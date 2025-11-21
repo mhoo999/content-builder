@@ -115,20 +115,25 @@
 
 /* 경력 입력 스타일 */
 .career-item {
-  margin-bottom: 16px;
-  padding: 20px;
-  padding-right: 48px; /* 삭제 버튼 공간 확보 */
-  background: var(--background);
+  margin-bottom: 12px;
+  padding: 16px 48px 16px 16px;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   position: relative;
+  transition: all 0.2s;
+}
+
+.career-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(49, 130, 246, 0.08);
 }
 
 .career-inputs {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
+  align-items: start;
 }
 
 .career-item .form-group {
@@ -136,17 +141,47 @@
 }
 
 .career-item .form-group label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.career-item .form-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.career-item .form-group input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.1);
+}
+
+.career-item .form-group input::placeholder {
+  color: var(--text-tertiary);
+  font-size: 13px;
 }
 
 .career-item .btn-remove-small {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 12px;
+  right: 12px;
   width: 28px;
   height: 28px;
   font-size: 16px;
+  opacity: 0.6;
+  transition: all 0.2s;
+}
+
+.career-item:hover .btn-remove-small {
+  opacity: 1;
 }
