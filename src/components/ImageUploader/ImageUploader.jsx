@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import './ImageUploader.css';
 
 function ImageUploader({ onImageInsert }) {
   const [preview, setPreview] = useState(null);
   const [imageName, setImageName] = useState('');
+  const fileInputRef = useRef(null);
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -36,11 +37,21 @@ function ImageUploader({ onImageInsert }) {
     // 리셋
     setPreview(null);
     setImageName('');
+    
+    // input 파일 선택기 리셋 (같은 파일을 다시 선택할 수 있도록)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const cancelImage = () => {
     setPreview(null);
     setImageName('');
+    
+    // input 파일 선택기 리셋
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -49,6 +60,7 @@ function ImageUploader({ onImageInsert }) {
         <label className="btn-upload">
           📷 이미지 선택
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/*"
             onChange={handleFileSelect}
