@@ -134,6 +134,8 @@ function RichTextEditor({ value, onChange, placeholder, editorId }) {
     </div>
   );
 }
+
+function SummarySection({ lessonData, onUpdate }) {
   // 연습문제 추가
   const addExercise = () => {
     onUpdate({
