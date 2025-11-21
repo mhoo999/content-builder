@@ -8,7 +8,8 @@ IT 학위 콘텐츠 제작을 위한 비주얼 빌더 도구 (토스 스타일 U
 - 🎨 토스 스타일 UI (깔끔한 블루 컬러)
 - 📚 차시별 탭 관리
 - 💾 JSON export/import
-- 🔄 subjects 폴더 구조 자동 생성
+- 🔄 **subjects 폴더 구조 자동 생성** (브라우저에서 바로!)
+- 📂 폴더 Import 기능 (기존 subjects 폴더 불러오기)
 
 ## 📦 지원 콘텐츠 타입
 
@@ -43,16 +44,35 @@ npm run dev
    - 📖 준비하기 (오리엔테이션, 용어, 학습목표)
    - 🎓 학습하기 (생각묻기, 강의, 점검하기)
    - ✅ 정리하기 (연습문제, 학습정리, 다운로드)
-5. "Export JSON" 버튼으로 저장
 
-### 3. subjects 폴더 구조 생성
+### 3. Export 및 폴더 구조 생성
+
+#### 방법 1: Export to Subjects (추천) ⭐
+
+브라우저에서 바로 폴더 구조를 생성할 수 있습니다:
+
+1. **"📁 Export to Subjects"** 버튼 클릭
+2. 출력 경로 입력 (예: `~/IdeaProjects/contents_it/subjects`)
+3. 자동으로 폴더 구조 생성 완료! 🎉
+
+**장점:**
+- JSON 다운로드 + 폴더 구조 생성이 한 번에!
+- 터미널 명령어 입력 불필요
+- Python 스크립트가 자동으로 실행됨
+
+#### 방법 2: 수동 변환 (고급 사용자용)
+
+JSON 파일을 다운로드한 후 수동으로 변환:
+
+1. **"📤 Export JSON"** 버튼으로 JSON 파일 다운로드
+2. 터미널에서 Python 스크립트 실행:
 
 ```bash
 # Builder JSON을 subjects 폴더 구조로 변환
 python3 builder_to_subjects.py <builder_json_file> [output_dir]
 
 # 예시
-python3 builder_to_subjects.py 25itinse_builder.json
+python3 builder_to_subjects.py 25itinse_builder.json ~/IdeaProjects/contents_it/subjects
 ```
 
 생성되는 구조:

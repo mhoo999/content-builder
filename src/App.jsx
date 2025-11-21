@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { createCourseData, createBuilderLessonData, createProfessorData } from './models/dataModel';
+import ProfessorSection from './components/Professor/ProfessorSection';
 import PreparationSection from './components/Preparation/PreparationSection';
 import LearningSection from './components/Learning/LearningSection';
-import SummarySection from './components/Summary/SummarySection';
+import SummarySection from './components/Summary/SummarySectionNew';
+import { convertDataJsonToBuilderFormat, parseSubjectsJson, parseProfessorInfo } from './utils/folderParser';
 import './App.css';
 
 function App() {
@@ -18,11 +20,26 @@ function App() {
   // 현재 편집 중인 차시
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
 
+  // Collapsible sections state
+  const [courseInfoOpen, setCourseInfoOpen] = useState(true);
+  const [professorInfoOpen, setProfessorInfoOpen] = useState(true);
+
   // 새 차시 추가
   const addLesson = () => {
     const newLesson = createBuilderLessonData();
     newLesson.weekNumber = Math.ceil((courseData.lessons.length + 1) / 2);
     newLesson.lessonNumber = courseData.lessons.length + 1;
+
+    // 이전 차시의 다운로드 URL 복사
+    if (courseData.lessons.length > 0) {
+      const previousLesson = courseData.lessons[courseData.lessons.length - 1];
+      if (previousLesson.instructionUrl) {
+        newLesson.instructionUrl = previousLesson.instructionUrl;
+      }
+      if (previousLesson.guideUrl) {
+        newLesson.guideUrl = previousLesson.guideUrl;
+      }
+    }
 
     setCourseData(prev => ({
       ...prev,
@@ -79,6 +96,78 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  // Export to Subjects Folder
+  const exportToSubjects = async () => {
+    if (!courseData.courseCode) {
+      alert('과목 코드를 입력해주세요.');
+      return;
+    }
+
+    if (courseData.lessons.length === 0) {
+      alert('차시를 추가해주세요.');
+      return;
+    }
+
+    // 출력 경로 입력 받기
+    const defaultPath = '~/IdeaProjects/contents_it/subjects';
+    const outputPath = prompt(
+      '출력 경로를 입력하세요:\n\n' +
+      '예: ~/IdeaProjects/contents_it/subjects\n' +
+      '또는: /Users/username/projects/subjects',
+      defaultPath
+    );
+
+    if (!outputPath) {
+      return; // 사용자가 취소
+    }
+
+    try {
+      // API 호출하여 폴더 구조 생성
+      const response = await fetch('/api/export-subjects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          courseData: courseData,
+          outputPath: outputPath
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || '폴더 생성 중 오류가 발생했습니다.');
+      }
+
+      const result = await response.json();
+      alert(
+        `✅ 폴더 구조 생성 완료!\n\n` +
+        `위치: ${result.outputPath}\n` +
+        `차시 수: ${result.lessonCount}개`
+      );
+    } catch (error) {
+      console.error('Export error:', error);
+      
+      // API가 없는 경우 대체 방법 안내
+      const dataStr = JSON.stringify(courseData, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const filename = `${courseData.courseCode}_builder.json`;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      const command = `python3 builder_to_subjects.py ${filename} ${outputPath}`;
+      alert(
+        `⚠️ API 서버가 실행되지 않았습니다.\n\n` +
+        `JSON 파일이 다운로드되었습니다.\n` +
+        `터미널에서 다음 명령어를 실행하세요:\n\n${command}`
+      );
+    }
+  };
+
   // JSON Import
   const importJSON = (event) => {
     const file = event.target.files[0];
@@ -98,6 +187,87 @@ function App() {
     }
   };
 
+  // Folder Import (subjects/{code}/ 폴더 구조)
+  const importFolder = async (event) => {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    try {
+      // subjects.json 찾기
+      const subjectsJsonFile = files.find(f => f.webkitRelativePath.endsWith('subjects.json'));
+      let lessonTitles = {};
+      let courseCode = '';
+      let courseName = '';
+
+      if (subjectsJsonFile) {
+        const subjectsText = await subjectsJsonFile.text();
+        const subjectsData = JSON.parse(subjectsText);
+        lessonTitles = parseSubjectsJson(subjectsData);
+        courseCode = subjectsData.courseCode || '';
+        courseName = subjectsData.courseName || '';
+      }
+
+      // 모든 data.json 파일 찾기
+      const dataJsonFiles = files.filter(f => f.webkitRelativePath.endsWith('/assets/data/data.json'));
+
+      if (dataJsonFiles.length === 0) {
+        alert('data.json 파일을 찾을 수 없습니다.');
+        return;
+      }
+
+      // 차시 번호 추출 및 정렬
+      const lessonData = await Promise.all(
+        dataJsonFiles.map(async (file) => {
+          const pathParts = file.webkitRelativePath.split('/');
+          const lessonFolder = pathParts[pathParts.length - 4]; // subjects/{code}/{lesson}/assets/data/data.json
+          const lessonNumber = parseInt(lessonFolder, 10);
+
+          const text = await file.text();
+          const dataJson = JSON.parse(text);
+
+          return { lessonNumber, dataJson, file };
+        })
+      );
+
+      // 차시 번호로 정렬
+      lessonData.sort((a, b) => a.lessonNumber - b.lessonNumber);
+
+      // 교수 정보 추출 (첫 번째 차시에서)
+      const professorInfo = lessonData.length > 0
+        ? parseProfessorInfo(lessonData[0].dataJson)
+        : createProfessorData();
+
+      // Builder 형식으로 변환
+      const lessons = lessonData.map((item, index) => {
+        const builderLesson = convertDataJsonToBuilderFormat(item.dataJson, item.lessonNumber);
+        builderLesson.lessonTitle = lessonTitles[item.lessonNumber] || `${item.lessonNumber}차시`;
+        return builderLesson;
+      });
+
+      // 과목 코드 추출 (파일 경로에서)
+      if (!courseCode && dataJsonFiles.length > 0) {
+        const pathParts = dataJsonFiles[0].webkitRelativePath.split('/');
+        courseCode = pathParts[1] || '';
+      }
+
+      // 데이터 설정
+      setCourseData({
+        courseCode: courseCode,
+        courseName: courseName || courseData.courseName,
+        backgroundImage: '',
+        professor: professorInfo,
+        lessons: lessons
+      });
+
+      setCurrentLessonIndex(0);
+      alert(`${lessons.length}개 차시를 성공적으로 불러왔습니다!`);
+
+    } catch (error) {
+      console.error('Folder import error:', error);
+      alert('폴더를 불러오는 중 오류가 발생했습니다: ' + error.message);
+    }
+  };
+
   const currentLesson = courseData.lessons[currentLessonIndex];
 
   return (
@@ -107,11 +277,22 @@ function App() {
         <h1>📚 Content Builder</h1>
         <div className="header-actions">
           <label className="btn-secondary">
-            📥 Import
+            📥 Import JSON
             <input
               type="file"
               accept=".json"
               onChange={importJSON}
+              style={{ display: 'none' }}
+            />
+          </label>
+          <label className="btn-secondary">
+            📂 Import Folder
+            <input
+              type="file"
+              webkitdirectory=""
+              directory=""
+              multiple
+              onChange={importFolder}
               style={{ display: 'none' }}
             />
           </label>
@@ -122,6 +303,14 @@ function App() {
           >
             📤 Export JSON
           </button>
+          <button
+            className="btn-primary"
+            onClick={exportToSubjects}
+            disabled={courseData.lessons.length === 0 || !courseData.courseCode}
+            title="JSON 다운로드 + 폴더 구조 생성 안내"
+          >
+            📁 Export to Subjects
+          </button>
         </div>
       </header>
 
@@ -129,24 +318,50 @@ function App() {
       <div className="main-content">
         {/* 사이드바 */}
         <aside className="sidebar">
-          <div className="course-info-section">
-            <h3>과목 정보</h3>
-            <div className="form-group">
-              <label>과목 코드</label>
-              <input
-                type="text"
-                placeholder="예: 25itinse"
-                value={courseData.courseCode}
-                onChange={(e) => updateCourseInfo('courseCode', e.target.value)}
-              />
+          {/* 과목 정보 */}
+          <div className="collapsible-section">
+            <div
+              className="collapsible-header"
+              onClick={() => setCourseInfoOpen(!courseInfoOpen)}
+            >
+              <h3>과목 정보</h3>
+              <span className={`collapsible-toggle ${courseInfoOpen ? 'open' : ''}`}>▼</span>
             </div>
-            <div className="form-group">
-              <label>과정명</label>
-              <input
-                type="text"
-                placeholder="예: 인터넷보안"
-                value={courseData.courseName}
-                onChange={(e) => updateCourseInfo('courseName', e.target.value)}
+            <div className={`collapsible-content ${!courseInfoOpen ? 'collapsed' : ''}`}>
+              <div className="form-group">
+                <label>과목 코드</label>
+                <input
+                  type="text"
+                  placeholder="예: 25itinse"
+                  value={courseData.courseCode}
+                  onChange={(e) => updateCourseInfo('courseCode', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>과정명</label>
+                <input
+                  type="text"
+                  placeholder="예: 인터넷보안"
+                  value={courseData.courseName}
+                  onChange={(e) => updateCourseInfo('courseName', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 교수 정보 섹션 */}
+          <div className="collapsible-section">
+            <div
+              className="collapsible-header"
+              onClick={() => setProfessorInfoOpen(!professorInfoOpen)}
+            >
+              <h3>교수 정보</h3>
+              <span className={`collapsible-toggle ${professorInfoOpen ? 'open' : ''}`}>▼</span>
+            </div>
+            <div className={`collapsible-content ${!professorInfoOpen ? 'collapsed' : ''}`}>
+              <ProfessorSection
+                professor={courseData.professor}
+                onUpdate={(updated) => setCourseData(prev => ({ ...prev, professor: updated }))}
               />
             </div>
           </div>

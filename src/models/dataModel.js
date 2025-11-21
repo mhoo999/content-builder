@@ -17,8 +17,8 @@ export const createCourseData = () => ({
 export const createProfessorData = () => ({
   name: '',
   photo: '',                // 상대경로: ../images/{과목코드}_professor.png
-  education: [],            // 학력 리스트
-  career: []                // 경력 리스트 (HTML 포함 가능)
+  education: [''],          // 학력 리스트 (동적 추가/삭제)
+  career: ['']              // 경력 리스트 (동적 추가/삭제, HTML 포함 가능)
 });
 
 // 주차 정보 (subjects.json용)
@@ -252,31 +252,22 @@ export const createBuilderLessonData = () => ({
   // 생각묻기 & 점검하기
   opinionQuestion: '',
   professorThink: '',
-  professorThinkImage: '',
 
   // 강의보기
   lectureVideoUrl: '',
   lectureSubtitle: '',
   timestamps: ['', '', ''],
 
-  // 연습문제 (OX 1개 + 4지선다 2개)
-  exercise1: {
-    question: '',
-    answer: '2',      // "1"(O) or "2"(X)
-    commentary: ''
-  },
-  exercise2: {
-    question: '',
-    options: ['', '', '', ''],
-    answer: '1',
-    commentary: ''
-  },
-  exercise3: {
-    question: '',
-    options: ['', '', '', ''],
-    answer: '1',
-    commentary: ''
-  },
+  // 연습문제 (동적 추가/삭제, boolean 또는 multiple 선택)
+  exercises: [
+    {
+      type: 'boolean',  // 'boolean' 또는 'multiple'
+      question: '',
+      answer: '2',      // boolean: "1"(O) or "2"(X), multiple: "1"~"4"
+      options: [],      // multiple일 때만 사용
+      commentary: ''
+    }
+  ],
 
   // 학습정리 (HTML 지원)
   summary: ['', '', ''],

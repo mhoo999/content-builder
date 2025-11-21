@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './PreparationSection.css';
+import ImageUploader from '../ImageUploader/ImageUploader';
 
 function PreparationSection({ lessonData, onUpdate }) {
   const isFirstLesson = lessonData.weekNumber === 1 && lessonData.lessonNumber === 1;
@@ -78,10 +79,34 @@ function PreparationSection({ lessonData, onUpdate }) {
 
       {/* 용어체크 */}
       <div className="subsection">
-        <h4>용어체크 (3개)</h4>
+        <div className="list-header">
+          <h4>용어체크</h4>
+          <button
+            className="btn-add-small"
+            onClick={() => {
+              const newTerms = [...lessonData.terms, { title: '', content: '' }];
+              onUpdate({ ...lessonData, terms: newTerms });
+            }}
+          >
+            + 용어 추가
+          </button>
+        </div>
         {lessonData.terms.map((term, index) => (
           <div key={index} className="term-item">
-            <div className="term-header">용어 {index + 1}</div>
+            <div className="term-header">
+              <span>용어 {index + 1}</span>
+              {lessonData.terms.length > 1 && (
+                <button
+                  className="btn-remove-inline"
+                  onClick={() => {
+                    const newTerms = lessonData.terms.filter((_, i) => i !== index);
+                    onUpdate({ ...lessonData, terms: newTerms });
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
             <div className="form-group">
               <label>제목</label>
               <input
@@ -99,7 +124,12 @@ function PreparationSection({ lessonData, onUpdate }) {
                 onChange={(e) => handleTermChange(index, 'content', e.target.value)}
                 rows={3}
               />
-              <small className="hint">💡 이미지 삽입 지원 예정</small>
+              <ImageUploader
+                onImageInsert={(imageHtml) => {
+                  const newContent = term.content + '\n' + imageHtml;
+                  handleTermChange(index, 'content', newContent);
+                }}
+              />
             </div>
           </div>
         ))}
@@ -110,29 +140,73 @@ function PreparationSection({ lessonData, onUpdate }) {
         <h4>학습목표</h4>
 
         <div className="learning-group">
-          <label className="group-label">학습내용 (3개)</label>
+          <div className="list-header">
+            <label className="group-label">학습내용</label>
+            <button
+              className="btn-add-small"
+              onClick={() => {
+                const newContents = [...lessonData.learningContents, ''];
+                onUpdate({ ...lessonData, learningContents: newContents });
+              }}
+            >
+              + 추가
+            </button>
+          </div>
           {lessonData.learningContents.map((content, index) => (
-            <div key={index} className="form-group">
+            <div key={index} className="dynamic-item">
               <input
                 type="text"
                 placeholder={`학습내용 ${index + 1}`}
                 value={content}
                 onChange={(e) => handleLearningContentChange(index, e.target.value)}
               />
+              {lessonData.learningContents.length > 1 && (
+                <button
+                  className="btn-remove-small"
+                  onClick={() => {
+                    const newContents = lessonData.learningContents.filter((_, i) => i !== index);
+                    onUpdate({ ...lessonData, learningContents: newContents });
+                  }}
+                >
+                  ×
+                </button>
+              )}
             </div>
           ))}
         </div>
 
         <div className="learning-group">
-          <label className="group-label">학습목표 (3개)</label>
+          <div className="list-header">
+            <label className="group-label">학습목표</label>
+            <button
+              className="btn-add-small"
+              onClick={() => {
+                const newObjectives = [...lessonData.learningObjectives, ''];
+                onUpdate({ ...lessonData, learningObjectives: newObjectives });
+              }}
+            >
+              + 추가
+            </button>
+          </div>
           {lessonData.learningObjectives.map((objective, index) => (
-            <div key={index} className="form-group">
+            <div key={index} className="dynamic-item">
               <input
                 type="text"
                 placeholder={`학습목표 ${index + 1}`}
                 value={objective}
                 onChange={(e) => handleLearningObjectiveChange(index, e.target.value)}
               />
+              {lessonData.learningObjectives.length > 1 && (
+                <button
+                  className="btn-remove-small"
+                  onClick={() => {
+                    const newObjectives = lessonData.learningObjectives.filter((_, i) => i !== index);
+                    onUpdate({ ...lessonData, learningObjectives: newObjectives });
+                  }}
+                >
+                  ×
+                </button>
+              )}
             </div>
           ))}
         </div>

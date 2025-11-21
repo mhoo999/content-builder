@@ -84,3 +84,47 @@ select:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.1);
 }
+
+/* 학습정리 */
+.dynamic-item-vertical {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.dynamic-item-vertical:last-child {
+  margin-bottom: 0;
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.item-header label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* exercise controls */
+.exercise-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.type-selector {
+  padding: 6px 12px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+}

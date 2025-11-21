@@ -1,4 +1,5 @@
 import './LearningSection.css';
+import ImageUploader from '../ImageUploader/ImageUploader';
 
 function LearningSection({ lessonData, onUpdate }) {
   const handleOpinionChange = (value) => {
@@ -99,15 +100,11 @@ function LearningSection({ lessonData, onUpdate }) {
             onChange={(e) => handleProfessorThinkChange(e.target.value)}
             rows={5}
           />
-          <small className="hint">💡 이미지 삽입 지원 예정</small>
-        </div>
-        <div className="form-group">
-          <label>교수님 이미지 경로 (선택)</label>
-          <input
-            type="text"
-            placeholder="../images/professor-02.png"
-            value={lessonData.professorThinkImage}
-            onChange={(e) => handleProfessorThinkImageChange(e.target.value)}
+          <ImageUploader
+            onImageInsert={(imageHtml) => {
+              const newContent = lessonData.professorThink + '\n' + imageHtml;
+              handleProfessorThinkChange(newContent);
+            }}
           />
         </div>
       </div>
