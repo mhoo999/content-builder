@@ -10,6 +10,7 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  justify-content: center;
 }
 
 .btn-upload {
@@ -17,7 +18,7 @@
   color: white;
   border: none;
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
