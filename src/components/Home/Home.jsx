@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './Home.css';
 
-function Home({ onNewProject, onLoadProject }) {
+function Home({ onNewProject, onLoadProject, onImportFolder }) {
   const [savedProjects, setSavedProjects] = useState([]);
 
   useEffect(() => {
@@ -129,8 +129,9 @@ function Home({ onNewProject, onLoadProject }) {
               directory=""
               multiple
               onChange={(e) => {
-                // Import Folder 기능은 App.jsx에서 처리
-                // 여기서는 파일 선택만 하고 실제 처리는 부모 컴포넌트에서
+                if (onImportFolder) {
+                  onImportFolder(e);
+                }
               }}
               style={{ display: 'none' }}
             />

@@ -379,6 +379,7 @@ function App() {
         <Home
           onNewProject={handleNewProject}
           onLoadProject={handleLoadProject}
+          onImportFolder={importFolder}
         />
       ) : (
         <div className="main-content">
