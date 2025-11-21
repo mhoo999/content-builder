@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { createCourseData, createBuilderLessonData, createProfessorData } from './models/dataModel';
 import ProfessorSection from './components/Professor/ProfessorSection';
 import PreparationSection from './components/Preparation/PreparationSection';
 import LearningSection from './components/Learning/LearningSection';
 import SummarySection from './components/Summary/SummarySectionNew';
-import Home from './components/Home/Home';
 import { convertDataJsonToBuilderFormat, parseSubjectsJson, parseProfessorInfo } from './utils/folderParser';
 import './App.css';
 
@@ -23,25 +22,6 @@ function App() {
 
   // 오른쪽 사이드바 접기/펼치기
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
-
-  // 화면 모드 (home: 홈 화면, editor: 에디터 화면)
-  const [viewMode, setViewMode] = useState('home');
-
-  // 자동 저장 (로컬 스토리지)
-  useEffect(() => {
-    if (viewMode === 'editor' && courseData.courseCode && courseData.lessons.length > 0) {
-      const projectKey = `content-builder-project-${courseData.courseCode}`;
-      const dataToSave = {
-        ...courseData,
-        lastModified: new Date().toISOString()
-      };
-      try {
-        localStorage.setItem(projectKey, JSON.stringify(dataToSave));
-      } catch (error) {
-        console.error('자동 저장 실패:', error);
-      }
-    }
-  }, [courseData, viewMode]);
 
   // 새 차시 추가
   const addLesson = () => {
@@ -101,18 +81,6 @@ function App() {
       ...prev,
       professor: { ...prev.professor, [field]: value }
     }));
-  };
-
-  // JSON Export
-  const exportJSON = () => {
-    const dataStr = JSON.stringify(courseData, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${courseData.courseCode || 'course'}_builder.json`;
-    link.click();
-    URL.revokeObjectURL(url);
   };
 
   // Export to Subjects Folder
@@ -185,51 +153,6 @@ function App() {
         `터미널에서 다음 명령어를 실행하세요:\n\n${command}`
       );
     }
-  };
-
-  // JSON Import
-  const importJSON = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = JSON.parse(e.target.result);
-          setCourseData(data);
-          setCurrentLessonIndex(0);
-          setViewMode('editor');
-          alert('데이터를 성공적으로 불러왔습니다!');
-        } catch (error) {
-          alert('JSON 파일을 읽는 중 오류가 발생했습니다: ' + error.message);
-        }
-      };
-      reader.readAsText(file);
-    }
-  };
-
-  // 프로젝트 불러오기 (홈 화면에서)
-  const handleLoadProject = (data) => {
-    setCourseData(data);
-    setCurrentLessonIndex(0);
-    setViewMode('editor');
-  };
-
-  // 새 프로젝트 시작
-  const handleNewProject = () => {
-    if (courseData.lessons.length > 0) {
-      if (!window.confirm('현재 작업 중인 내용이 사라집니다. 새 프로젝트를 시작하시겠습니까?')) {
-        return;
-      }
-    }
-    setCourseData({
-      courseCode: '',
-      courseName: '',
-      backgroundImage: '',
-      professor: createProfessorData(),
-      lessons: []
-    });
-    setCurrentLessonIndex(0);
-    setViewMode('editor');
   };
 
   // Folder Import (subjects/{code}/ 폴더 구조)
@@ -305,7 +228,6 @@ function App() {
       });
 
       setCurrentLessonIndex(0);
-      setViewMode('editor');
       alert(`${lessons.length}개 차시를 성공적으로 불러왔습니다!`);
 
     } catch (error) {
@@ -321,30 +243,9 @@ function App() {
       {/* 헤더 */}
       <header className="header">
         <div className="header-left">
-          {viewMode === 'editor' && (
-            <button
-              className="btn-home-link"
-              onClick={() => {
-                if (window.confirm('홈으로 이동하시겠습니까? (작업 내용은 자동 저장됩니다)')) {
-                  setViewMode('home');
-                }
-              }}
-            >
-              🏠 홈
-            </button>
-          )}
           <h1>📚 Content Builder</h1>
         </div>
         <div className="header-actions">
-          <label className="btn-secondary">
-            📥 Import JSON
-            <input
-              type="file"
-              accept=".json"
-              onChange={importJSON}
-              style={{ display: 'none' }}
-            />
-          </label>
           <label className="btn-secondary">
             📂 Import Folder
             <input
@@ -357,13 +258,6 @@ function App() {
             />
           </label>
           <button
-            className="btn-secondary"
-            onClick={exportJSON}
-            disabled={courseData.lessons.length === 0}
-          >
-            📤 Export JSON
-          </button>
-          <button
             className="btn-primary"
             onClick={exportToSubjects}
             disabled={courseData.lessons.length === 0 || !courseData.courseCode}
@@ -375,14 +269,7 @@ function App() {
       </header>
 
       {/* 메인 컨텐츠 */}
-      {viewMode === 'home' ? (
-        <Home
-          onNewProject={handleNewProject}
-          onLoadProject={handleLoadProject}
-          onImportFolder={importFolder}
-        />
-      ) : (
-        <div className="main-content">
+      <div className="main-content">
         {/* 왼쪽 사이드바 (차시 목록만) */}
         <aside className="sidebar sidebar-left">
           <div className="lessons-list">
@@ -542,8 +429,7 @@ function App() {
             </div>
           )}
         </aside>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
