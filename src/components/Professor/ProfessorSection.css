@@ -2,6 +2,14 @@
   /* padding은 collapsible-content에서 관리 */
 }
 
+.professor-section .form-group {
+  margin-bottom: 20px;
+}
+
+.professor-section .form-group:last-child {
+  margin-bottom: 0;
+}
+
 .current-image-preview {
   margin-top: 12px;
   padding: 12px;
@@ -25,14 +33,14 @@
 }
 
 .dynamic-list {
-  margin-top: 20px;
+  margin-top: 24px;
 }
 
 .list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .list-header label {
@@ -46,8 +54,8 @@
   background: var(--primary-color);
   color: white;
   border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -60,13 +68,14 @@
 
 .dynamic-item {
   display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
 }
 
 .dynamic-item input {
   flex: 1;
-  padding: 10px 12px;
+  padding: 12px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 14px;
@@ -86,10 +95,10 @@
   background: transparent;
   border: 1px solid var(--border);
   color: var(--text-tertiary);
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  font-size: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  font-size: 20px;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -107,7 +116,8 @@
 /* 경력 입력 스타일 */
 .career-item {
   margin-bottom: 16px;
-  padding: 16px;
+  padding: 20px;
+  padding-right: 56px; /* 삭제 버튼 공간 확보 */
   background: var(--background);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -117,12 +127,26 @@
 .career-inputs {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   flex: 1;
+}
+
+.career-item .form-group {
+  margin-bottom: 0;
+}
+
+.career-item .form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
 }
 
 .career-item .btn-remove-small {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
 }

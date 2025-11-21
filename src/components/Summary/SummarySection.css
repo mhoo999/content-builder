@@ -90,7 +90,7 @@ select:focus {
   background: var(--background);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 16px;
+  padding: 20px;
   margin-bottom: 16px;
 }
 
@@ -102,7 +102,7 @@ select:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .item-header label {
@@ -110,6 +110,28 @@ select:focus {
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
+}
+
+.btn-remove-inline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-tertiary);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn-remove-inline:hover {
+  background: var(--error);
+  border-color: var(--error);
+  color: white;
 }
 
 /* exercise controls */
