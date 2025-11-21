@@ -13,8 +13,10 @@ import { useEffect, useMemo } from 'react';
 function RichTextEditor({ value, onChange, placeholder, editorId }) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      Underline,
+      StarterKit.configure({
+        // StarterKit의 모든 확장 사용 (Underline은 포함되지 않음)
+      }),
+      Underline, // StarterKit에 없는 Underline 명시적으로 추가
       Table.configure({
         resizable: true,
       }),
