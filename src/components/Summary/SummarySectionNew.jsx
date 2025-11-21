@@ -2,10 +2,12 @@ import './SummarySection.css';
 import ImageUploader from '../ImageUploader/ImageUploader';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
 import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
+import { useEffect } from 'react';
 
 function SummarySection({ lessonData, onUpdate }) {
   // RichTextEditor 컴포넌트
@@ -13,6 +15,7 @@ function SummarySection({ lessonData, onUpdate }) {
     const editor = useEditor({
       extensions: [
         StarterKit,
+        Underline,
         Table.configure({
           resizable: true,
         }),
@@ -20,19 +23,26 @@ function SummarySection({ lessonData, onUpdate }) {
         TableHeader,
         TableCell,
       ],
-      content: value,
+      content: value || '',
       onUpdate: ({ editor }) => {
         onChange(editor.getHTML());
       },
       editorProps: {
         attributes: {
           class: 'rich-text-editor-content',
+          placeholder: placeholder,
         },
       },
     });
 
+    useEffect(() => {
+      if (editor && value !== editor.getHTML()) {
+        editor.commands.setContent(value || '');
+      }
+    }, [value, editor]);
+
     if (!editor) {
-      return null;
+      return <div className="rich-text-editor-loading">로딩 중...</div>;
     }
 
     return (
