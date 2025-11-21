@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { createCourseData, createBuilderLessonData, createProfessorData } from './models/dataModel';
+import PreparationSection from './components/Preparation/PreparationSection';
+import LearningSection from './components/Learning/LearningSection';
+import SummarySection from './components/Summary/SummarySection';
 import './App.css';
 
 function App() {
@@ -200,7 +203,7 @@ function App() {
                 {currentLesson.weekNumber}주 {currentLesson.lessonNumber % 2 === 1 ? '1' : '2'}차
               </p>
 
-              {/* 여기에 폼 컴포넌트들이 들어갈 예정 */}
+              {/* 기본 정보 */}
               <div className="form-section">
                 <h3>📝 기본 정보</h3>
                 <div className="form-group">
@@ -217,9 +220,23 @@ function App() {
                 </div>
               </div>
 
-              <div className="coming-soon">
-                <p>🚧 폼 컴포넌트 구현 중...</p>
-              </div>
+              {/* 준비하기 섹션 */}
+              <PreparationSection
+                lessonData={currentLesson}
+                onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+              />
+
+              {/* 학습하기 섹션 */}
+              <LearningSection
+                lessonData={currentLesson}
+                onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+              />
+
+              {/* 정리하기 섹션 */}
+              <SummarySection
+                lessonData={currentLesson}
+                onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+              />
             </div>
           ) : null}
         </main>
