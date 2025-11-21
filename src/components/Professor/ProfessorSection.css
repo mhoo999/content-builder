@@ -130,10 +130,9 @@
 }
 
 .career-inputs {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  align-items: start;
 }
 
 .career-item .form-group {
@@ -158,6 +157,20 @@
   transition: all 0.2s;
   background: var(--surface);
   color: var(--text-primary);
+}
+
+.career-item .form-group input[type="date"] {
+  cursor: pointer;
+}
+
+.career-item .form-group input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.career-item .form-group input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .career-item .form-group input:focus {

@@ -180,40 +180,82 @@ export const parseProfessorInfo = (dataJson) => {
   const educationItem = profile.find(item => item.title && item.title.includes('학'));
   const careerItem = profile.find(item => item.title && item.title.includes('경'));
 
-  // 경력 변환: ['<b>연도</b><br />내용'] → [{ period: '연도', description: '내용' }]
+  // 경력 변환: ['<b>연도</b><br />내용'] → [{ period: '연도', startDate: '', endDate: '', description: '내용' }]
   const careerContent = careerItem?.content || [];
+  
+  // period 문자열을 파싱하여 startDate와 endDate 추출하는 헬퍼 함수
+  const parsePeriodToDates = (period) => {
+    if (!period) return { startDate: '', endDate: '' };
+    
+    // "YYYY년 MM월 ~ YYYY년 MM월" 형식 파싱
+    const match = period.match(/(\d{4})년\s*(\d{1,2})월\s*~\s*(\d{4})년\s*(\d{1,2})월/);
+    if (match) {
+      const [, startYear, startMonth, endYear, endMonth] = match;
+      return {
+        startDate: `${startYear}-${String(startMonth).padStart(2, '0')}-01`,
+        endDate: `${endYear}-${String(endMonth).padStart(2, '0')}-01`
+      };
+    }
+    
+    // "YYYY년 MM월 ~" 형식 파싱
+    const singleMatch = period.match(/(\d{4})년\s*(\d{1,2})월\s*~/);
+    if (singleMatch) {
+      const [, year, month] = singleMatch;
+      return {
+        startDate: `${year}-${String(month).padStart(2, '0')}-01`,
+        endDate: ''
+      };
+    }
+    
+    return { startDate: '', endDate: '' };
+  };
+  
   const parsedCareer = careerContent.map(careerStr => {
     if (typeof careerStr === 'string') {
       // <b>연도</b><br />내용 형식 파싱
       const boldMatch = careerStr.match(/<b>(.*?)<\/b><br \/>(.*)/);
       if (boldMatch) {
+        const period = boldMatch[1].trim();
+        const dates = parsePeriodToDates(period);
         return {
-          period: boldMatch[1].trim(),
+          period: period,
+          startDate: dates.startDate,
+          endDate: dates.endDate,
           description: boldMatch[2].trim()
         };
       }
       // <b>연도</b> 형식만 있는 경우
       const boldOnlyMatch = careerStr.match(/<b>(.*?)<\/b>/);
       if (boldOnlyMatch) {
+        const period = boldOnlyMatch[1].trim();
+        const dates = parsePeriodToDates(period);
         return {
-          period: boldOnlyMatch[1].trim(),
+          period: period,
+          startDate: dates.startDate,
+          endDate: dates.endDate,
           description: ''
         };
       }
       // 일반 문자열인 경우 (기존 형식 호환)
       return {
         period: '',
+        startDate: '',
+        endDate: '',
         description: careerStr
       };
     }
     // 이미 객체 형식인 경우
     if (typeof careerStr === 'object' && careerStr !== null) {
+      const period = careerStr.period || '';
+      const dates = parsePeriodToDates(period);
       return {
-        period: careerStr.period || '',
+        period: period,
+        startDate: careerStr.startDate || dates.startDate,
+        endDate: careerStr.endDate || dates.endDate,
         description: careerStr.description || ''
       };
     }
-    return { period: '', description: '' };
+    return { period: '', startDate: '', endDate: '', description: '' };
   });
 
   return {
