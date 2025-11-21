@@ -50,11 +50,36 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .header h1 {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.btn-home-link {
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.btn-home-link:hover {
+  background: var(--background);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .header-actions {
