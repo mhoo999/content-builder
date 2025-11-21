@@ -30,10 +30,16 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
 
   // 용어체크 파싱
   const termPage = findPageByComponent(pages, 'term');
-  const terms = termPage?.data?.map(term => ({
-    title: term.title || '',
-    content: Array.isArray(term.content) ? term.content.join('\n') : (term.content || '')
-  })) || [{ title: '', content: '' }];
+  const terms = termPage?.data?.map(term => {
+    // title의 <br /> 또는 <br> 태그를 줄바꿈(\n)으로 변환
+    let title = term.title || '';
+    title = title.replace(/<br\s*\/?>/gi, '\n').trim();
+    
+    return {
+      title: title,
+      content: Array.isArray(term.content) ? term.content.join('\n') : (term.content || '')
+    };
+  }) || [{ title: '', content: '' }];
 
   // 학습목표 파싱
   const objectivesPage = findPageByComponent(pages, 'objectives');
