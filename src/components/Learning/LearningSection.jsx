@@ -8,10 +8,18 @@ function LearningSection({ lessonData, onUpdate }) {
   };
 
   const handleProfessorThinkChange = (value) => {
-    // 이미지가 포함된 경우, 축약된 텍스트를 원본으로 복원
+    // value가 이미 원본(base64 포함)인지 확인
+    const hasBase64Image = /<img[^>]*src=["']data:image\/[^"']+["'][^>]*>/gi.test(value);
     const originalValue = lessonData.professorThink;
-    const restoredValue = restoreImageText(value, originalValue);
-    onUpdate({ ...lessonData, professorThink: restoredValue });
+    
+    if (hasBase64Image) {
+      // 이미 원본이면 그대로 사용
+      onUpdate({ ...lessonData, professorThink: value });
+    } else {
+      // 축약된 버전이면 복원
+      const restoredValue = restoreImageText(value, originalValue);
+      onUpdate({ ...lessonData, professorThink: restoredValue });
+    }
   };
 
   const handleProfessorThinkImageChange = (value) => {

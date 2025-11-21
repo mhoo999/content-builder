@@ -49,7 +49,9 @@ export const restoreImageText = (shortenedText, originalText) => {
   const placeholders = [];
   let match;
   
-  while ((match = imagePlaceholderRegex.exec(shortenedText)) !== null) {
+  // 모든 매치를 찾아서 배열에 저장
+  const tempText = shortenedText;
+  while ((match = imagePlaceholderRegex.exec(tempText)) !== null) {
     placeholders.push({
       index: parseInt(match[1], 10) - 1, // 0-based index
       placeholder: match[0],
@@ -63,21 +65,10 @@ export const restoreImageText = (shortenedText, originalText) => {
   // 역순으로 대체 (인덱스가 변경되지 않도록)
   placeholders.reverse().forEach(({ index, placeholder }) => {
     if (index >= 0 && index < images.length) {
+      // 첫 번째 매치만 대체 (replace는 첫 번째만 대체)
       restored = restored.replace(placeholder, images[index]);
     }
   });
-  
-  // 원본에 있던 이미지 중 축약된 텍스트에 없는 것들은 유지
-  // (사용자가 [이미지 N]을 삭제한 경우를 대비)
-  const remainingImages = images.filter((img, index) => {
-    const placeholder = `[이미지 ${index + 1}]`;
-    return !shortenedText.includes(placeholder);
-  });
-  
-  // 남은 이미지들을 텍스트 끝에 추가 (사용자가 삭제한 경우 복원)
-  if (remainingImages.length > 0) {
-    restored += '\n' + remainingImages.join('\n');
-  }
   
   return restored;
 };

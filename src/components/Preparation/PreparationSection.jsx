@@ -23,8 +23,17 @@ function PreparationSection({ lessonData, onUpdate }) {
     
     // 이미지가 포함된 필드(content)인 경우, 축약된 텍스트를 원본으로 복원
     if (field === 'content' && originalValue) {
-      const restoredValue = restoreImageText(value, originalValue);
-      newTerms[index] = { ...newTerms[index], [field]: restoredValue };
+      // value가 이미 원본(base64 포함)인지 확인
+      const hasBase64Image = /<img[^>]*src=["']data:image\/[^"']+["'][^>]*>/gi.test(value);
+      
+      if (hasBase64Image) {
+        // 이미 원본이면 그대로 사용
+        newTerms[index] = { ...newTerms[index], [field]: value };
+      } else {
+        // 축약된 버전이면 복원
+        const restoredValue = restoreImageText(value, originalValue);
+        newTerms[index] = { ...newTerms[index], [field]: restoredValue };
+      }
     } else {
       newTerms[index] = { ...newTerms[index], [field]: value };
     }
