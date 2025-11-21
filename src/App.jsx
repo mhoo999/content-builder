@@ -394,6 +394,21 @@ function App() {
                     }}
                   />
                 </div>
+                <div className="form-group">
+                  <label>주차</label>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="예: 1"
+                    value={currentLesson.weekNumber}
+                    onChange={(e) => {
+                      const weekNum = parseInt(e.target.value, 10) || 1;
+                      const updated = { ...currentLesson, weekNumber: weekNum };
+                      updateLesson(currentLessonIndex, updated);
+                    }}
+                  />
+                  <small className="hint">💡 주차 번호를 입력하세요 (예: 1주, 2주)</small>
+                </div>
               </div>
 
               {/* 준비하기 섹션 */}
