@@ -1,0 +1,398 @@
+#!/usr/bin/env python3
+"""
+Content Builder JSON을 subjects 폴더 구조로 변환
+
+Usage:
+    python3 builder_to_subjects.py <builder_json_file> [output_dir]
+"""
+
+import json
+import sys
+import os
+from pathlib import Path
+
+
+def create_intro_page(professor):
+    """인트로 페이지 생성"""
+    return {
+        "path": "",
+        "section": 0,
+        "title": "인트로",
+        "component": "intro",
+        "media": "../../../resources/media/common_start.mp4",
+        "data": {
+            "professor": {
+                "name": professor["name"],
+                "photo": professor["photo"],
+                "profile": [
+                    {
+                        "title": "학　력",
+                        "content": professor["education"]
+                    },
+                    {
+                        "title": "경　력",
+                        "content": professor["career"]
+                    }
+                ]
+            }
+        }
+    }
+
+
+def create_orientation_page(orientation):
+    """오리엔테이션 페이지 생성"""
+    return {
+        "path": "/orientation",
+        "section": 1,
+        "title": "오리엔테이션",
+        "description": "본격적인 학습에 앞서 오리엔테이션을 먼저 들어주세요.",
+        "script": "본격적인 학습에 앞서 교수님의 오리엔테이션을 먼저 들어주세요.",
+        "component": "orientation",
+        "media": orientation["videoUrl"],
+        "caption": [{
+            "src": orientation["subtitlePath"],
+            "lable": "한국어",
+            "language": "ko",
+            "kind": "subtitles"
+        }],
+        "data": {}
+    }
+
+
+def create_term_page(terms):
+    """용어체크 페이지 생성"""
+    term_data = []
+    for term in terms:
+        if term["title"] or term["content"]:
+            term_data.append({
+                "title": term["title"],
+                "content": [term["content"]] if term["content"] else []
+            })
+
+    return {
+        "path": "/term",
+        "section": 1,
+        "title": "용어체크",
+        "description": "이번 시간에 다룰 주요 용어를 체크해보세요.",
+        "script": "이번 시간에 다룰 주요 용어를 체크해보세요.",
+        "component": "term",
+        "media": "../../../resources/media/common_word.mp3",
+        "data": term_data
+    }
+
+
+def create_objectives_page(contents, objectives):
+    """학습목표 페이지 생성"""
+    return {
+        "path": "/objectives",
+        "section": 1,
+        "title": "학습목표",
+        "description": "주요 학습내용과 학습목표를 살펴보세요.",
+        "script": "이번 시간에 학습할 주요 학습 내용과 학습목표를 확인해보세요.",
+        "component": "objectives",
+        "media": "../../../resources/media/common_goal.mp3",
+        "data": [
+            {
+                "title": "학습내용",
+                "contents": [c for c in contents if c]
+            },
+            {
+                "title": "학습목표",
+                "contents": [o for o in objectives if o]
+            }
+        ]
+    }
+
+
+def create_opinion_page(question):
+    """생각묻기 페이지 생성"""
+    return {
+        "path": "/opinion",
+        "section": 2,
+        "title": "생각묻기",
+        "description": "다음의 질문에 답해보세요.",
+        "script": "본격적인 학습을 시작하기 전 다음의 질문에 답해보세요.",
+        "component": "opinion",
+        "media": "../../../resources/media/common_question.mp3",
+        "data": {
+            "title": question
+        }
+    }
+
+
+def create_lecture_page(lesson):
+    """강의보기 페이지 생성"""
+    timestamps = []
+    for ts in lesson["timestamps"]:
+        if ts:
+            timestamps.append({"time": ts})
+
+    return {
+        "path": "/lecture",
+        "section": 2,
+        "title": "강의보기",
+        "description": "교수님의 강의에 맞춰 주도적으로 학습하세요.",
+        "script": "영상페이지에서는 내레이션을 제공하지 않습니다",
+        "component": "lecture",
+        "media": lesson["lectureVideoUrl"],
+        "caption": [{
+            "src": lesson["lectureSubtitle"],
+            "lable": "한국어",
+            "language": "ko",
+            "kind": "subtitles"
+        }],
+        "data": timestamps
+    }
+
+
+def create_check_page(lesson):
+    """점검하기 페이지 생성"""
+    return {
+        "path": "/check",
+        "section": 2,
+        "title": "점검하기",
+        "description": "질문에 대한 교수님의 생각을 확인해보세요.",
+        "script": "질문에 대한 교수님의 생각을 확인해보세요.",
+        "component": "check",
+        "media": "../../../resources/media/common_check.mp3",
+        "data": {
+            "title": lesson["opinionQuestion"],
+            "photo": lesson["professorThinkImage"] or "../images/professor-02.png",
+            "think": lesson["professorThink"]
+        }
+    }
+
+
+def create_exercise_page(lesson):
+    """연습문제 페이지 생성"""
+    exercises = []
+
+    # 문제 1: OX
+    if lesson["exercise1"]["question"]:
+        exercises.append({
+            "type": "boolean",
+            "subject": lesson["exercise1"]["question"],
+            "value": ["O", "X"],
+            "answer": lesson["exercise1"]["answer"],
+            "commentary": lesson["exercise1"]["commentary"]
+        })
+
+    # 문제 2: 4지선다
+    if lesson["exercise2"]["question"]:
+        exercises.append({
+            "type": "multiple",
+            "subject": lesson["exercise2"]["question"],
+            "value": lesson["exercise2"]["options"],
+            "answer": lesson["exercise2"]["answer"],
+            "commentary": lesson["exercise2"]["commentary"]
+        })
+
+    # 문제 3: 4지선다
+    if lesson["exercise3"]["question"]:
+        exercises.append({
+            "type": "multiple",
+            "subject": lesson["exercise3"]["question"],
+            "value": lesson["exercise3"]["options"],
+            "answer": lesson["exercise3"]["answer"],
+            "commentary": lesson["exercise3"]["commentary"]
+        })
+
+    return {
+        "path": "/exercise",
+        "section": 3,
+        "title": "연습문제",
+        "description": "학습한 내용을 토대로 다음의 문제를 풀어보세요.",
+        "script": "학습한 내용을 얼마나 이해했는지 문제를 풀며 확인해보세요.",
+        "component": "exercise",
+        "media": "../../../resources/media/common_quiz.mp3",
+        "data": exercises
+    }
+
+
+def create_theorem_page(lesson):
+    """학습정리 페이지 생성"""
+    summary = [s for s in lesson["summary"] if s]
+
+    return {
+        "path": "/theorem",
+        "section": 3,
+        "title": "학습정리",
+        "description": "학습한 내용을 다시 한번 정리해보세요.",
+        "script": "학습한 내용을 다시 한번 정리해보세요.",
+        "component": "theorem",
+        "media": "../../../resources/media/common_summary.mp3",
+        "data": {
+            "theorem": summary,
+            "reference": ""
+        }
+    }
+
+
+def create_next_page():
+    """다음안내 페이지 생성"""
+    return {
+        "path": "/next",
+        "section": 3,
+        "title": "다음안내",
+        "description": "다음시간 주제를 확인하고, 미리 준비해보세요.",
+        "script": "이것으로 이번 시간 강의를 마쳤습니다. 수고하셨습니다.",
+        "component": "next",
+        "media": "../../../resources/media/common_out.mp3",
+        "photo": "../images/professor.png",
+        "data": []
+    }
+
+
+def create_subjects_json(course_data):
+    """subjects.json 생성 (주차별 차시 목록)"""
+    # 주차별로 그룹화
+    weeks = {}
+    for lesson in course_data["lessons"]:
+        week_num = lesson["weekNumber"]
+        if week_num not in weeks:
+            weeks[week_num] = {
+                "weekNumber": week_num,
+                "lessons": []
+            }
+        weeks[week_num]["lessons"].append({
+            "number": lesson["lessonNumber"],
+            "title": lesson["lessonTitle"]
+        })
+
+    # subjects.json 형식으로 변환
+    subjects = []
+    for week_num in sorted(weeks.keys()):
+        week = weeks[week_num]
+        lists = []
+        for lesson in week["lessons"]:
+            lists.append(f"<span>{lesson['number']}차</span> {lesson['title']}")
+
+        subjects.append({
+            "title": f"<span>{week_num}주</span>",
+            "lists": lists
+        })
+
+    return {"subjects": subjects}
+
+
+def convert_builder_to_subjects(builder_json_path, output_dir=None):
+    """Builder JSON을 subjects 폴더 구조로 변환"""
+
+    # JSON 로드
+    with open(builder_json_path, 'r', encoding='utf-8') as f:
+        course_data = json.load(f)
+
+    course_code = course_data["courseCode"]
+    course_name = course_data["courseName"]
+    professor = course_data["professor"]
+
+    if not course_code:
+        print("❌ 과목 코드가 없습니다!")
+        return False
+
+    # 출력 디렉토리 설정
+    if output_dir is None:
+        output_dir = Path.cwd() / "subjects"
+    else:
+        output_dir = Path(output_dir)
+
+    course_dir = output_dir / course_code
+    course_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"📁 생성 위치: {course_dir}")
+
+    # subjects.json 생성
+    subjects_json = create_subjects_json(course_data)
+    with open(course_dir / "subjects.json", 'w', encoding='utf-8') as f:
+        json.dump(subjects_json, f, ensure_ascii=False, indent=2)
+    print(f"✅ subjects.json 생성 완료")
+
+    # subtitles 폴더 생성
+    subtitles_dir = course_dir / "subtitles"
+    subtitles_dir.mkdir(exist_ok=True)
+
+    # images 폴더 생성
+    images_dir = course_dir / "images"
+    images_dir.mkdir(exist_ok=True)
+
+    # 각 차시별 data.json 생성
+    for lesson in course_data["lessons"]:
+        lesson_num = f"{lesson['lessonNumber']:02d}"
+        lesson_dir = course_dir / lesson_num / "assets" / "data"
+        lesson_dir.mkdir(parents=True, exist_ok=True)
+
+        # 페이지 생성
+        pages = []
+
+        # 1. 인트로
+        pages.append(create_intro_page(professor))
+
+        # 2. 오리엔테이션 (1주1차시만)
+        if lesson["hasOrientation"]:
+            pages.append(create_orientation_page(lesson["orientation"]))
+
+        # 3. 용어체크
+        pages.append(create_term_page(lesson["terms"]))
+
+        # 4. 학습목표
+        pages.append(create_objectives_page(
+            lesson["learningContents"],
+            lesson["learningObjectives"]
+        ))
+
+        # 5. 생각묻기
+        pages.append(create_opinion_page(lesson["opinionQuestion"]))
+
+        # 6. 강의보기
+        pages.append(create_lecture_page(lesson))
+
+        # 7. 점검하기
+        pages.append(create_check_page(lesson))
+
+        # 8. 연습문제
+        pages.append(create_exercise_page(lesson))
+
+        # 9. 학습정리
+        pages.append(create_theorem_page(lesson))
+
+        # 10. 다음안내
+        pages.append(create_next_page())
+
+        # data.json 생성
+        data_json = {
+            "subject": course_name,
+            "index": lesson["weekNumber"],
+            "section": lesson["lessonNumber"],
+            "instruction": lesson["instructionUrl"],
+            "guide": lesson["guideUrl"],
+            "sections": ["인트로", "준비하기", "학습하기", "정리하기"],
+            "pages": pages
+        }
+
+        data_json_path = lesson_dir / "data.json"
+        with open(data_json_path, 'w', encoding='utf-8') as f:
+            json.dump(data_json, f, ensure_ascii=False, indent=2)
+
+        print(f"✅ {lesson_num}차시 data.json 생성 완료")
+
+    print(f"\n🎉 총 {len(course_data['lessons'])}개 차시 변환 완료!")
+    print(f"📂 생성된 폴더: {course_dir}")
+
+    return True
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python3 builder_to_subjects.py <builder_json_file> [output_dir]")
+        print("Example: python3 builder_to_subjects.py 25itinse_builder.json")
+        sys.exit(1)
+
+    builder_json_path = sys.argv[1]
+    output_dir = sys.argv[2] if len(sys.argv) > 2 else None
+
+    if not os.path.exists(builder_json_path):
+        print(f"❌ 파일을 찾을 수 없습니다: {builder_json_path}")
+        sys.exit(1)
+
+    success = convert_builder_to_subjects(builder_json_path, output_dir)
+    sys.exit(0 if success else 1)
