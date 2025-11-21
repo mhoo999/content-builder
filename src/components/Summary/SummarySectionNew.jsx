@@ -11,7 +11,7 @@ import { useEffect } from 'react';
 
 function SummarySection({ lessonData, onUpdate }) {
   // RichTextEditor 컴포넌트
-  const RichTextEditor = ({ value, onChange, placeholder }) => {
+  const RichTextEditor = ({ value, onChange, placeholder, editorKey }) => {
     const editor = useEditor({
       extensions: [
         StarterKit,
@@ -33,6 +33,7 @@ function SummarySection({ lessonData, onUpdate }) {
           placeholder: placeholder,
         },
       },
+      key: editorKey, // 각 에디터 인스턴스에 고유 키 부여
     });
 
     useEffect(() => {
@@ -342,6 +343,8 @@ function SummarySection({ lessonData, onUpdate }) {
               )}
             </div>
             <RichTextEditor
+              key={`summary-${index}`}
+              editorKey={`summary-editor-${index}`}
               value={sum}
               onChange={(value) => updateSummary(index, value)}
               placeholder={`학습정리 내용 ${index + 1}`}
