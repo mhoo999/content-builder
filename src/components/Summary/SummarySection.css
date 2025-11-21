@@ -216,3 +216,14 @@ select:focus {
   background: var(--background);
   font-weight: 600;
 }
+
+.rich-text-editor-loading {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
