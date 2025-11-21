@@ -128,3 +128,91 @@ select:focus {
   color: var(--text-primary);
   cursor: pointer;
 }
+
+/* 리치 텍스트 에디터 */
+.rich-text-editor-wrapper {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.rich-text-toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.rich-text-toolbar button {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.rich-text-toolbar button:hover:not(:disabled) {
+  background: var(--background);
+  border-color: var(--primary-color);
+}
+
+.rich-text-toolbar button.is-active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.rich-text-toolbar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toolbar-divider {
+  width: 1px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+.rich-text-editor-content {
+  min-height: 200px;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.rich-text-editor-content:focus {
+  outline: none;
+}
+
+.rich-text-editor-content p {
+  margin: 0 0 8px 0;
+}
+
+.rich-text-editor-content p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-text-editor-content table {
+  border-collapse: collapse;
+  margin: 16px 0;
+  width: 100%;
+}
+
+.rich-text-editor-content table td,
+.rich-text-editor-content table th {
+  border: 1px solid var(--border);
+  padding: 8px;
+  min-width: 100px;
+}
+
+.rich-text-editor-content table th {
+  background: var(--background);
+  font-weight: 600;
+}

@@ -20,9 +20,8 @@ function App() {
   // 현재 편집 중인 차시
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
 
-  // Collapsible sections state
-  const [courseInfoOpen, setCourseInfoOpen] = useState(true);
-  const [professorInfoOpen, setProfessorInfoOpen] = useState(true);
+  // 오른쪽 사이드바 접기/펼치기
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
 
   // 새 차시 추가
   const addLesson = () => {
@@ -316,56 +315,8 @@ function App() {
 
       {/* 메인 컨텐츠 */}
       <div className="main-content">
-        {/* 사이드바 */}
-        <aside className="sidebar">
-          {/* 과목 정보 */}
-          <div className="collapsible-section">
-            <div
-              className="collapsible-header"
-              onClick={() => setCourseInfoOpen(!courseInfoOpen)}
-            >
-              <h3>과목 정보</h3>
-              <span className={`collapsible-toggle ${courseInfoOpen ? 'open' : ''}`}>▼</span>
-            </div>
-            <div className={`collapsible-content ${!courseInfoOpen ? 'collapsed' : ''}`}>
-              <div className="form-group">
-                <label>과목 코드</label>
-                <input
-                  type="text"
-                  placeholder="예: 25itinse"
-                  value={courseData.courseCode}
-                  onChange={(e) => updateCourseInfo('courseCode', e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label>과정명</label>
-                <input
-                  type="text"
-                  placeholder="예: 인터넷보안"
-                  value={courseData.courseName}
-                  onChange={(e) => updateCourseInfo('courseName', e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 교수 정보 섹션 */}
-          <div className="collapsible-section">
-            <div
-              className="collapsible-header"
-              onClick={() => setProfessorInfoOpen(!professorInfoOpen)}
-            >
-              <h3>교수 정보</h3>
-              <span className={`collapsible-toggle ${professorInfoOpen ? 'open' : ''}`}>▼</span>
-            </div>
-            <div className={`collapsible-content ${!professorInfoOpen ? 'collapsed' : ''}`}>
-              <ProfessorSection
-                professor={courseData.professor}
-                onUpdate={(updated) => setCourseData(prev => ({ ...prev, professor: updated }))}
-              />
-            </div>
-          </div>
-
+        {/* 왼쪽 사이드바 (차시 목록만) */}
+        <aside className="sidebar sidebar-left">
           <div className="lessons-list">
             <div className="lessons-header">
               <h3>차시 목록</h3>
@@ -405,7 +356,8 @@ function App() {
         </aside>
 
         {/* 에디터 영역 */}
-        <main className="editor-area">
+        <main className="editor-area-wrapper">
+          <div className="editor-area">
           {courseData.lessons.length === 0 ? (
             <div className="welcome-screen">
               <h2>Content Builder에 오신 것을 환영합니다! 👋</h2>
@@ -454,7 +406,50 @@ function App() {
               />
             </div>
           ) : null}
+          </div>
         </main>
+
+        {/* 오른쪽 사이드바 (과목 정보, 교수 정보) */}
+        <aside className={`sidebar sidebar-right ${rightSidebarOpen ? 'open' : 'collapsed'}`}>
+          <div className="sidebar-toggle" onClick={() => setRightSidebarOpen(!rightSidebarOpen)}>
+            {rightSidebarOpen ? '▶' : '◀'}
+          </div>
+          {rightSidebarOpen && (
+            <div className="sidebar-content">
+              {/* 과목 정보 */}
+              <div className="sidebar-section">
+                <h3>과목 정보</h3>
+                <div className="form-group">
+                  <label>과목 코드</label>
+                  <input
+                    type="text"
+                    placeholder="예: 25itinse"
+                    value={courseData.courseCode}
+                    onChange={(e) => updateCourseInfo('courseCode', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>과정명</label>
+                  <input
+                    type="text"
+                    placeholder="예: 인터넷보안"
+                    value={courseData.courseName}
+                    onChange={(e) => updateCourseInfo('courseName', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* 교수 정보 */}
+              <div className="sidebar-section">
+                <h3>교수 정보</h3>
+                <ProfessorSection
+                  professor={courseData.professor}
+                  onUpdate={(updated) => setCourseData(prev => ({ ...prev, professor: updated }))}
+                />
+              </div>
+            </div>
+          )}
+        </aside>
       </div>
     </div>
   );

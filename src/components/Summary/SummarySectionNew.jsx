@@ -1,7 +1,120 @@
 import './SummarySection.css';
 import ImageUploader from '../ImageUploader/ImageUploader';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
 
 function SummarySection({ lessonData, onUpdate }) {
+  // RichTextEditor 컴포넌트
+  const RichTextEditor = ({ value, onChange, placeholder }) => {
+    const editor = useEditor({
+      extensions: [
+        StarterKit,
+        Table.configure({
+          resizable: true,
+        }),
+        TableRow,
+        TableHeader,
+        TableCell,
+      ],
+      content: value,
+      onUpdate: ({ editor }) => {
+        onChange(editor.getHTML());
+      },
+      editorProps: {
+        attributes: {
+          class: 'rich-text-editor-content',
+        },
+      },
+    });
+
+    if (!editor) {
+      return null;
+    }
+
+    return (
+      <div className="rich-text-editor-wrapper">
+        <div className="rich-text-toolbar">
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            className={editor.isActive('bold') ? 'is-active' : ''}
+          >
+            <strong>B</strong>
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            className={editor.isActive('italic') ? 'is-active' : ''}
+          >
+            <em>I</em>
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            className={editor.isActive('underline') ? 'is-active' : ''}
+          >
+            <u>U</u>
+          </button>
+          <div className="toolbar-divider"></div>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
+          >
+            H1
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
+          >
+            H2
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
+          >
+            H3
+          </button>
+          <div className="toolbar-divider"></div>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            className={editor.isActive('bulletList') ? 'is-active' : ''}
+          >
+            • 목록
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            className={editor.isActive('orderedList') ? 'is-active' : ''}
+          >
+            1. 목록
+          </button>
+          <div className="toolbar-divider"></div>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+          >
+            표
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().deleteTable().run()}
+            disabled={!editor.can().deleteTable()}
+          >
+            표 삭제
+          </button>
+        </div>
+        <EditorContent editor={editor} />
+      </div>
+    );
+  };
   // 연습문제 추가
   const addExercise = () => {
     onUpdate({
@@ -218,17 +331,10 @@ function SummarySection({ lessonData, onUpdate }) {
                 </button>
               )}
             </div>
-            <textarea
-              placeholder={`학습정리 내용 ${index + 1}`}
+            <RichTextEditor
               value={sum}
-              onChange={(e) => updateSummary(index, e.target.value)}
-              rows={4}
-            />
-            <ImageUploader
-              onImageInsert={(imageHtml) => {
-                const newContent = sum + '\n' + imageHtml;
-                updateSummary(index, newContent);
-              }}
+              onChange={(value) => updateSummary(index, value)}
+              placeholder={`학습정리 내용 ${index + 1}`}
             />
           </div>
         ))}

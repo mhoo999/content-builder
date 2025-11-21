@@ -9,11 +9,71 @@ Usage:
 import json
 import sys
 import os
+import re
+import base64
 from pathlib import Path
+from urllib.parse import unquote
 
 
-def create_intro_page(professor):
+def extract_and_save_images(html_content, images_dir, course_code, image_counter):
+    """
+    HTML에서 base64 이미지를 추출하여 파일로 저장하고 상대경로로 교체
+    
+    Args:
+        html_content: HTML 문자열 (base64 이미지 포함)
+        images_dir: 이미지 저장 디렉토리
+        course_code: 과목 코드
+        image_counter: 이미지 카운터 (dict, {'count': int})
+    
+    Returns:
+        이미지 경로가 교체된 HTML 문자열
+    """
+    if not html_content:
+        return html_content
+    
+    # base64 이미지 패턴 찾기: <img src="data:image/...;base64,..." />
+    pattern = r'<img\s+[^>]*src=["\'](data:image/([^;]+);base64,([^"\']+))["\'][^>]*>'
+    
+    def replace_image(match):
+        full_data_url = match.group(1)
+        image_type = match.group(2)  # png, jpeg, jpg, gif 등
+        base64_data = match.group(3)
+        
+        # 이미지 카운터 증가
+        image_counter['count'] += 1
+        image_num = image_counter['count']
+        
+        # 파일명 생성: {과목코드}_img_{번호}.{확장자}
+        ext = 'png' if image_type == 'png' else ('jpg' if image_type in ['jpeg', 'jpg'] else image_type)
+        filename = f"{course_code}_img_{image_num:03d}.{ext}"
+        image_path = images_dir / filename
+        
+        try:
+            # base64 디코딩하여 파일로 저장
+            image_data = base64.b64decode(base64_data)
+            with open(image_path, 'wb') as f:
+                f.write(image_data)
+            
+            # 상대경로로 교체 (data.json에서 images 폴더로의 경로: ../images/)
+            relative_path = f"../images/{filename}"
+            return match.group(0).replace(full_data_url, relative_path)
+        except Exception as e:
+            print(f"⚠️ 이미지 저장 실패: {e}")
+            return match.group(0)  # 실패 시 원본 유지
+    
+    # 모든 base64 이미지를 찾아서 교체
+    result = re.sub(pattern, replace_image, html_content)
+    return result
+
+
+def create_intro_page(professor, images_dir=None, course_code=None, image_counter=None):
     """인트로 페이지 생성"""
+    photo = professor.get("photo", "")
+    
+    # 교수 사진 이미지 추출 및 저장
+    if images_dir and course_code and image_counter and photo:
+        photo = extract_and_save_images(photo, images_dir, course_code, image_counter)
+    
     return {
         "path": "",
         "section": 0,
@@ -23,7 +83,7 @@ def create_intro_page(professor):
         "data": {
             "professor": {
                 "name": professor["name"],
-                "photo": professor["photo"],
+                "photo": photo,
                 "profile": [
                     {
                         "title": "학　력",
@@ -59,14 +119,20 @@ def create_orientation_page(orientation):
     }
 
 
-def create_term_page(terms):
+def create_term_page(terms, images_dir=None, course_code=None, image_counter=None):
     """용어체크 페이지 생성"""
     term_data = []
     for term in terms:
         if term["title"] or term["content"]:
+            content = term["content"] if term["content"] else ""
+            
+            # 이미지 추출 및 저장 (images_dir가 제공된 경우)
+            if images_dir and course_code and image_counter and content:
+                content = extract_and_save_images(content, images_dir, course_code, image_counter)
+            
             term_data.append({
                 "title": term["title"],
-                "content": [term["content"]] if term["content"] else []
+                "content": [content] if content else []
             })
 
     return {
@@ -145,8 +211,14 @@ def create_lecture_page(lesson):
     }
 
 
-def create_check_page(lesson):
+def create_check_page(lesson, images_dir=None, course_code=None, image_counter=None):
     """점검하기 페이지 생성"""
+    professor_think = lesson.get("professorThink", "")
+    
+    # 교수님 의견에 포함된 이미지 추출 및 저장
+    if images_dir and course_code and image_counter and professor_think:
+        professor_think = extract_and_save_images(professor_think, images_dir, course_code, image_counter)
+    
     return {
         "path": "/check",
         "section": 2,
@@ -157,8 +229,8 @@ def create_check_page(lesson):
         "media": "../../../resources/media/common_check.mp3",
         "data": {
             "title": lesson["opinionQuestion"],
-            "photo": lesson["professorThinkImage"] or "../images/professor-02.png",
-            "think": lesson["professorThink"]
+            "photo": lesson.get("professorThinkImage") or "../images/professor-02.png",
+            "think": professor_think
         }
     }
 
@@ -209,9 +281,16 @@ def create_exercise_page(lesson):
     }
 
 
-def create_theorem_page(lesson):
+def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter=None):
     """학습정리 페이지 생성"""
     summary = [s for s in lesson["summary"] if s]
+    
+    # 학습정리 내용의 이미지 추출 및 저장
+    if images_dir and course_code and image_counter:
+        summary = [
+            extract_and_save_images(s, images_dir, course_code, image_counter) if s else s
+            for s in summary
+        ]
 
     return {
         "path": "/theorem",
@@ -241,6 +320,46 @@ def create_next_page():
         "photo": "../images/professor.png",
         "data": []
     }
+
+
+def get_index_html_template():
+    """index.html 템플릿 반환 (IT 2023 스타일)"""
+    return '''<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no" />
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>메가존아이티평생교육원</title>
+	<script src="../../../resources/scripts/jquery/jquery.js"></script>
+	<script src="../../../resources/scripts/vue/vue.min.js"></script>
+	<script src="../../../resources/scripts/vue/vue-router.min.js"></script>
+
+	<script src="../../../resources/scripts/2023/templates/layout.js"></script>
+	<script src="../../../resources/scripts/2023/templates/defaults.js"></script>
+	<script src="../../../resources/scripts/sync.js"></script>
+
+	<link rel="stylesheet" href="../../../resources/scripts/videojs/video-js.min.css">
+
+
+	<link rel="stylesheet" href="../../../resources/styles/2023/base.css">
+	<link rel="stylesheet" href="../../../resources/styles/2025/layout.css">
+	<link rel="stylesheet" href="../../../resources/styles/2023/modules.css">
+	<link rel="stylesheet" href="../../../resources/styles/2023/mediaquery.css">
+	<link rel="stylesheet" href="../../../resources/styles/2023/type-1.css">
+
+	<link rel="stylesheet" media="print" type="text/css" href="../../../resources/styles/print.css">
+</head>
+<body>
+	<div id="app"></div>
+	<script src="../../../resources/scripts/app.js"></script>
+	<script src="../../../resources/scripts/videojs/video.min.js"></script>
+
+	<script src="../../../resources/scripts/2023/commons.js"></script>
+	<script src="../../../resources/scripts/videojs/videojs-contrib-hls.min.js"></script>
+	<script src="../../../resources/scripts/videojs/videojs.hotkeys.min.js"></script>
+</body>
+</html>'''
 
 
 def create_subjects_json(course_data):
@@ -314,6 +433,9 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     # images 폴더 생성
     images_dir = course_dir / "images"
     images_dir.mkdir(exist_ok=True)
+    
+    # 이미지 카운터 (전체 과정에서 공유)
+    image_counter = {'count': 0}
 
     # 각 차시별 data.json 생성
     for lesson in course_data["lessons"]:
@@ -325,14 +447,14 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         pages = []
 
         # 1. 인트로
-        pages.append(create_intro_page(professor))
+        pages.append(create_intro_page(professor, images_dir, course_code, image_counter))
 
         # 2. 오리엔테이션 (1주1차시만)
         if lesson["hasOrientation"]:
             pages.append(create_orientation_page(lesson["orientation"]))
 
         # 3. 용어체크
-        pages.append(create_term_page(lesson["terms"]))
+        pages.append(create_term_page(lesson["terms"], images_dir, course_code, image_counter))
 
         # 4. 학습목표
         pages.append(create_objectives_page(
@@ -347,16 +469,22 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         pages.append(create_lecture_page(lesson))
 
         # 7. 점검하기
-        pages.append(create_check_page(lesson))
+        pages.append(create_check_page(lesson, images_dir, course_code, image_counter))
 
         # 8. 연습문제
         pages.append(create_exercise_page(lesson))
 
         # 9. 학습정리
-        pages.append(create_theorem_page(lesson))
+        pages.append(create_theorem_page(lesson, images_dir, course_code, image_counter))
 
         # 10. 다음안내
         pages.append(create_next_page())
+
+        # index.html 생성
+        index_html = get_index_html_template()
+        index_file = lesson_dir.parent / "index.html"
+        with open(index_file, 'w', encoding='utf-8') as f:
+            f.write(index_html)
 
         # data.json 생성
         data_json = {
@@ -373,7 +501,11 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         with open(data_json_path, 'w', encoding='utf-8') as f:
             json.dump(data_json, f, ensure_ascii=False, indent=2)
 
-        print(f"✅ {lesson_num}차시 data.json 생성 완료")
+        print(f"✅ {lesson_num}차시 index.html, data.json 생성 완료")
+    
+    # 이미지 저장 결과 출력
+    if image_counter['count'] > 0:
+        print(f"📷 총 {image_counter['count']}개 이미지 저장 완료: {images_dir}")
 
     print(f"\n🎉 총 {len(course_data['lessons'])}개 차시 변환 완료!")
     print(f"📂 생성된 폴더: {course_dir}")
