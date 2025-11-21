@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './PreparationSection.css';
 import ImageUploader from '../ImageUploader/ImageUploader';
+import { shortenImageText, restoreImageText } from '../../utils/textDisplay';
 
 function PreparationSection({ lessonData, onUpdate }) {
   const isFirstLesson = lessonData.weekNumber === 1 && lessonData.lessonNumber === 1;
@@ -18,7 +19,16 @@ function PreparationSection({ lessonData, onUpdate }) {
 
   const handleTermChange = (index, field, value) => {
     const newTerms = [...lessonData.terms];
-    newTerms[index] = { ...newTerms[index], [field]: value };
+    const originalValue = newTerms[index][field];
+    
+    // 이미지가 포함된 필드(content)인 경우, 축약된 텍스트를 원본으로 복원
+    if (field === 'content' && originalValue) {
+      const restoredValue = restoreImageText(value, originalValue);
+      newTerms[index] = { ...newTerms[index], [field]: restoredValue };
+    } else {
+      newTerms[index] = { ...newTerms[index], [field]: value };
+    }
+    
     onUpdate({ ...lessonData, terms: newTerms });
   };
 
@@ -121,7 +131,7 @@ function PreparationSection({ lessonData, onUpdate }) {
               <label>내용</label>
               <textarea
                 placeholder="예: 암호화하기 전의 메시지"
-                value={term.content}
+                value={shortenImageText(term.content)}
                 onChange={(e) => handleTermChange(index, 'content', e.target.value)}
                 rows={3}
               />

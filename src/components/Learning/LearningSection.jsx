@@ -1,5 +1,6 @@
 import './LearningSection.css';
 import ImageUploader from '../ImageUploader/ImageUploader';
+import { shortenImageText, restoreImageText } from '../../utils/textDisplay';
 
 function LearningSection({ lessonData, onUpdate }) {
   const handleOpinionChange = (value) => {
@@ -7,7 +8,10 @@ function LearningSection({ lessonData, onUpdate }) {
   };
 
   const handleProfessorThinkChange = (value) => {
-    onUpdate({ ...lessonData, professorThink: value });
+    // 이미지가 포함된 경우, 축약된 텍스트를 원본으로 복원
+    const originalValue = lessonData.professorThink;
+    const restoredValue = restoreImageText(value, originalValue);
+    onUpdate({ ...lessonData, professorThink: restoredValue });
   };
 
   const handleProfessorThinkImageChange = (value) => {
@@ -96,7 +100,7 @@ function LearningSection({ lessonData, onUpdate }) {
           <label>교수님 의견</label>
           <textarea
             placeholder="예: 암호를 사용하지 않으면 도청 문제가 발생합니다..."
-            value={lessonData.professorThink}
+            value={shortenImageText(lessonData.professorThink)}
             onChange={(e) => handleProfessorThinkChange(e.target.value)}
             rows={5}
           />
