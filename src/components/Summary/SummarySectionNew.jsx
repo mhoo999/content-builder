@@ -7,43 +7,50 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
-function SummarySection({ lessonData, onUpdate }) {
-  // RichTextEditor 컴포넌트
-  const RichTextEditor = ({ value, onChange, placeholder }) => {
-    const editor = useEditor({
-      extensions: [
-        StarterKit,
-        Underline,
-        Table.configure({
-          resizable: true,
-        }),
-        TableRow,
-        TableHeader,
-        TableCell,
-      ],
-      content: value || '',
-      onUpdate: ({ editor }) => {
-        onChange(editor.getHTML());
+// RichTextEditor를 별도 컴포넌트로 분리
+function RichTextEditor({ value, onChange, placeholder, editorId }) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+    ],
+    content: value || '',
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+    editorProps: {
+      attributes: {
+        class: 'rich-text-editor-content',
+        placeholder: placeholder,
       },
-      editorProps: {
-        attributes: {
-          class: 'rich-text-editor-content',
-          placeholder: placeholder,
-        },
-      },
-    });
+    },
+  });
 
-    useEffect(() => {
-      if (editor && value !== editor.getHTML()) {
-        editor.commands.setContent(value || '');
-      }
-    }, [value, editor]);
-
-    if (!editor) {
-      return <div className="rich-text-editor-loading">로딩 중...</div>;
+  useEffect(() => {
+    if (editor && value !== editor.getHTML()) {
+      editor.commands.setContent(value || '');
     }
+  }, [value, editor]);
+
+  useEffect(() => {
+    return () => {
+      if (editor) {
+        editor.destroy();
+      }
+    };
+  }, [editor]);
+
+  if (!editor) {
+    return <div className="rich-text-editor-loading">로딩 중...</div>;
+  }
 
     return (
       <div className="rich-text-editor-wrapper">
