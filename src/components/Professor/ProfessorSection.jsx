@@ -26,7 +26,7 @@ function ProfessorSection({ professor, onUpdate }) {
   const addCareer = () => {
     onUpdate({
       ...professor,
-      career: [...professor.career, '']
+      career: [...professor.career, { period: '', description: '' }]
     });
   };
 
@@ -37,9 +37,9 @@ function ProfessorSection({ professor, onUpdate }) {
     });
   };
 
-  const updateCareer = (index, value) => {
+  const updateCareer = (index, field, value) => {
     const newCareer = [...professor.career];
-    newCareer[index] = value;
+    newCareer[index] = { ...newCareer[index], [field]: value };
     onUpdate({ ...professor, career: newCareer });
   };
 
@@ -105,13 +105,27 @@ function ProfessorSection({ professor, onUpdate }) {
           </button>
         </div>
         {professor.career.map((car, index) => (
-          <div key={index} className="dynamic-item">
-            <input
-              type="text"
-              placeholder="예: 2003년 6월 ~ 2013년 9월 펌킨네트웍스 기술본부 이사"
-              value={car}
-              onChange={(e) => updateCareer(index, e.target.value)}
-            />
+          <div key={index} className="career-item">
+            <div className="career-inputs">
+              <div className="form-group">
+                <label>연도</label>
+                <input
+                  type="text"
+                  placeholder="예: 2003년 6월 ~ 2013년 9월"
+                  value={car.period || ''}
+                  onChange={(e) => updateCareer(index, 'period', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>내용</label>
+                <input
+                  type="text"
+                  placeholder="예: 펌킨네트웍스 기술본부 이사"
+                  value={car.description || ''}
+                  onChange={(e) => updateCareer(index, 'description', e.target.value)}
+                />
+              </div>
+            </div>
             <button
               className="btn-remove-small"
               onClick={() => removeCareer(index)}

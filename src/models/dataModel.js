@@ -18,7 +18,7 @@ export const createProfessorData = () => ({
   name: '',
   photo: '',                // 상대경로: ../images/{과목코드}_professor.png
   education: [''],          // 학력 리스트 (동적 추가/삭제)
-  career: ['']              // 경력 리스트 (동적 추가/삭제, HTML 포함 가능)
+  career: [{ period: '', description: '' }]  // 경력 리스트 (연도 + 내용 분리)
 });
 
 // 주차 정보 (subjects.json용)

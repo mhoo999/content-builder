@@ -174,10 +174,46 @@ export const parseProfessorInfo = (dataJson) => {
   const educationItem = profile.find(item => item.title && item.title.includes('학'));
   const careerItem = profile.find(item => item.title && item.title.includes('경'));
 
+  // 경력 변환: ['<b>연도</b><br />내용'] → [{ period: '연도', description: '내용' }]
+  const careerContent = careerItem?.content || [];
+  const parsedCareer = careerContent.map(careerStr => {
+    if (typeof careerStr === 'string') {
+      // <b>연도</b><br />내용 형식 파싱
+      const boldMatch = careerStr.match(/<b>(.*?)<\/b><br \/>(.*)/);
+      if (boldMatch) {
+        return {
+          period: boldMatch[1].trim(),
+          description: boldMatch[2].trim()
+        };
+      }
+      // <b>연도</b> 형식만 있는 경우
+      const boldOnlyMatch = careerStr.match(/<b>(.*?)<\/b>/);
+      if (boldOnlyMatch) {
+        return {
+          period: boldOnlyMatch[1].trim(),
+          description: ''
+        };
+      }
+      // 일반 문자열인 경우 (기존 형식 호환)
+      return {
+        period: '',
+        description: careerStr
+      };
+    }
+    // 이미 객체 형식인 경우
+    if (typeof careerStr === 'object' && careerStr !== null) {
+      return {
+        period: careerStr.period || '',
+        description: careerStr.description || ''
+      };
+    }
+    return { period: '', description: '' };
+  });
+
   return {
     name: prof.name || '',
     photo: prof.photo || '',
     education: educationItem?.content || [''],
-    career: careerItem?.content || ['']
+    career: parsedCareer.length > 0 ? parsedCareer : [{ period: '', description: '' }]
   };
 };

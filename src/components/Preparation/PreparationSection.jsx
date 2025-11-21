@@ -108,13 +108,14 @@ function PreparationSection({ lessonData, onUpdate }) {
               )}
             </div>
             <div className="form-group">
-              <label>제목</label>
-              <input
-                type="text"
-                placeholder="예: 평문(plaintext)"
+              <label>제목 (줄바꿈 가능)</label>
+              <textarea
+                placeholder="예: 평문(plaintext)&#10;또는 키 배송 문제&#10;(key distribution problem)"
                 value={term.title}
                 onChange={(e) => handleTermChange(index, 'title', e.target.value)}
+                rows={2}
               />
+              <small className="hint">💡 Enter 키로 줄바꿈 가능</small>
             </div>
             <div className="form-group">
               <label>내용</label>

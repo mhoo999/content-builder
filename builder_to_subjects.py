@@ -74,6 +74,24 @@ def create_intro_page(professor, images_dir=None, course_code=None, image_counte
     if images_dir and course_code and image_counter and photo:
         photo = extract_and_save_images(photo, images_dir, course_code, image_counter)
     
+    # 경력 변환: [{ period: '', description: '' }] → ['<b>period</b><br />description']
+    career_content = []
+    if isinstance(professor.get("career"), list):
+        for career_item in professor.get("career", []):
+            if isinstance(career_item, dict):
+                period = career_item.get("period", "").strip()
+                description = career_item.get("description", "").strip()
+                if period or description:
+                    if period and description:
+                        career_content.append(f"<b>{period}</b><br />{description}")
+                    elif period:
+                        career_content.append(f"<b>{period}</b>")
+                    elif description:
+                        career_content.append(description)
+            elif isinstance(career_item, str) and career_item.strip():
+                # 기존 형식 호환 (문자열인 경우 그대로 사용)
+                career_content.append(career_item)
+    
     return {
         "path": "",
         "section": 0,
@@ -87,11 +105,11 @@ def create_intro_page(professor, images_dir=None, course_code=None, image_counte
                 "profile": [
                     {
                         "title": "학　력",
-                        "content": professor["education"]
+                        "content": professor.get("education", [])
                     },
                     {
                         "title": "경　력",
-                        "content": professor["career"]
+                        "content": career_content
                     }
                 ]
             }
@@ -123,15 +141,20 @@ def create_term_page(terms, images_dir=None, course_code=None, image_counter=Non
     """용어체크 페이지 생성"""
     term_data = []
     for term in terms:
-        if term["title"] or term["content"]:
-            content = term["content"] if term["content"] else ""
+        if term.get("title") or term.get("content"):
+            title = term.get("title", "")
+            content = term.get("content", "")
             
-            # 이미지 추출 및 저장 (images_dir가 제공된 경우)
+            # 제목의 줄바꿈을 <br />로 변환
+            if title:
+                title = title.replace('\n', '<br />')
+            
+            # 내용 이미지 추출 및 저장 (images_dir가 제공된 경우)
             if images_dir and course_code and image_counter and content:
                 content = extract_and_save_images(content, images_dir, course_code, image_counter)
             
             term_data.append({
-                "title": term["title"],
+                "title": title,
                 "content": [content] if content else []
             })
 
