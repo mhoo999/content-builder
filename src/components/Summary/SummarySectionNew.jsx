@@ -129,6 +129,56 @@ function RichTextEditor({ value, onChange, placeholder, editorId }) {
         >
           표 삭제
         </button>
+        <div className="toolbar-divider"></div>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().addColumnBefore().run()}
+          disabled={!editor.can().addColumnBefore()}
+          title="왼쪽에 컬럼 추가"
+        >
+          + 컬럼(←)
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().addColumnAfter().run()}
+          disabled={!editor.can().addColumnAfter()}
+          title="오른쪽에 컬럼 추가"
+        >
+          + 컬럼(→)
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().deleteColumn().run()}
+          disabled={!editor.can().deleteColumn()}
+          title="컬럼 삭제"
+        >
+          - 컬럼
+        </button>
+        <div className="toolbar-divider"></div>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().addRowBefore().run()}
+          disabled={!editor.can().addRowBefore()}
+          title="위에 로우 추가"
+        >
+          + 로우(↑)
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().addRowAfter().run()}
+          disabled={!editor.can().addRowAfter()}
+          title="아래에 로우 추가"
+        >
+          + 로우(↓)
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().deleteRow().run()}
+          disabled={!editor.can().deleteRow()}
+          title="로우 삭제"
+        >
+          - 로우
+        </button>
       </div>
       <EditorContent editor={editor} />
     </div>
