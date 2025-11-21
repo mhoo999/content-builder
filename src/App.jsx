@@ -367,7 +367,16 @@ function App() {
             <div className="lesson-editor">
               <h2>{currentLesson.lessonNumber}차시 편집</h2>
               <p className="subtitle">
-                {currentLesson.weekNumber}주 {currentLesson.lessonNumber % 2 === 1 ? '1' : '2'}차
+                {(() => {
+                  // 같은 주차에 속한 차시들 중에서 현재 차시가 몇 번째인지 계산
+                  const sameWeekLessons = courseData.lessons.filter(
+                    lesson => lesson.weekNumber === currentLesson.weekNumber
+                  ).sort((a, b) => a.lessonNumber - b.lessonNumber);
+                  const weekLessonNumber = sameWeekLessons.findIndex(
+                    lesson => lesson.lessonNumber === currentLesson.lessonNumber
+                  ) + 1;
+                  return `${currentLesson.weekNumber}주 ${weekLessonNumber}차`;
+                })()}
               </p>
 
               {/* 기본 정보 */}
