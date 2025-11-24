@@ -163,6 +163,11 @@ python3 builder_to_subjects.py ~/Downloads/25itinse_builder.json ~/Documents
 - Import된 이미지는 메모리에 저장됨 (브라우저 새로고침 시 사라짐)
 - 작업 중간에 Export하여 백업 권장
 
+### 서버 호환성
+- Export 시 img 태그가 서버 형식으로 자동 변환됨
+- 변환 전: `<img class="notion-image" src="...">`
+- 변환 후: `<img src='...' alt='' />`
+
 ---
 
 ## 7. 문제 해결
@@ -190,8 +195,8 @@ python3 builder_to_subjects.py <json파일> <출력경로>
 ├── images/            # 이미지 파일
 ├── subtitles/         # 자막 파일
 ├── 01/                # 1차시
+│   ├── index.html     # 메인 HTML
 │   └── assets/
-│       ├── index.html
 │       └── data/
 │           └── data.json
 └── ...

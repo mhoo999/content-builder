@@ -105,14 +105,18 @@ python3 builder_to_subjects.py ~/Downloads/25itinse_builder.json ~/Documents
     │   ├── 25itinse_img_002.png # 새로 추가한 이미지
     │   └── ...
     ├── 01/                      # 1차시
+    │   ├── index.html           # 메인 HTML
     │   └── assets/
-    │       ├── index.html
     │       └── data/
-    │           └── data.json
+    │           └── data.json    # 차시 데이터
     ├── 02/                      # 2차시
     │   └── ...
     └── ...
 ```
+
+**서버 호환성:**
+- img 태그가 서버 형식으로 자동 변환됨: `<img src='...' alt='' />`
+- `class="notion-image"`, `data-original-src` 등 에디터 속성 제거됨
 
 ## 이미지 처리
 
