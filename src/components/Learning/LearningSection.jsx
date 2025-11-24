@@ -1,6 +1,5 @@
 import './LearningSection.css';
-import ImageUploader from '../ImageUploader/ImageUploader';
-import { shortenImageText, restoreImageText } from '../../utils/textDisplay';
+import RichTextEditor from '../RichTextEditor';
 
 function LearningSection({ lessonData, onUpdate }) {
   const handleOpinionChange = (value) => {
@@ -8,22 +7,7 @@ function LearningSection({ lessonData, onUpdate }) {
   };
 
   const handleProfessorThinkChange = (value) => {
-    // value가 이미 원본(base64 포함)인지 확인
-    const hasBase64Image = /<img[^>]*src=["']data:image\/[^"']+["'][^>]*>/gi.test(value);
-    const originalValue = lessonData.professorThink;
-    
-    if (hasBase64Image) {
-      // 이미 원본이면 그대로 사용
-      onUpdate({ ...lessonData, professorThink: value });
-    } else {
-      // 축약된 버전이면 복원
-      const restoredValue = restoreImageText(value, originalValue);
-      onUpdate({ ...lessonData, professorThink: restoredValue });
-    }
-  };
-
-  const handleProfessorThinkImageChange = (value) => {
-    onUpdate({ ...lessonData, professorThinkImage: value });
+    onUpdate({ ...lessonData, professorThink: value });
   };
 
   const handleLectureChange = (field, value) => {
@@ -106,17 +90,10 @@ function LearningSection({ lessonData, onUpdate }) {
         </div>
         <div className="form-group">
           <label>교수님 의견</label>
-          <textarea
+          <RichTextEditor
+            value={lessonData.professorThink}
+            onChange={handleProfessorThinkChange}
             placeholder="예: 암호를 사용하지 않으면 도청 문제가 발생합니다..."
-            value={shortenImageText(lessonData.professorThink)}
-            onChange={(e) => handleProfessorThinkChange(e.target.value)}
-            rows={5}
-          />
-          <ImageUploader
-            onImageInsert={(imageHtml) => {
-              const newContent = lessonData.professorThink + '\n' + imageHtml;
-              handleProfessorThinkChange(newContent);
-            }}
           />
         </div>
       </div>

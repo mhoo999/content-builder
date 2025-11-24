@@ -5,6 +5,26 @@
  */
 
 /**
+ * HTML 문자열에서 상대경로 이미지에 data-original-src 속성 추가
+ * (base64 변환 없이 경로만 표시)
+ */
+export const markRelativeImages = (html) => {
+  if (!html) return html;
+
+  // ../images/filename.png 패턴 찾기
+  const pattern = /<img\s+([^>]*)src=["'](\.\.\/images\/[^"']+)["']([^>]*)>/gi;
+
+  return html.replace(pattern, (match, before, fullPath, after) => {
+    // 이미 data-original-src가 있으면 스킵
+    if (match.includes('data-original-src')) {
+      return match;
+    }
+    // data-original-src 속성 추가
+    return `<img ${before}src="${fullPath}" data-original-src="${fullPath}"${after}>`;
+  });
+};
+
+/**
  * 페이지 배열에서 특정 컴포넌트 타입의 페이지 찾기
  */
 const findPageByComponent = (pages, componentType) => {

@@ -1,189 +1,5 @@
 import './SummarySection.css';
-import ImageUploader from '../ImageUploader/ImageUploader';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import { Underline } from '@tiptap/extension-underline';
-import { Table } from '@tiptap/extension-table';
-import { TableRow } from '@tiptap/extension-table-row';
-import { TableCell } from '@tiptap/extension-table-cell';
-import { TableHeader } from '@tiptap/extension-table-header';
-import { useEffect } from 'react';
-
-// RichTextEditor를 별도 컴포넌트로 분리
-function RichTextEditor({ value, onChange, placeholder, editorId }) {
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        // StarterKit의 모든 확장 사용 (Underline은 포함되지 않음)
-      }),
-      Underline, // StarterKit에 없는 Underline 명시적으로 추가
-      Table.configure({
-        resizable: true,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-    ],
-    content: value || '',
-    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
-    },
-    editorProps: {
-      attributes: {
-        class: 'rich-text-editor-content',
-        placeholder: placeholder,
-      },
-    },
-  });
-
-  useEffect(() => {
-    if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value || '');
-    }
-  }, [value, editor]);
-
-  useEffect(() => {
-    return () => {
-      if (editor) {
-        editor.destroy();
-      }
-    };
-  }, [editor]);
-
-  if (!editor) {
-    return <div className="rich-text-editor-loading">로딩 중...</div>;
-  }
-
-  return (
-    <div className="rich-text-editor-wrapper">
-      <div className="rich-text-toolbar">
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          className={editor.isActive('bold') ? 'is-active' : ''}
-        >
-          <strong>B</strong>
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={editor.isActive('italic') ? 'is-active' : ''}
-        >
-          <em>I</em>
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={editor.isActive('underline') ? 'is-active' : ''}
-        >
-          <u>U</u>
-        </button>
-        <div className="toolbar-divider"></div>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
-        >
-          H1
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
-        >
-          H2
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
-        >
-          H3
-        </button>
-        <div className="toolbar-divider"></div>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={editor.isActive('bulletList') ? 'is-active' : ''}
-        >
-          • 목록
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={editor.isActive('orderedList') ? 'is-active' : ''}
-        >
-          1. 목록
-        </button>
-        <div className="toolbar-divider"></div>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-        >
-          표
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().deleteTable().run()}
-          disabled={!editor.can().deleteTable()}
-        >
-          표 삭제
-        </button>
-        <div className="toolbar-divider"></div>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().addColumnBefore().run()}
-          disabled={!editor.can().addColumnBefore()}
-          title="왼쪽에 컬럼 추가"
-        >
-          + 컬럼(←)
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().addColumnAfter().run()}
-          disabled={!editor.can().addColumnAfter()}
-          title="오른쪽에 컬럼 추가"
-        >
-          + 컬럼(→)
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().deleteColumn().run()}
-          disabled={!editor.can().deleteColumn()}
-          title="컬럼 삭제"
-        >
-          - 컬럼
-        </button>
-        <div className="toolbar-divider"></div>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().addRowBefore().run()}
-          disabled={!editor.can().addRowBefore()}
-          title="위에 로우 추가"
-        >
-          + 로우(↑)
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().addRowAfter().run()}
-          disabled={!editor.can().addRowAfter()}
-          title="아래에 로우 추가"
-        >
-          + 로우(↓)
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().deleteRow().run()}
-          disabled={!editor.can().deleteRow()}
-          title="로우 삭제"
-        >
-          - 로우
-        </button>
-      </div>
-      <EditorContent editor={editor} />
-    </div>
-  );
-}
+import RichTextEditor from '../RichTextEditor';
 
 function SummarySection({ lessonData, onUpdate }) {
   // 연습문제 추가
@@ -306,11 +122,10 @@ function SummarySection({ lessonData, onUpdate }) {
 
             <div className="form-group">
               <label>문항</label>
-              <textarea
-                placeholder="문제를 입력하세요"
+              <RichTextEditor
                 value={exercise.question}
-                onChange={(e) => updateExercise(index, 'question', e.target.value)}
-                rows={2}
+                onChange={(value) => updateExercise(index, 'question', value)}
+                placeholder="문제를 입력하세요"
               />
             </div>
 
@@ -370,11 +185,10 @@ function SummarySection({ lessonData, onUpdate }) {
 
             <div className="form-group">
               <label>해설</label>
-              <textarea
-                placeholder="정답에 대한 해설을 작성하세요"
+              <RichTextEditor
                 value={exercise.commentary}
-                onChange={(e) => updateExercise(index, 'commentary', e.target.value)}
-                rows={3}
+                onChange={(value) => updateExercise(index, 'commentary', value)}
+                placeholder="정답에 대한 해설을 작성하세요"
               />
             </div>
           </div>

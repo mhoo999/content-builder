@@ -15,52 +15,73 @@ from pathlib import Path
 from urllib.parse import unquote
 
 
+def clean_data_original_src(html_content):
+    """
+    HTML에서 data-original-src 속성 제거 (에디터 표시용 속성)
+
+    Args:
+        html_content: HTML 문자열
+
+    Returns:
+        정리된 HTML 문자열
+    """
+    if not html_content:
+        return html_content
+
+    # data-original-src 속성 제거
+    pattern = r'\s*data-original-src=["\'][^"\']*["\']'
+    return re.sub(pattern, '', html_content)
+
+
 def extract_and_save_images(html_content, images_dir, course_code, image_counter):
     """
     HTML에서 base64 이미지를 추출하여 파일로 저장하고 상대경로로 교체
-    
+
     Args:
         html_content: HTML 문자열 (base64 이미지 포함)
         images_dir: 이미지 저장 디렉토리
         course_code: 과목 코드
         image_counter: 이미지 카운터 (dict, {'count': int})
-    
+
     Returns:
         이미지 경로가 교체된 HTML 문자열
     """
     if not html_content:
         return html_content
-    
+
+    # 먼저 data-original-src 속성 제거
+    html_content = clean_data_original_src(html_content)
+
     # base64 이미지 패턴 찾기: <img src="data:image/...;base64,..." />
     pattern = r'<img\s+[^>]*src=["\'](data:image/([^;]+);base64,([^"\']+))["\'][^>]*>'
-    
+
     def replace_image(match):
         full_data_url = match.group(1)
         image_type = match.group(2)  # png, jpeg, jpg, gif 등
         base64_data = match.group(3)
-        
+
         # 이미지 카운터 증가
         image_counter['count'] += 1
         image_num = image_counter['count']
-        
+
         # 파일명 생성: {과목코드}_img_{번호}.{확장자}
         ext = 'png' if image_type == 'png' else ('jpg' if image_type in ['jpeg', 'jpg'] else image_type)
         filename = f"{course_code}_img_{image_num:03d}.{ext}"
         image_path = images_dir / filename
-        
+
         try:
             # base64 디코딩하여 파일로 저장
             image_data = base64.b64decode(base64_data)
             with open(image_path, 'wb') as f:
                 f.write(image_data)
-            
+
             # 상대경로로 교체 (data.json에서 images 폴더로의 경로: ../images/)
             relative_path = f"../images/{filename}"
             return match.group(0).replace(full_data_url, relative_path)
         except Exception as e:
             print(f"⚠️ 이미지 저장 실패: {e}")
             return match.group(0)  # 실패 시 원본 유지
-    
+
     # 모든 base64 이미지를 찾아서 교체
     result = re.sub(pattern, replace_image, html_content)
     return result
@@ -258,39 +279,70 @@ def create_check_page(lesson, images_dir=None, course_code=None, image_counter=N
     }
 
 
-def create_exercise_page(lesson):
-    """연습문제 페이지 생성"""
+def create_exercise_page(lesson, images_dir=None, course_code=None, image_counter=None):
+    """연습문제 페이지 생성 (exercises 배열 형식 지원)"""
     exercises = []
 
-    # 문제 1: OX
-    if lesson["exercise1"]["question"]:
-        exercises.append({
-            "type": "boolean",
-            "subject": lesson["exercise1"]["question"],
-            "value": ["O", "X"],
-            "answer": lesson["exercise1"]["answer"],
-            "commentary": lesson["exercise1"]["commentary"]
-        })
+    # 새 형식: exercises 배열
+    if "exercises" in lesson and isinstance(lesson["exercises"], list):
+        for ex in lesson["exercises"]:
+            question = ex.get("question", "")
+            commentary = ex.get("commentary", "")
 
-    # 문제 2: 4지선다
-    if lesson["exercise2"]["question"]:
-        exercises.append({
-            "type": "multiple",
-            "subject": lesson["exercise2"]["question"],
-            "value": lesson["exercise2"]["options"],
-            "answer": lesson["exercise2"]["answer"],
-            "commentary": lesson["exercise2"]["commentary"]
-        })
+            # 문항과 해설의 이미지 추출 및 저장
+            if images_dir and course_code and image_counter:
+                if question:
+                    question = extract_and_save_images(question, images_dir, course_code, image_counter)
+                if commentary:
+                    commentary = extract_and_save_images(commentary, images_dir, course_code, image_counter)
 
-    # 문제 3: 4지선다
-    if lesson["exercise3"]["question"]:
-        exercises.append({
-            "type": "multiple",
-            "subject": lesson["exercise3"]["question"],
-            "value": lesson["exercise3"]["options"],
-            "answer": lesson["exercise3"]["answer"],
-            "commentary": lesson["exercise3"]["commentary"]
-        })
+            if question:
+                if ex.get("type") == "boolean":
+                    exercises.append({
+                        "type": "boolean",
+                        "subject": question,
+                        "value": ["O", "X"],
+                        "answer": ex.get("answer", "2"),
+                        "commentary": commentary
+                    })
+                else:  # multiple
+                    exercises.append({
+                        "type": "multiple",
+                        "subject": question,
+                        "value": ex.get("options", ["", "", "", ""]),
+                        "answer": ex.get("answer", "1"),
+                        "commentary": commentary
+                    })
+    else:
+        # 기존 형식 호환: exercise1, exercise2, exercise3
+        for key in ["exercise1", "exercise2", "exercise3"]:
+            if key in lesson and lesson[key].get("question"):
+                ex = lesson[key]
+                question = ex["question"]
+                commentary = ex.get("commentary", "")
+
+                # 문항과 해설의 이미지 추출 및 저장
+                if images_dir and course_code and image_counter:
+                    question = extract_and_save_images(question, images_dir, course_code, image_counter)
+                    if commentary:
+                        commentary = extract_and_save_images(commentary, images_dir, course_code, image_counter)
+
+                if ex.get("type") == "boolean" or key == "exercise1":
+                    exercises.append({
+                        "type": "boolean",
+                        "subject": question,
+                        "value": ["O", "X"],
+                        "answer": ex.get("answer", "2"),
+                        "commentary": commentary
+                    })
+                else:
+                    exercises.append({
+                        "type": "multiple",
+                        "subject": question,
+                        "value": ex.get("options", ["", "", "", ""]),
+                        "answer": ex.get("answer", "1"),
+                        "commentary": commentary
+                    })
 
     return {
         "path": "/exercise",
@@ -417,6 +469,46 @@ def create_subjects_json(course_data):
     return {"subjects": subjects}
 
 
+def save_imported_images(imported_images, images_dir):
+    """
+    임포트된 이미지들을 파일로 저장
+
+    Args:
+        imported_images: 경로 -> base64 딕셔너리
+        images_dir: 저장할 디렉토리
+
+    Returns:
+        저장된 이미지 개수
+    """
+    if not imported_images:
+        return 0
+
+    saved_count = 0
+    for rel_path, base64_data in imported_images.items():
+        try:
+            # ../images/filename.ext 에서 filename.ext 추출
+            filename = rel_path.split('/')[-1]
+            if not filename:
+                continue
+
+            # base64 데이터에서 헤더 제거 (data:image/png;base64, 부분)
+            if ',' in base64_data:
+                base64_data = base64_data.split(',')[1]
+
+            # 디코딩 및 저장
+            image_data = base64.b64decode(base64_data)
+            image_path = images_dir / filename
+
+            with open(image_path, 'wb') as f:
+                f.write(image_data)
+
+            saved_count += 1
+        except Exception as e:
+            print(f"⚠️ 이미지 저장 실패 ({rel_path}): {e}")
+
+    return saved_count
+
+
 def convert_builder_to_subjects(builder_json_path, output_dir=None):
     """Builder JSON을 subjects 폴더 구조로 변환"""
 
@@ -427,6 +519,7 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     course_code = course_data["courseCode"]
     course_name = course_data["courseName"]
     professor = course_data["professor"]
+    imported_images = course_data.get("importedImages", {})
 
     if not course_code:
         print("❌ 과목 코드가 없습니다!")
@@ -456,7 +549,12 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     # images 폴더 생성
     images_dir = course_dir / "images"
     images_dir.mkdir(exist_ok=True)
-    
+
+    # 임포트된 이미지들 먼저 저장
+    if imported_images:
+        saved_imported = save_imported_images(imported_images, images_dir)
+        print(f"📷 임포트된 이미지 {saved_imported}개 저장 완료")
+
     # 이미지 카운터 (전체 과정에서 공유)
     image_counter = {'count': 0}
 
@@ -495,7 +593,7 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         pages.append(create_check_page(lesson, images_dir, course_code, image_counter))
 
         # 8. 연습문제
-        pages.append(create_exercise_page(lesson))
+        pages.append(create_exercise_page(lesson, images_dir, course_code, image_counter))
 
         # 9. 학습정리
         pages.append(create_theorem_page(lesson, images_dir, course_code, image_counter))

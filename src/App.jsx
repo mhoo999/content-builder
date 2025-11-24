@@ -4,7 +4,7 @@ import ProfessorSection from './components/Professor/ProfessorSection';
 import PreparationSection from './components/Preparation/PreparationSection';
 import LearningSection from './components/Learning/LearningSection';
 import SummarySection from './components/Summary/SummarySectionNew';
-import { convertDataJsonToBuilderFormat, parseSubjectsJson, parseProfessorInfo } from './utils/folderParser';
+import { convertDataJsonToBuilderFormat, parseSubjectsJson, parseProfessorInfo, markRelativeImages } from './utils/folderParser';
 import './App.css';
 
 function App() {
@@ -16,6 +16,9 @@ function App() {
     professor: createProfessorData(),
     lessons: []
   }));
+
+  // 임포트된 이미지 저장소 (경로 -> base64)
+  const [importedImages, setImportedImages] = useState({});
 
   // 현재 편집 중인 차시
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
@@ -96,17 +99,23 @@ function App() {
     }
 
     // 출력 경로 입력 받기
-    const defaultPath = '~/IdeaProjects/contents_it/subjects';
+    const defaultPath = '~/Documents';
     const outputPath = prompt(
       '출력 경로를 입력하세요:\n\n' +
-      '예: ~/IdeaProjects/contents_it/subjects\n' +
-      '또는: /Users/username/projects/subjects',
+      '예: ~/Documents\n' +
+      '또는: /Users/username/Documents',
       defaultPath
     );
 
     if (!outputPath) {
       return; // 사용자가 취소
     }
+
+    // 익스포트할 데이터에 임포트된 이미지 포함
+    const exportData = {
+      ...courseData,
+      importedImages: importedImages
+    };
 
     try {
       // API 호출하여 폴더 구조 생성
@@ -116,7 +125,7 @@ function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          courseData: courseData,
+          courseData: exportData,
           outputPath: outputPath
         })
       });
@@ -134,9 +143,9 @@ function App() {
       );
     } catch (error) {
       console.error('Export error:', error);
-      
+
       // API가 없는 경우 대체 방법 안내
-      const dataStr = JSON.stringify(courseData, null, 2);
+      const dataStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -147,9 +156,10 @@ function App() {
       URL.revokeObjectURL(url);
 
       const command = `python3 builder_to_subjects.py ${filename} ${outputPath}`;
+      const imageCount = Object.keys(importedImages).length;
       alert(
         `⚠️ API 서버가 실행되지 않았습니다.\n\n` +
-        `JSON 파일이 다운로드되었습니다.\n` +
+        `JSON 파일이 다운로드되었습니다. (이미지 ${imageCount}개 포함)\n` +
         `터미널에서 다음 명령어를 실행하세요:\n\n${command}`
       );
     }
@@ -164,16 +174,43 @@ function App() {
       // subjects.json 찾기
       const subjectsJsonFile = files.find(f => f.webkitRelativePath.endsWith('subjects.json'));
       let lessonTitles = {};
-      let courseCode = '';
-      let courseName = '';
 
       if (subjectsJsonFile) {
         const subjectsText = await subjectsJsonFile.text();
         const subjectsData = JSON.parse(subjectsText);
         lessonTitles = parseSubjectsJson(subjectsData);
-        courseCode = subjectsData.courseCode || '';
-        courseName = subjectsData.courseName || '';
       }
+
+      // 이미지 파일들 찾아서 저장소에 저장
+      const imageFiles = files.filter(f => {
+        const path = f.webkitRelativePath.toLowerCase();
+        return path.includes('/images/') &&
+               (path.endsWith('.jpg') || path.endsWith('.jpeg') ||
+                path.endsWith('.png') || path.endsWith('.gif') || path.endsWith('.webp'));
+      });
+
+      // 이미지를 base64로 변환하여 저장 (경로를 키로 사용)
+      const imageStore = {};
+      await Promise.all(
+        imageFiles.map(async (file) => {
+          const pathParts = file.webkitRelativePath.split('/');
+          // images/filename.ext 형태로 키 생성
+          const imagesIndex = pathParts.findIndex(p => p === 'images');
+          if (imagesIndex !== -1) {
+            const relativePath = '../' + pathParts.slice(imagesIndex).join('/');
+            const base64 = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (e) => resolve(e.target.result);
+              reader.readAsDataURL(file);
+            });
+            imageStore[relativePath] = base64;
+          }
+        })
+      );
+
+      // 이미지 저장소 업데이트
+      setImportedImages(imageStore);
+      console.log(`Imported ${Object.keys(imageStore).length} images`);
 
       // 모든 data.json 파일 찾기
       const dataJsonFiles = files.filter(f => f.webkitRelativePath.endsWith('/assets/data/data.json'));
@@ -205,30 +242,83 @@ function App() {
         ? parseProfessorInfo(lessonData[0].dataJson)
         : createProfessorData();
 
-      // Builder 형식으로 변환
+      // Builder 형식으로 변환 + 상대경로 이미지 마킹
       const lessons = lessonData.map((item, index) => {
         const builderLesson = convertDataJsonToBuilderFormat(item.dataJson, item.lessonNumber);
         builderLesson.lessonTitle = lessonTitles[item.lessonNumber] || `${item.lessonNumber}차시`;
+
+        // 이미지가 포함된 필드들에 data-original-src 속성 추가 (경로 표시용)
+        // 용어 내용
+        if (builderLesson.terms) {
+          builderLesson.terms = builderLesson.terms.map(term => ({
+            ...term,
+            content: markRelativeImages(term.content)
+          }));
+        }
+        // 교수님 의견
+        if (builderLesson.professorThink) {
+          builderLesson.professorThink = markRelativeImages(builderLesson.professorThink);
+        }
+        // 연습문제 (문항, 해설)
+        if (builderLesson.exercises) {
+          builderLesson.exercises = builderLesson.exercises.map(ex => ({
+            ...ex,
+            question: markRelativeImages(ex.question),
+            commentary: markRelativeImages(ex.commentary)
+          }));
+        }
+        // 학습정리
+        if (builderLesson.summary) {
+          builderLesson.summary = builderLesson.summary.map(s =>
+            markRelativeImages(s)
+          );
+        }
+
         return builderLesson;
       });
 
       // 과목 코드 추출 (파일 경로에서)
-      if (!courseCode && dataJsonFiles.length > 0) {
+      // 경로 예시: "25itinse/01/assets/data/data.json" 또는 "subjects/25itinse/01/assets/data/data.json"
+      // 차시 폴더(01, 02...)의 바로 상위 폴더가 과목코드
+      let courseCode = '';
+      if (dataJsonFiles.length > 0) {
         const pathParts = dataJsonFiles[0].webkitRelativePath.split('/');
-        courseCode = pathParts[1] || '';
+        // pathParts 끝에서부터: data.json(-1), data(-2), assets(-3), 차시폴더(-4), 과목코드(-5)
+        // 예: ['25itinse', '01', 'assets', 'data', 'data.json']
+        //      [0]         [1]   [2]       [3]     [4]
+        // length=5, 과목코드 인덱스 = 5-5 = 0 ✓
+        // 예: ['subjects', '25itinse', '01', 'assets', 'data', 'data.json']
+        //      [0]         [1]         [2]   [3]       [4]     [5]
+        // length=6, 과목코드 인덱스 = 6-5 = 1 ✓
+        const courseCodeIndex = pathParts.length - 5;
+        if (courseCodeIndex >= 0) {
+          courseCode = pathParts[courseCodeIndex];
+        }
+
+        // 추출된 코드가 숫자로만 되어 있으면 (차시 폴더를 잘못 선택한 경우) 상위 폴더 확인
+        if (/^\d+$/.test(courseCode) && courseCodeIndex > 0) {
+          courseCode = pathParts[courseCodeIndex - 1] || courseCode;
+        }
+      }
+
+      // 과정명 추출 (첫 번째 data.json의 subject 필드에서)
+      let courseName = '';
+      if (lessonData.length > 0 && lessonData[0].dataJson.subject) {
+        courseName = lessonData[0].dataJson.subject;
       }
 
       // 데이터 설정
       setCourseData({
         courseCode: courseCode,
-        courseName: courseName || courseData.courseName,
+        courseName: courseName,
         backgroundImage: '',
         professor: professorInfo,
         lessons: lessons
       });
 
       setCurrentLessonIndex(0);
-      alert(`${lessons.length}개 차시를 성공적으로 불러왔습니다!`);
+      const imageCount = Object.keys(imageStore).length;
+      alert(`${lessons.length}개 차시를 성공적으로 불러왔습니다!\n\n과목코드: ${courseCode}\n과정명: ${courseName}\n이미지: ${imageCount}개 저장됨`);
 
     } catch (error) {
       console.error('Folder import error:', error);
