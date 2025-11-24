@@ -446,25 +446,41 @@ def create_subjects_json(course_data):
         if week_num not in weeks:
             weeks[week_num] = {
                 "weekNumber": week_num,
+                "weekTitle": "",  # 주차 제목 (첫 번째 차시 제목 사용)
                 "lessons": []
             }
         weeks[week_num]["lessons"].append({
             "number": lesson["lessonNumber"],
             "title": lesson["lessonTitle"]
         })
+        # 주차 제목이 비어있으면 첫 번째 차시 제목 사용
+        if not weeks[week_num]["weekTitle"] and lesson.get("lessonTitle"):
+            weeks[week_num]["weekTitle"] = lesson["lessonTitle"]
 
     # subjects.json 형식으로 변환
     subjects = []
     for week_num in sorted(weeks.keys()):
         week = weeks[week_num]
-        lists = []
-        for lesson in week["lessons"]:
-            lists.append(f"<span>{lesson['number']}차</span> {lesson['title']}")
+        lessons = week["lessons"]
 
-        subjects.append({
-            "title": f"<span>{week_num}주</span>",
-            "lists": lists
-        })
+        # 주차 내에서의 순서 계산 (1차, 2차, ...)
+        lists = []
+        for idx, lesson in enumerate(lessons, 1):
+            title = lesson["title"] if lesson["title"] else f"{lesson['number']}차시"
+            lists.append(f"<span>{idx}차</span> {title}")
+
+        # 주차 제목 생성 (주차 제목이 없으면 주차 번호만)
+        week_title = week.get("weekTitle", "")
+        if week_title:
+            title_str = f"<span>{week_num}주</span> {week_title}"
+        else:
+            title_str = f"<span>{week_num}주</span>"
+
+        subject_entry = {"title": title_str}
+        if lists:
+            subject_entry["lists"] = lists
+
+        subjects.append(subject_entry)
 
     return {"subjects": subjects}
 
@@ -601,9 +617,10 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         # 10. 다음안내
         pages.append(create_next_page())
 
-        # index.html 생성
+        # index.html 생성 (차시 폴더 바로 아래에 생성: 01/index.html)
         index_html = get_index_html_template()
-        index_file = lesson_dir.parent / "index.html"
+        lesson_folder = course_dir / lesson_num  # 01, 02, ...
+        index_file = lesson_folder / "index.html"
         with open(index_file, 'w', encoding='utf-8') as f:
             f.write(index_html)
 
