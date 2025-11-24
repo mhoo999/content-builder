@@ -15,9 +15,9 @@ from pathlib import Path
 from urllib.parse import unquote
 
 
-def clean_data_original_src(html_content):
+def clean_html_for_export(html_content):
     """
-    HTML에서 data-original-src 속성 제거 (에디터 표시용 속성)
+    HTML에서 에디터 관련 속성 정리 (data-original-src, notion-image 클래스 등)
 
     Args:
         html_content: HTML 문자열
@@ -29,8 +29,22 @@ def clean_data_original_src(html_content):
         return html_content
 
     # data-original-src 속성 제거
-    pattern = r'\s*data-original-src=["\'][^"\']*["\']'
-    return re.sub(pattern, '', html_content)
+    html_content = re.sub(r'\s*data-original-src=["\'][^"\']*["\']', '', html_content)
+
+    # class="notion-image" 제거 및 alt='' 추가, 태그 형식 정리
+    # <img class="notion-image" src="..."> → <img src='...' alt='' />
+    def fix_img_tag(match):
+        full_tag = match.group(0)
+        # src 추출
+        src_match = re.search(r'src=["\']([^"\']*)["\']', full_tag)
+        if src_match:
+            src = src_match.group(1)
+            return f"<img src='{src}' alt='' />"
+        return full_tag
+
+    html_content = re.sub(r'<img[^>]*class=["\']notion-image["\'][^>]*>', fix_img_tag, html_content)
+
+    return html_content
 
 
 def extract_and_save_images(html_content, images_dir, course_code, image_counter):
@@ -49,8 +63,8 @@ def extract_and_save_images(html_content, images_dir, course_code, image_counter
     if not html_content:
         return html_content
 
-    # 먼저 data-original-src 속성 제거
-    html_content = clean_data_original_src(html_content)
+    # 먼저 에디터 관련 속성 정리
+    html_content = clean_html_for_export(html_content)
 
     # base64 이미지 패턴 찾기: <img src="data:image/...;base64,..." />
     pattern = r'<img\s+[^>]*src=["\'](data:image/([^;]+);base64,([^"\']+))["\'][^>]*>'
