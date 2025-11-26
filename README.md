@@ -121,14 +121,18 @@ npm run dev
 # macOS/Linux
 python3 builder_to_subjects.py <다운로드된_json> <출력_경로>
 
-# Windows
-python builder_to_subjects.py <다운로드된_json> <출력_경로>
-
 # 예시 (macOS/Linux)
 python3 builder_to_subjects.py ~/Downloads/25itinse_builder.json ~/Documents
+```
+
+```powershell
+# Windows PowerShell (UTF-8 인코딩 설정)
+$env:PYTHONIOENCODING="utf-8"
+python builder_to_subjects.py <다운로드된_json> <출력_경로>
 
 # 예시 (Windows)
-python builder_to_subjects.py %USERPROFILE%\Downloads\25itinse_builder.json %USERPROFILE%\Documents
+$env:PYTHONIOENCODING="utf-8"
+python builder_to_subjects.py $env:USERPROFILE\Downloads\25itinse_builder.json $env:USERPROFILE\Documents
 ```
 
 **생성되는 구조:**

@@ -39,7 +39,11 @@ export default function exportSubjectsPlugin() {
             const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
             const pythonProcess = spawn(pythonCmd, [scriptPath, tempFile, outputPath], {
               cwd: process.cwd(),
-              stdio: 'pipe'
+              stdio: 'pipe',
+              env: {
+                ...process.env,
+                PYTHONIOENCODING: 'utf-8'  // Windows 인코딩 문제 해결
+              }
             });
 
             let stdout = '';
