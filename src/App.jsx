@@ -99,11 +99,15 @@ function App() {
     }
 
     // 출력 경로 입력 받기
-    const defaultPath = '~/Documents';
+    // Windows/macOS/Linux 공통 경로 안내
+    const isWindows = navigator.platform.toLowerCase().includes('win');
+    const defaultPath = isWindows ? '~/Documents' : '~/Documents';
+    const examplePath = isWindows
+      ? 'C:\\Users\\username\\Documents\n또는: ~/Documents (자동 확장됨)'
+      : '~/Documents\n또는: /Users/username/Documents';
+
     const outputPath = prompt(
-      '출력 경로를 입력하세요:\n\n' +
-      '예: ~/Documents\n' +
-      '또는: /Users/username/Documents',
+      `출력 경로를 입력하세요:\n\n예: ${examplePath}`,
       defaultPath
     );
 
@@ -155,7 +159,8 @@ function App() {
       link.click();
       URL.revokeObjectURL(url);
 
-      const command = `python3 builder_to_subjects.py ${filename} ${outputPath}`;
+      const pythonCmd = isWindows ? 'python' : 'python3';
+      const command = `${pythonCmd} builder_to_subjects.py ${filename} ${outputPath}`;
       const imageCount = Object.keys(importedImages).length;
       alert(
         `⚠️ API 서버가 실행되지 않았습니다.\n\n` +

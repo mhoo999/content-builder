@@ -14,6 +14,12 @@ import base64
 from pathlib import Path
 from urllib.parse import unquote
 
+# Windows 인코딩 문제 해결 (UTF-8 강제)
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
 
 def clean_html_for_export(html_content):
     """
@@ -559,7 +565,8 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     if output_dir is None:
         output_dir = Path.cwd() / "subjects"
     else:
-        output_dir = Path(output_dir)
+        # ~ 경로 확장 (Windows/macOS/Linux 호환)
+        output_dir = Path(output_dir).expanduser()
 
     course_dir = output_dir / course_code
     course_dir.mkdir(parents=True, exist_ok=True)
