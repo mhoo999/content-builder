@@ -24,13 +24,34 @@ IT 학위 콘텐츠 제작을 위한 비주얼 빌더 도구
 
 ## 설치 및 실행
 
-### 1. 의존성 설치
+### 1. Python 설치 (Windows만 해당)
+
+**macOS/Linux**: Python 3가 기본 설치되어 있어 건너뛰어도 됩니다.
+
+**Windows**: Export 기능 사용을 위해 Python 3 설치 필요
+
+#### 터미널 설치 (권장)
+```powershell
+# winget 사용 (Windows 10/11 기본 제공)
+winget install Python.Python.3.12
+```
+
+#### 수동 설치
+https://www.python.org/downloads/ 에서 다운로드 후 설치
+- 설치 시 **"Add Python to PATH"** 체크 필수
+
+#### 설치 확인
+```bash
+python --version
+```
+
+### 2. 의존성 설치
 
 ```bash
 npm install
 ```
 
-### 2. 개발 서버 실행
+### 3. 개발 서버 실행
 
 ```bash
 npm run dev
