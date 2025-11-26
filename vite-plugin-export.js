@@ -35,7 +35,9 @@ export default function exportSubjectsPlugin() {
 
             // Python 스크립트 실행
             const scriptPath = join(process.cwd(), 'builder_to_subjects.py');
-            const pythonProcess = spawn('python3', [scriptPath, tempFile, outputPath], {
+            // Windows는 'python', macOS/Linux는 'python3' 사용
+            const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+            const pythonProcess = spawn(pythonCmd, [scriptPath, tempFile, outputPath], {
               cwd: process.cwd(),
               stdio: 'pipe'
             });

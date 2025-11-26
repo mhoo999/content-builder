@@ -42,7 +42,11 @@ https://www.python.org/downloads/ 에서 다운로드 후 설치
 
 #### 설치 확인
 ```bash
+# Windows
 python --version
+
+# macOS/Linux
+python3 --version
 ```
 
 ### 2. 의존성 설치
@@ -103,16 +107,28 @@ npm run dev
 
 ### Export (폴더 구조 생성)
 
+**자동 방식** (개발 서버 실행 중)
+
 1. **"Export to Subjects"** 버튼 클릭
 2. 출력 경로 입력 (기본: `~/Documents`)
-3. JSON 파일 다운로드됨
-4. 터미널에서 Python 스크립트 실행:
+3. ✅ 폴더 구조 자동 생성 완료!
+
+**수동 방식** (JSON 파일이 다운로드된 경우)
+
+터미널에서 Python 스크립트 실행:
 
 ```bash
+# macOS/Linux
 python3 builder_to_subjects.py <다운로드된_json> <출력_경로>
 
-# 예시
+# Windows
+python builder_to_subjects.py <다운로드된_json> <출력_경로>
+
+# 예시 (macOS/Linux)
 python3 builder_to_subjects.py ~/Downloads/25itinse_builder.json ~/Documents
+
+# 예시 (Windows)
+python builder_to_subjects.py %USERPROFILE%\Downloads\25itinse_builder.json %USERPROFILE%\Documents
 ```
 
 **생성되는 구조:**
