@@ -79,15 +79,24 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
   }
 
   // terms가 없거나 비어있을 때 기본 3개 제공
-  const terms = lessonData.terms && lessonData.terms.length > 0 
-    ? lessonData.terms 
-    : [{ title: "", content: [""] }, { title: "", content: [""] }, { title: "", content: [""] }]
+  const terms =
+    lessonData.terms && lessonData.terms.length > 0
+      ? lessonData.terms
+      : [
+          { title: "", content: ["", "", ""] },
+          { title: "", content: ["", "", ""] },
+          { title: "", content: ["", "", ""] },
+        ]
 
   // terms가 비어있을 때 자동으로 초기화
   if (!lessonData.terms || lessonData.terms.length === 0) {
     onUpdate({
       ...lessonData,
-      terms: [{ title: "", content: [""] }, { title: "", content: [""] }, { title: "", content: [""] }]
+      terms: [
+        { title: "", content: ["", "", ""] },
+        { title: "", content: ["", "", ""] },
+        { title: "", content: ["", "", ""] },
+      ],
     })
   }
 
@@ -135,7 +144,7 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
           <button
             className="btn-add-small"
             onClick={() => {
-              const newTerms = [...lessonData.terms, { title: "", content: [""] }]
+              const newTerms = [...lessonData.terms, { title: "", content: ["", "", ""] }]
               onUpdate({ ...lessonData, terms: newTerms })
             }}
           >
