@@ -81,8 +81,23 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
 
   // 학습목표 파싱
   const objectivesPage = findPageByComponent(pages, 'objectives');
-  const learningContents = objectivesPage?.data?.[0]?.contents || ['', '', ''];
-  const learningObjectives = objectivesPage?.data?.[1]?.contents || ['', '', ''];
+  const learningContentsRaw = objectivesPage?.data?.[0]?.contents || ['', '', ''];
+  const learningObjectivesRaw = objectivesPage?.data?.[1]?.contents || ['', '', ''];
+  
+  // 넘버링 제거 (예: "1. 내용" -> "내용")
+  const learningContents = learningContentsRaw.map(item => {
+    if (typeof item === 'string') {
+      return item.replace(/^\d+\.\s*/, '').trim();
+    }
+    return item;
+  });
+  
+  const learningObjectives = learningObjectivesRaw.map(item => {
+    if (typeof item === 'string') {
+      return item.replace(/^\d+\.\s*/, '').trim();
+    }
+    return item;
+  });
 
   // 생각묻기 & 점검하기 파싱
   const opinionPage = findPageByComponent(pages, 'opinion');

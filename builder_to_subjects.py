@@ -291,6 +291,10 @@ def create_term_page(terms, images_dir=None, course_code=None, image_counter=Non
 
 def create_objectives_page(contents, objectives):
     """학습목표 페이지 생성"""
+    # 학습내용과 학습목표에 자동 넘버링 추가
+    numbered_contents = [f"{i+1}. {c}" for i, c in enumerate(contents) if c]
+    numbered_objectives = [f"{i+1}. {o}" for i, o in enumerate(objectives) if o]
+    
     return {
         "path": "/objectives",
         "section": 1,
@@ -302,11 +306,11 @@ def create_objectives_page(contents, objectives):
         "data": [
             {
                 "title": "학습내용",
-                "contents": [c for c in contents if c]
+                "contents": numbered_contents
             },
             {
                 "title": "학습목표",
-                "contents": [o for o in objectives if o]
+                "contents": numbered_objectives
             }
         ]
     }
