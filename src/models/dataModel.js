@@ -260,6 +260,7 @@ export const createBuilderLessonData = () => ({
   hasPractice: false,  // 실습있음 체크박스
   practiceVideoUrl: '',  // 실습 강의 영상 URL
   practiceSubtitle: '',  // 실습 자막 파일 경로
+  practiceTimestamps: ['0:00:04', '0:00:00'],  // 실습 타임스탬프 (기본 2개)
 
   // 연습문제 (동적 추가/삭제, boolean 또는 multiple 선택)
   exercises: [

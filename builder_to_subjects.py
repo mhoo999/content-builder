@@ -389,9 +389,12 @@ def create_practice_page(lesson, course_code=None, year=None):
             lesson_num_str = f"{lesson['lessonNumber']:02d}"
             practice_subtitle = f"../subtitles/{course_code}_{lesson_num_str}_P.vtt"
     
-    # 실습 타임스탬프 (기본값은 빈 배열, 필요시 추가 가능)
+    # 실습 타임스탬프
     practice_timestamps = []
-    # 실습 타임스탬프가 별도로 있으면 사용, 없으면 빈 배열
+    if "practiceTimestamps" in lesson and isinstance(lesson["practiceTimestamps"], list):
+        for ts in lesson["practiceTimestamps"]:
+            if ts:
+                practice_timestamps.append({"time": ts})
     
     return {
         "path": "/practice",

@@ -31,21 +31,70 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
     onUpdate({ ...lessonData, timestamps: newTimestamps });
   };
 
+  // 타임스탬프 포맷 정정 함수 (H:MM:SS 형식)
+  const formatTimestamp = (value) => {
+    if (!value) return '';
+    
+    // 숫자만 추출
+    const numbers = value.replace(/\D/g, '');
+    if (!numbers) return '';
+    
+    // 최대 6자리까지만 (HMMSS)
+    const numStr = numbers.slice(0, 6).padStart(6, '0');
+    
+    // H:MM:SS 형식으로 변환
+    const hours = parseInt(numStr.slice(0, 1), 10);
+    const minutes = parseInt(numStr.slice(1, 3), 10);
+    const seconds = parseInt(numStr.slice(3, 5), 10);
+    
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
   const handlePracticeToggle = (e) => {
     const hasPractice = e.target.checked;
     const lectureVideoUrl = lessonData.lectureVideoUrl || autoLectureVideoUrl;
     const lectureSubtitle = lessonData.lectureSubtitle || autoLectureSubtitle;
     
+    // 실습 타임스탬프 초기화 (기본 2개: "0:00:04", "0:00:00")
+    const practiceTimestamps = hasPractice && (!lessonData.practiceTimestamps || lessonData.practiceTimestamps.length === 0)
+      ? ['0:00:04', '0:00:00']
+      : (lessonData.practiceTimestamps || []);
+    
     onUpdate({
       ...lessonData,
       hasPractice: hasPractice,
       practiceVideoUrl: hasPractice && lectureVideoUrl ? lectureVideoUrl.replace('.mp4', '_P.mp4') : '',
-      practiceSubtitle: hasPractice && lectureSubtitle ? lectureSubtitle.replace('.vtt', '_P.vtt') : ''
+      practiceSubtitle: hasPractice && lectureSubtitle ? lectureSubtitle.replace('.vtt', '_P.vtt') : '',
+      practiceTimestamps: practiceTimestamps
     });
   };
 
   const handlePracticeChange = (field, value) => {
     onUpdate({ ...lessonData, [field]: value });
+  };
+
+  const handlePracticeTimestampChange = (index, value) => {
+    const newPracticeTimestamps = [...(lessonData.practiceTimestamps || [])];
+    newPracticeTimestamps[index] = value;
+    onUpdate({ ...lessonData, practiceTimestamps: newPracticeTimestamps });
+  };
+
+  const handlePracticeTimestampBlur = (index) => {
+    const currentValue = (lessonData.practiceTimestamps || [])[index] || '';
+    const formatted = formatTimestamp(currentValue);
+    if (formatted && formatted !== currentValue) {
+      handlePracticeTimestampChange(index, formatted);
+    }
+  };
+
+  const addPracticeTimestamp = () => {
+    const newPracticeTimestamps = [...(lessonData.practiceTimestamps || []), '0:00:00'];
+    onUpdate({ ...lessonData, practiceTimestamps: newPracticeTimestamps });
+  };
+
+  const removePracticeTimestamp = (index) => {
+    const newPracticeTimestamps = (lessonData.practiceTimestamps || []).filter((_, i) => i !== index);
+    onUpdate({ ...lessonData, practiceTimestamps: newPracticeTimestamps });
   };
 
   return (
@@ -130,6 +179,45 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
                 value={lessonData.practiceSubtitle || (lessonData.lectureSubtitle || autoLectureSubtitle ? `${(lessonData.lectureSubtitle || autoLectureSubtitle).replace('.vtt', '_P.vtt')}` : '')}
                 onChange={(e) => handlePracticeChange('practiceSubtitle', e.target.value)}
               />
+            </div>
+            <div className="timestamp-group">
+              <div className="list-header">
+                <label className="group-label">실습 타임스탬프</label>
+                <button
+                  className="btn-add-small"
+                  onClick={addPracticeTimestamp}
+                  type="button"
+                >
+                  + 추가
+                </button>
+              </div>
+              <div className="timestamp-inputs">
+                {(lessonData.practiceTimestamps || ['0:00:04', '0:00:00']).map((timestamp, index) => (
+                  <div key={index} className="timestamp-input-wrapper">
+                    <input
+                      type="text"
+                      placeholder="0:00:04"
+                      value={timestamp}
+                      onChange={(e) => {
+                        // 숫자만 입력 가능
+                        const value = e.target.value.replace(/[^\d:]/g, '');
+                        handlePracticeTimestampChange(index, value);
+                      }}
+                      onBlur={() => handlePracticeTimestampBlur(index)}
+                      pattern="[0-9]:[0-9]{2}:[0-9]{2}"
+                    />
+                    {(lessonData.practiceTimestamps || []).length > 2 && (
+                      <button
+                        className="btn-remove-inline"
+                        onClick={() => removePracticeTimestamp(index)}
+                        type="button"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </>
         )}
