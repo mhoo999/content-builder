@@ -77,6 +77,13 @@ function App() {
     }));
   };
 
+  // 차시 번호 업데이트 (인라인 편집용)
+  const updateLessonNumber = (index, lessonNumber) => {
+    const lessonNum = parseInt(lessonNumber) || 1;
+    const lesson = courseData.lessons[index];
+    updateLesson(index, { ...lesson, lessonNumber: lessonNum });
+  };
+
   // 주차 번호 업데이트 (인라인 편집용)
   const updateLessonWeek = (index, weekNumber) => {
     const weekNum = parseInt(weekNumber) || 1;
@@ -433,7 +440,17 @@ function App() {
                   >
                     <div className="lesson-info">
                       <div className="lesson-info-row">
-                        <span className="lesson-number">{lesson.lessonNumber}강</span>
+                        <input
+                          type="text"
+                          className="lesson-num-input-inline"
+                          value={lesson.lessonNumber}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '');
+                            updateLessonNumber(index, value || '1');
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="week-label-inline">강</span>
                         <input
                           type="text"
                           className="week-input-inline"

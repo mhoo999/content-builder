@@ -7,7 +7,7 @@ function StartModal({ onClose, onCreate }) {
   // 생성 버튼
   const handleCreate = () => {
     if (lessonCount < 1) {
-      alert('최소 1개 이상의 차시를 입력해주세요.');
+      alert('최소 1개 이상의 강의를 입력해주세요.');
       return;
     }
     if (lessonCount > 100) {
@@ -15,7 +15,7 @@ function StartModal({ onClose, onCreate }) {
       return;
     }
 
-    // 차시 개수만큼 생성 (2개 차시당 1주차)
+    // 강의 개수만큼 생성 (2개 강의당 1주차)
     const lessons = Array.from({ length: lessonCount }, (_, index) => ({
       weekNumber: Math.ceil((index + 1) / 2),
       title: ''
@@ -35,8 +35,8 @@ function StartModal({ onClose, onCreate }) {
 
         <div className="start-modal-body">
           <p className="modal-description">
-            몇 개의 차시를 만들까요?<br />
-            <small>2개 차시당 1주차로 자동 생성됩니다.</small>
+            몇 개의 강의를 만들까요?<br />
+            <small>2개 강의당 1주차로 자동 생성됩니다.</small>
           </p>
 
           <div className="count-input-wrapper">
@@ -49,12 +49,12 @@ function StartModal({ onClose, onCreate }) {
               max="100"
               autoFocus
             />
-            <span className="count-label">개 차시</span>
+            <span className="count-label">개 강의</span>
           </div>
 
           <div className="preview">
             <small className="preview-text">
-              📊 생성 예정: {lessonCount}개 차시 / {Math.ceil(lessonCount / 2)}개 주차
+              📊 생성 예정: {lessonCount}개 강의 / {Math.ceil(lessonCount / 2)}개 주차
             </small>
           </div>
         </div>
