@@ -557,7 +557,9 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     course_code = course_data["courseCode"]
     course_name = course_data["courseName"]
     professor = course_data["professor"]
-    imported_images = course_data.get("importedImages", {})
+    # imported_images는 더 이상 사용하지 않음
+    # 이미지는 HTML 내용의 base64를 직접 추출하여 파일로 저장함
+    imported_images = {}
 
     if not course_code:
         print("❌ 과목 코드가 없습니다!")
@@ -589,12 +591,8 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     images_dir = course_dir / "images"
     images_dir.mkdir(exist_ok=True)
 
-    # 임포트된 이미지들 먼저 저장
-    if imported_images:
-        saved_imported = save_imported_images(imported_images, images_dir)
-        print(f"📷 임포트된 이미지 {saved_imported}개 저장 완료")
-
     # 이미지 카운터 (전체 과정에서 공유)
+    # HTML 내용의 base64 이미지를 추출하여 파일로 저장하고 상대경로로 교체
     image_counter = {'count': 0}
 
     # 교수 사진 미리 처리 (한 번만 처리하여 모든 차시에서 재사용)

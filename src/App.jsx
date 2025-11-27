@@ -172,10 +172,12 @@ function App() {
       return; // 사용자가 취소
     }
 
-    // 익스포트할 데이터에 임포트된 이미지 포함
+    // 익스포트할 데이터 준비
+    // 이미지는 Python 스크립트에서 HTML의 base64를 찾아서 파일로 저장하고 상대경로로 교체함
+    // importedImages는 Export 시 JSON에 포함하지 않음 (이미 HTML에 base64로 포함되어 있거나 상대경로로 변환됨)
     const exportData = {
-      ...courseData,
-      importedImages: importedImages
+      ...courseData
+      // importedImages는 제외 - Python 스크립트가 HTML에서 base64 이미지를 직접 처리함
     };
 
     try {
@@ -218,10 +220,10 @@ function App() {
 
       const pythonCmd = isWindows ? 'python' : 'python3';
       const command = `${pythonCmd} builder_to_subjects.py ${filename} ${outputPath}`;
-      const imageCount = Object.keys(importedImages).length;
       alert(
         `⚠️ API 서버가 실행되지 않았습니다.\n\n` +
-        `JSON 파일이 다운로드되었습니다. (이미지 ${imageCount}개 포함)\n` +
+        `JSON 파일이 다운로드되었습니다.\n` +
+        `Python 스크립트가 HTML의 base64 이미지를 자동으로 파일로 저장하고 상대경로로 교체합니다.\n\n` +
         `터미널에서 다음 명령어를 실행하세요:\n\n${command}`
       );
     }
