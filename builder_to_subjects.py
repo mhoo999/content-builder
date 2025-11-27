@@ -53,6 +53,53 @@ def clean_html_for_export(html_content):
     return html_content
 
 
+def save_base64_image(base64_data_url, images_dir, course_code, image_counter):
+    """
+    base64 이미지 데이터 URL을 파일로 저장하고 상대경로 반환
+    
+    Args:
+        base64_data_url: data:image/...;base64,... 형식의 문자열
+        images_dir: 이미지 저장 디렉토리
+        course_code: 과목 코드
+        image_counter: 이미지 카운터 (dict, {'count': int})
+    
+    Returns:
+        상대경로 문자열 (예: ../images/25itinse_img_001.png)
+    """
+    if not base64_data_url or not base64_data_url.startswith("data:image/"):
+        return base64_data_url
+    
+    try:
+        # data:image/png;base64,xxxxx 형식에서 타입과 데이터 추출
+        header, data = base64_data_url.split(',', 1)
+        image_type_match = re.search(r'data:image/([^;]+)', header)
+        if not image_type_match:
+            return base64_data_url
+        
+        image_type = image_type_match.group(1)
+        base64_data = data
+        
+        # 이미지 카운터 증가
+        image_counter['count'] += 1
+        image_num = image_counter['count']
+        
+        # 파일명 생성: {과목코드}_img_{번호}.{확장자}
+        ext = 'png' if image_type == 'png' else ('jpg' if image_type in ['jpeg', 'jpg'] else image_type)
+        filename = f"{course_code}_img_{image_num:03d}.{ext}"
+        image_path = images_dir / filename
+        
+        # base64 디코딩하여 파일로 저장
+        image_data = base64.b64decode(base64_data)
+        with open(image_path, 'wb') as f:
+            f.write(image_data)
+        
+        # 상대경로 반환
+        return f"../images/{filename}"
+    except Exception as e:
+        print(f"⚠️ 이미지 저장 실패: {e}")
+        return base64_data_url  # 실패 시 원본 반환
+
+
 def extract_and_save_images(html_content, images_dir, course_code, image_counter):
     """
     HTML에서 base64 이미지를 추출하여 파일로 저장하고 상대경로로 교체
@@ -76,6 +123,7 @@ def extract_and_save_images(html_content, images_dir, course_code, image_counter
     pattern = r'<img\s+[^>]*src=["\'](data:image/([^;]+);base64,([^"\']+))["\'][^>]*>'
 
     def replace_image(match):
+        full_tag = match.group(0)
         full_data_url = match.group(1)
         image_type = match.group(2)  # png, jpeg, jpg, gif 등
         base64_data = match.group(3)
@@ -97,10 +145,11 @@ def extract_and_save_images(html_content, images_dir, course_code, image_counter
 
             # 상대경로로 교체 (data.json에서 images 폴더로의 경로: ../images/)
             relative_path = f"../images/{filename}"
-            return match.group(0).replace(full_data_url, relative_path)
+            # img 태그의 src 속성만 교체
+            return full_tag.replace(full_data_url, relative_path)
         except Exception as e:
             print(f"⚠️ 이미지 저장 실패: {e}")
-            return match.group(0)  # 실패 시 원본 유지
+            return full_tag  # 실패 시 원본 유지
 
     # 모든 base64 이미지를 찾아서 교체
     result = re.sub(pattern, replace_image, html_content)
@@ -599,9 +648,19 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     professor_photo = professor.get("photo", "")
     processed_professor_photo = professor_photo
     if professor_photo:
-        # base64 이미지인 경우에만 처리
-        if professor_photo.startswith("data:image/"):
+        # HTML 태그가 포함된 경우 (<img src="data:image/...">)
+        if "<img" in professor_photo and "data:image/" in professor_photo:
+            # HTML에서 base64 이미지를 추출하여 파일로 저장하고 상대경로로 교체
             processed_professor_photo = extract_and_save_images(
+                professor_photo, images_dir, course_code, image_counter
+            )
+            # HTML 태그에서 src 속성의 경로만 추출
+            src_match = re.search(r'src=["\']([^"\']+)["\']', processed_professor_photo)
+            if src_match:
+                processed_professor_photo = src_match.group(1)
+        # 단순 base64 문자열인 경우 (data:image/...;base64,...)
+        elif professor_photo.startswith("data:image/"):
+            processed_professor_photo = save_base64_image(
                 professor_photo, images_dir, course_code, image_counter
             )
         # 이미 상대경로인 경우 그대로 사용
