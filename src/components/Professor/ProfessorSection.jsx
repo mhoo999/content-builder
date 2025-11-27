@@ -41,33 +41,11 @@ function ProfessorSection({ professor, onUpdate, disabled = false }) {
     const newCareer = [...professor.career];
     newCareer[index] = { ...newCareer[index], [field]: value };
     
-    // startDate나 endDate가 변경되면 period를 업데이트
-    if (field === 'startDate' || field === 'endDate') {
-      const startDate = field === 'startDate' ? value : (newCareer[index].startDate || '');
-      const endDate = field === 'endDate' ? value : (newCareer[index].endDate || '');
-      
-      if (startDate && endDate) {
-        // 날짜를 "YYYY년 MM월 ~ YYYY년 MM월" 형식으로 변환
-        const formatDate = (dateStr) => {
-          if (!dateStr) return '';
-          const date = new Date(dateStr);
-          const year = date.getFullYear();
-          const month = date.getMonth() + 1;
-          return `${year}년 ${month}월`;
-        };
-        newCareer[index].period = `${formatDate(startDate)} ~ ${formatDate(endDate)}`;
-      } else if (startDate) {
-        const formatDate = (dateStr) => {
-          if (!dateStr) return '';
-          const date = new Date(dateStr);
-          const year = date.getFullYear();
-          const month = date.getMonth() + 1;
-          return `${year}년 ${month}월`;
-        };
-        newCareer[index].period = `${formatDate(startDate)} ~`;
-      } else {
-        newCareer[index].period = '';
-      }
+    // period가 변경되면 startDate와 endDate를 파싱하여 업데이트
+    if (field === 'period') {
+      const dates = parsePeriodToDates(value);
+      newCareer[index].startDate = dates.startDate;
+      newCareer[index].endDate = dates.endDate;
     }
     
     onUpdate({ ...professor, career: newCareer });
@@ -165,50 +143,39 @@ function ProfessorSection({ professor, onUpdate, disabled = false }) {
             + 추가
           </button>
         </div>
-        {professor.career.map((car, index) => {
-          const dates = parsePeriodToDates(car.period || '');
-          return (
-            <div key={index} className="career-item">
-              <div className="career-inputs">
-                <div className="form-group">
-                  <label>시작일</label>
-                  <input
-                    type="date"
-                    value={car.startDate || dates.startDate || ''}
-                    onChange={(e) => updateCareer(index, 'startDate', e.target.value)}
-                    disabled={disabled}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>종료일</label>
-                  <input
-                    type="date"
-                    value={car.endDate || dates.endDate || ''}
-                    onChange={(e) => updateCareer(index, 'endDate', e.target.value)}
-                    disabled={disabled}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>내용</label>
-                  <input
-                    type="text"
-                    placeholder="예: 펌킨네트웍스 기술본부 이사"
-                    value={car.description || ''}
-                    onChange={(e) => updateCareer(index, 'description', e.target.value)}
-                    disabled={disabled}
-                  />
-                </div>
+        {professor.career.map((car, index) => (
+          <div key={index} className="career-item">
+            <div className="career-inputs">
+              <div className="form-group">
+                <label>기간</label>
+                <input
+                  type="text"
+                  placeholder="예: 2020년 1월 ~ 2023년 12월"
+                  value={car.period || ''}
+                  onChange={(e) => updateCareer(index, 'period', e.target.value)}
+                  disabled={disabled}
+                />
               </div>
-              <button
-                className="btn-remove-small"
-                onClick={() => removeCareer(index)}
-                disabled={disabled}
-              >
-                ×
-              </button>
+              <div className="form-group">
+                <label>내용</label>
+                <input
+                  type="text"
+                  placeholder="예: 펌킨네트웍스 기술본부 이사"
+                  value={car.description || ''}
+                  onChange={(e) => updateCareer(index, 'description', e.target.value)}
+                  disabled={disabled}
+                />
+              </div>
             </div>
-          );
-        })}
+            <button
+              className="btn-remove-small"
+              onClick={() => removeCareer(index)}
+              disabled={disabled}
+            >
+              ×
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

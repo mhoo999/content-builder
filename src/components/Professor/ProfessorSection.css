@@ -159,19 +159,6 @@
   color: var(--text-primary);
 }
 
-.career-item .form-group input[type="date"] {
-  cursor: pointer;
-}
-
-.career-item .form-group input[type="date"]::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.6;
-  transition: opacity 0.2s;
-}
-
-.career-item .form-group input[type="date"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
 
 .career-item .form-group input:focus {
   outline: none;
