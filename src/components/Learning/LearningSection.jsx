@@ -1,7 +1,18 @@
 import './LearningSection.css';
 import RichTextEditor from '../RichTextEditor';
 
-function LearningSection({ lessonData, onUpdate }) {
+function LearningSection({ lessonData, onUpdate, courseCode, year }) {
+  // 차시 번호를 2자리 문자열로 변환 (01, 02, ...)
+  const lessonNumStr = String(lessonData.lessonNumber).padStart(2, '0');
+  
+  // 자동 생성된 URL들
+  const autoLectureVideoUrl = courseCode && year 
+    ? `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/${courseCode}_${lessonNumStr}.mp4`
+    : '';
+  const autoLectureSubtitle = courseCode 
+    ? `../subtitles/${courseCode}_${lessonNumStr}.vtt`
+    : '';
+
   const handleOpinionChange = (value) => {
     onUpdate({ ...lessonData, opinionQuestion: value });
   };
@@ -18,6 +29,23 @@ function LearningSection({ lessonData, onUpdate }) {
     const newTimestamps = [...lessonData.timestamps];
     newTimestamps[index] = value;
     onUpdate({ ...lessonData, timestamps: newTimestamps });
+  };
+
+  const handlePracticeToggle = (e) => {
+    const hasPractice = e.target.checked;
+    const lectureVideoUrl = lessonData.lectureVideoUrl || autoLectureVideoUrl;
+    const lectureSubtitle = lessonData.lectureSubtitle || autoLectureSubtitle;
+    
+    onUpdate({
+      ...lessonData,
+      hasPractice: hasPractice,
+      practiceVideoUrl: hasPractice && lectureVideoUrl ? lectureVideoUrl.replace('.mp4', '_P.mp4') : '',
+      practiceSubtitle: hasPractice && lectureSubtitle ? lectureSubtitle.replace('.vtt', '_P.vtt') : ''
+    });
+  };
+
+  const handlePracticeChange = (field, value) => {
+    onUpdate({ ...lessonData, [field]: value });
   };
 
   return (
@@ -45,8 +73,8 @@ function LearningSection({ lessonData, onUpdate }) {
           <label>강의 영상 URL</label>
           <input
             type="url"
-            placeholder="https://cdn-it.livestudy.com/mov/2025/25itinse/25itinse_01.mp4"
-            value={lessonData.lectureVideoUrl}
+            placeholder={autoLectureVideoUrl || "https://cdn-it.livestudy.com/mov/{연도}/{코드명}/{코드명}_{차시번호}.mp4"}
+            value={lessonData.lectureVideoUrl || autoLectureVideoUrl}
             onChange={(e) => handleLectureChange('lectureVideoUrl', e.target.value)}
           />
         </div>
@@ -54,8 +82,8 @@ function LearningSection({ lessonData, onUpdate }) {
           <label>자막 파일 경로</label>
           <input
             type="text"
-            placeholder="../subtitles/25itinse_01.vtt"
-            value={lessonData.lectureSubtitle}
+            placeholder={autoLectureSubtitle || "../subtitles/{코드명}_{차시번호}.vtt"}
+            value={lessonData.lectureSubtitle || autoLectureSubtitle}
             onChange={(e) => handleLectureChange('lectureSubtitle', e.target.value)}
           />
         </div>
@@ -73,6 +101,38 @@ function LearningSection({ lessonData, onUpdate }) {
             ))}
           </div>
         </div>
+        <div className="checkbox-group" style={{ marginTop: '16px' }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={lessonData.hasPractice || false}
+              onChange={handlePracticeToggle}
+            />
+            <span>실습있음</span>
+          </label>
+        </div>
+        {(lessonData.hasPractice || false) && (
+          <>
+            <div className="form-group">
+              <label>실습 강의 영상 URL</label>
+              <input
+                type="url"
+                placeholder={lessonData.lectureVideoUrl || autoLectureVideoUrl ? `${(lessonData.lectureVideoUrl || autoLectureVideoUrl).replace('.mp4', '_P.mp4')}` : "{강의영상URL}_P.mp4"}
+                value={lessonData.practiceVideoUrl || (lessonData.lectureVideoUrl || autoLectureVideoUrl ? `${(lessonData.lectureVideoUrl || autoLectureVideoUrl).replace('.mp4', '_P.mp4')}` : '')}
+                onChange={(e) => handlePracticeChange('practiceVideoUrl', e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label>실습 자막 파일 경로</label>
+              <input
+                type="text"
+                placeholder={lessonData.lectureSubtitle || autoLectureSubtitle ? `${(lessonData.lectureSubtitle || autoLectureSubtitle).replace('.vtt', '_P.vtt')}` : "{자막경로}_P.vtt"}
+                value={lessonData.practiceSubtitle || (lessonData.lectureSubtitle || autoLectureSubtitle ? `${(lessonData.lectureSubtitle || autoLectureSubtitle).replace('.vtt', '_P.vtt')}` : '')}
+                onChange={(e) => handlePracticeChange('practiceSubtitle', e.target.value)}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* 점검하기 */}

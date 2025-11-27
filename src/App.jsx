@@ -120,12 +120,23 @@ function App() {
       newLesson.lessonNumber = index + 1;
       newLesson.lessonTitle = structure.title;
       
+      // 차시 번호를 2자리 문자열로 변환 (01, 02, ...)
+      const lessonNumStr = String(newLesson.lessonNumber).padStart(2, '0');
+      
       // 1강 1주차 1차시인 경우 오리엔테이션 자동 활성화 및 URL 자동 생성
       if (newLesson.weekNumber === 1 && newLesson.lessonNumber === 1) {
         newLesson.hasOrientation = true;
         // 오리엔테이션 URL 자동 생성: https://cdn-it.livestudy.com/mov/{연도}/{코드명}/{코드명}_ot.mp4
         newLesson.orientation.videoUrl = `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/${courseCode}_ot.mp4`;
         newLesson.orientation.subtitlePath = `../subtitles/${courseCode}_ot.vtt`;
+      }
+      
+      // 강의 영상 URL 및 자막 파일 경로 자동 생성
+      if (courseCode && year) {
+        newLesson.lectureVideoUrl = `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/${courseCode}_${lessonNumStr}.mp4`;
+        newLesson.lectureSubtitle = `../subtitles/${courseCode}_${lessonNumStr}.vtt`;
+        newLesson.instructionUrl = `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/down/${courseCode}_mp3_${lessonNumStr}.zip`;
+        newLesson.guideUrl = `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/down/${courseCode}_book_${lessonNumStr}.zip`;
       }
       
       return newLesson;
@@ -565,12 +576,16 @@ function App() {
               <LearningSection
                 lessonData={currentLesson}
                 onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+                courseCode={courseData.courseCode}
+                year={courseData.year}
               />
 
               {/* 정리하기 섹션 */}
               <SummarySection
                 lessonData={currentLesson}
                 onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+                courseCode={courseData.courseCode}
+                year={courseData.year}
               />
             </div>
           ) : null}

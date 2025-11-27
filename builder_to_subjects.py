@@ -316,10 +316,28 @@ def create_opinion_page(question):
     }
 
 
-def create_lecture_page(lesson):
-    """강의보기 페이지 생성"""
+def create_lecture_page(lesson, course_code=None, year=None):
+    """강의보기 페이지 생성
+    
+    Args:
+        lesson: 차시 데이터
+        course_code: 과목 코드 (자동 생성용)
+        year: 연도 (자동 생성용)
+    """
+    # 강의 영상 URL 자동 생성 (비어있는 경우)
+    lecture_video_url = lesson.get("lectureVideoUrl", "")
+    if not lecture_video_url and course_code and year:
+        lesson_num_str = f"{lesson['lessonNumber']:02d}"
+        lecture_video_url = f"https://cdn-it.livestudy.com/mov/{year}/{course_code}/{course_code}_{lesson_num_str}.mp4"
+    
+    # 자막 파일 경로 자동 생성 (비어있는 경우)
+    lecture_subtitle = lesson.get("lectureSubtitle", "")
+    if not lecture_subtitle and course_code:
+        lesson_num_str = f"{lesson['lessonNumber']:02d}"
+        lecture_subtitle = f"../subtitles/{course_code}_{lesson_num_str}.vtt"
+    
     timestamps = []
-    for ts in lesson["timestamps"]:
+    for ts in lesson.get("timestamps", []):
         if ts:
             timestamps.append({"time": ts})
 
@@ -330,9 +348,9 @@ def create_lecture_page(lesson):
         "description": "교수님의 강의에 맞춰 주도적으로 학습하세요.",
         "script": "영상페이지에서는 내레이션을 제공하지 않습니다",
         "component": "lecture",
-        "media": lesson["lectureVideoUrl"],
+        "media": lecture_video_url,
         "caption": [{
-            "src": lesson["lectureSubtitle"],
+            "src": lecture_subtitle,
             "lable": "한국어",
             "language": "ko",
             "kind": "subtitles"
@@ -716,7 +734,7 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         pages.append(create_opinion_page(lesson["opinionQuestion"]))
 
         # 6. 강의보기
-        pages.append(create_lecture_page(lesson))
+        pages.append(create_lecture_page(lesson, course_code, year))
 
         # 7. 점검하기
         pages.append(create_check_page(lesson, images_dir, course_code, image_counter))
@@ -737,13 +755,24 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         with open(index_file, 'w', encoding='utf-8') as f:
             f.write(index_html)
 
+        # 다운로드 URL 자동 생성 (비어있는 경우)
+        instruction_url = lesson.get("instructionUrl", "")
+        if not instruction_url and course_code and year:
+            lesson_num_str = f"{lesson['lessonNumber']:02d}"
+            instruction_url = f"https://cdn-it.livestudy.com/mov/{year}/{course_code}/down/{course_code}_mp3_{lesson_num_str}.zip"
+        
+        guide_url = lesson.get("guideUrl", "")
+        if not guide_url and course_code and year:
+            lesson_num_str = f"{lesson['lessonNumber']:02d}"
+            guide_url = f"https://cdn-it.livestudy.com/mov/{year}/{course_code}/down/{course_code}_book_{lesson_num_str}.zip"
+        
         # data.json 생성
         data_json = {
             "subject": course_name,
             "index": lesson["weekNumber"],
             "section": lesson["lessonNumber"],
-            "instruction": lesson["instructionUrl"],
-            "guide": lesson["guideUrl"],
+            "instruction": instruction_url,
+            "guide": guide_url,
             "sections": ["인트로", "준비하기", "학습하기", "정리하기"],
             "pages": pages
         }

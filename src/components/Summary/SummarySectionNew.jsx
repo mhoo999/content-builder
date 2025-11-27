@@ -1,7 +1,17 @@
 import './SummarySection.css';
 import RichTextEditor from '../RichTextEditor';
 
-function SummarySection({ lessonData, onUpdate }) {
+function SummarySection({ lessonData, onUpdate, courseCode, year }) {
+  // 차시 번호를 2자리 문자열로 변환 (01, 02, ...)
+  const lessonNumStr = String(lessonData.lessonNumber).padStart(2, '0');
+  
+  // 자동 생성된 다운로드 URL들
+  const autoInstructionUrl = courseCode && year 
+    ? `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/down/${courseCode}_mp3_${lessonNumStr}.zip`
+    : '';
+  const autoGuideUrl = courseCode && year 
+    ? `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/down/${courseCode}_book_${lessonNumStr}.zip`
+    : '';
   // 연습문제 추가
   const addExercise = () => {
     onUpdate({
@@ -233,8 +243,8 @@ function SummarySection({ lessonData, onUpdate }) {
           <label>음성파일 ZIP URL</label>
           <input
             type="url"
-            placeholder="https://cdn-it.livestudy.com/mov/2025/25itinse/down/25itinse_mp3_01.zip"
-            value={lessonData.instructionUrl}
+            placeholder={autoInstructionUrl || "https://cdn-it.livestudy.com/mov/{연도}/{코드명}/down/{코드명}_mp3_{차시번호}.zip"}
+            value={lessonData.instructionUrl || autoInstructionUrl}
             onChange={(e) => handleDownloadChange('instructionUrl', e.target.value)}
           />
         </div>
@@ -242,8 +252,8 @@ function SummarySection({ lessonData, onUpdate }) {
           <label>교안 ZIP URL</label>
           <input
             type="url"
-            placeholder="https://cdn-it.livestudy.com/mov/2025/25itinse/down/25itinse_book_01.zip"
-            value={lessonData.guideUrl}
+            placeholder={autoGuideUrl || "https://cdn-it.livestudy.com/mov/{연도}/{코드명}/down/{코드명}_book_{차시번호}.zip"}
+            value={lessonData.guideUrl || autoGuideUrl}
             onChange={(e) => handleDownloadChange('guideUrl', e.target.value)}
           />
         </div>
