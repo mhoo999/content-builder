@@ -594,7 +594,7 @@ button:disabled {
 .week-label-inline {
   font-size: 13px;
   color: var(--text-secondary);
-  margin-right: 4px;
+  margin-left: 2px;
 }
 
 .title-input-inline {

@@ -33,7 +33,7 @@ function App() {
   // 새 차시 추가
   const addLesson = () => {
     const newLesson = createBuilderLessonData();
-    newLesson.weekNumber = courseData.lessons.length + 1;
+    newLesson.weekNumber = Math.ceil((courseData.lessons.length + 1) / 2);
     newLesson.lessonNumber = courseData.lessons.length + 1;
 
     // 이전 차시의 다운로드 URL 복사
@@ -433,16 +433,18 @@ function App() {
                   >
                     <div className="lesson-info">
                       <div className="lesson-info-row">
-                        <span className="lesson-number">{lesson.lessonNumber}차시</span>
+                        <span className="lesson-number">{lesson.lessonNumber}강</span>
                         <input
-                          type="number"
+                          type="text"
                           className="week-input-inline"
                           value={lesson.weekNumber}
-                          onChange={(e) => updateLessonWeek(index, e.target.value)}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '');
+                            updateLessonWeek(index, value || '1');
+                          }}
                           onClick={(e) => e.stopPropagation()}
-                          min="1"
                         />
-                        <span className="week-label-inline">주</span>
+                        <span className="week-label-inline">주차</span>
                       </div>
                       <input
                         type="text"
@@ -482,7 +484,18 @@ function App() {
             </div>
           ) : currentLesson ? (
             <div className="lesson-editor">
-              <h2>{currentLesson.lessonNumber}차시 {currentLesson.weekNumber}주차</h2>
+              <h2>
+                {(() => {
+                  // 같은 주차에 속한 차시들 중에서 현재 차시가 몇 번째인지 계산
+                  const sameWeekLessons = courseData.lessons.filter(
+                    lesson => lesson.weekNumber === currentLesson.weekNumber
+                  ).sort((a, b) => a.lessonNumber - b.lessonNumber);
+                  const weekLessonNumber = sameWeekLessons.findIndex(
+                    lesson => lesson.lessonNumber === currentLesson.lessonNumber
+                  ) + 1;
+                  return `${currentLesson.lessonNumber}강 ${currentLesson.weekNumber}주차 ${weekLessonNumber}차시`;
+                })()}
+              </h2>
               <p className="subtitle">{currentLesson.lessonTitle || '제목 없음'}</p>
 
               {/* 준비하기 섹션 */}
