@@ -96,6 +96,15 @@ function App() {
     updateLesson(index, { ...lesson, weekNumber: weekNum });
   };
 
+  // 해당 주차의 차시 순서 계산
+  const getLessonOrderInWeek = (lessonIndex) => {
+    const lesson = courseData.lessons[lessonIndex];
+    const sameWeekLessons = courseData.lessons.filter(
+      l => l.weekNumber === lesson.weekNumber
+    ).sort((a, b) => a.lessonNumber - b.lessonNumber);
+    return sameWeekLessons.findIndex(l => l.lessonNumber === lesson.lessonNumber) + 1;
+  };
+
   // 차시 제목 업데이트 (인라인 편집용)
   const updateLessonTitle = (index, title) => {
     const lesson = courseData.lessons[index];
@@ -467,6 +476,14 @@ function App() {
                           onClick={(e) => e.stopPropagation()}
                         />
                         <span className="week-label-inline">주차</span>
+                        <input
+                          type="text"
+                          className="lesson-order-input-inline"
+                          value={getLessonOrderInWeek(index)}
+                          readOnly
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="week-label-inline">차시</span>
                       </div>
                       <input
                         type="text"
