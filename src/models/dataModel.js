@@ -266,13 +266,27 @@ export const createBuilderLessonData = () => ({
   practiceSubtitle: "", // 실습 자막 파일 경로
   practiceTimestamps: ["0:00:04", "0:00:00"], // 실습 타임스탬프 (기본 2개)
 
-  // 연습문제 (동적 추가/삭제, boolean 또는 multiple 선택)
+  // 연습문제 (기본 3개: OX, 4지선다, 4지선다)
   exercises: [
     {
-      type: "boolean", // 'boolean' 또는 'multiple'
+      type: "boolean", // OX
       question: "",
-      answer: "2", // boolean: "1"(O) or "2"(X), multiple: "1"~"4"
-      options: [], // multiple일 때만 사용
+      answer: "", // 기본 선택 없음
+      options: [],
+      commentary: "",
+    },
+    {
+      type: "multiple", // 4지선다
+      question: "",
+      answer: "", // 기본 선택 없음
+      options: ["", "", "", ""],
+      commentary: "",
+    },
+    {
+      type: "multiple", // 4지선다
+      question: "",
+      answer: "", // 기본 선택 없음
+      options: ["", "", "", ""],
       commentary: "",
     },
   ],

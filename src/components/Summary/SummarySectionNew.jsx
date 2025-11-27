@@ -21,7 +21,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year }) {
         {
           type: 'boolean',
           question: '',
-          answer: '2',
+          answer: '', // 기본 선택 없음
           options: [],
           commentary: ''
         }
@@ -43,7 +43,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year }) {
     newExercises[index] = {
       ...newExercises[index],
       type: newType,
-      answer: newType === 'boolean' ? '2' : '1',
+      answer: '', // 기본 선택 없음
       options: newType === 'multiple' ? ['', '', '', ''] : []
     };
     onUpdate({ ...lessonData, exercises: newExercises });
@@ -93,6 +93,63 @@ function SummarySection({ lessonData, onUpdate, courseCode, year }) {
     onUpdate({ ...lessonData, [field]: value });
   };
 
+  // exercises가 없거나 비어있을 때 기본 3개 제공
+  const exercises = lessonData.exercises && lessonData.exercises.length > 0
+    ? lessonData.exercises
+    : [
+        {
+          type: "boolean",
+          question: "",
+          answer: "",
+          options: [],
+          commentary: "",
+        },
+        {
+          type: "multiple",
+          question: "",
+          answer: "",
+          options: ["", "", "", ""],
+          commentary: "",
+        },
+        {
+          type: "multiple",
+          question: "",
+          answer: "",
+          options: ["", "", "", ""],
+          commentary: "",
+        },
+      ];
+
+  // exercises가 비어있을 때 자동으로 초기화
+  if (!lessonData.exercises || lessonData.exercises.length === 0) {
+    onUpdate({
+      ...lessonData,
+      exercises: [
+        {
+          type: "boolean",
+          question: "",
+          answer: "",
+          options: [],
+          commentary: "",
+        },
+        {
+          type: "multiple",
+          question: "",
+          answer: "",
+          options: ["", "", "", ""],
+          commentary: "",
+        },
+        {
+          type: "multiple",
+          question: "",
+          answer: "",
+          options: ["", "", "", ""],
+          commentary: "",
+        },
+      ],
+    });
+  }
+
   return (
     <div className="form-section">
       <h3>✅ 정리하기</h3>
@@ -106,7 +163,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year }) {
           </button>
         </div>
 
-        {lessonData.exercises.map((exercise, index) => (
+        {exercises.map((exercise, index) => (
           <div key={index} className="exercise-item">
             <div className="exercise-header">
               <span className="exercise-number">문제 {index + 1}</span>
@@ -119,7 +176,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year }) {
                   <option value="boolean">OX</option>
                   <option value="multiple">4지선다</option>
                 </select>
-                {lessonData.exercises.length > 1 && (
+                {exercises.length > 1 && (
                   <button
                     className="btn-remove-inline"
                     onClick={() => removeExercise(index)}
@@ -144,11 +201,11 @@ function SummarySection({ lessonData, onUpdate, courseCode, year }) {
                 <label className="group-label">선택지</label>
                 {exercise.options.map((option, optIndex) => (
                   <div key={optIndex} className="form-group">
-                    <input
-                      type="text"
-                      placeholder={`선택지 ${optIndex + 1}`}
+                    <label>선택지 {optIndex + 1}</label>
+                    <RichTextEditor
                       value={option}
-                      onChange={(e) => updateExerciseOption(index, optIndex, e.target.value)}
+                      onChange={(value) => updateExerciseOption(index, optIndex, value)}
+                      placeholder={`선택지 ${optIndex + 1}를 입력하세요`}
                     />
                   </div>
                 ))}
@@ -182,13 +239,15 @@ function SummarySection({ lessonData, onUpdate, courseCode, year }) {
                 </div>
               ) : (
                 <select
-                  value={exercise.answer}
+                  value={exercise.answer || ''}
                   onChange={(e) => updateExercise(index, 'answer', e.target.value)}
                 >
-                  <option value="1">1번</option>
-                  <option value="2">2번</option>
-                  <option value="3">3번</option>
-                  <option value="4">4번</option>
+                  <option value="">정답을 선택해주세요.</option>
+                  {exercise.options.map((option, optIndex) => (
+                    <option key={optIndex} value={String(optIndex + 1)}>
+                      {optIndex + 1}번
+                    </option>
+                  ))}
                 </select>
               )}
             </div>
