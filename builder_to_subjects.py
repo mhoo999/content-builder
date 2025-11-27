@@ -523,8 +523,9 @@ def save_imported_images(imported_images, images_dir):
     saved_count = 0
     for rel_path, base64_data in imported_images.items():
         try:
-            # ../images/filename.ext 에서 filename.ext 추출
-            filename = rel_path.split('/')[-1]
+            # ../images/filename.ext 에서 filename.ext 추출 (크로스 플랫폼 호환)
+            # Windows와 Unix 모두 '/' 또는 '\' 구분자 처리
+            filename = os.path.basename(rel_path.replace('\\', '/'))
             if not filename:
                 continue
 
@@ -697,6 +698,11 @@ if __name__ == "__main__":
 
     builder_json_path = sys.argv[1]
     output_dir = sys.argv[2] if len(sys.argv) > 2 else None
+
+    # Windows 경로 처리: 백슬래시를 정규화
+    builder_json_path = os.path.normpath(builder_json_path)
+    if output_dir:
+        output_dir = os.path.normpath(output_dir)
 
     if not os.path.exists(builder_json_path):
         print(f"❌ 파일을 찾을 수 없습니다: {builder_json_path}")
