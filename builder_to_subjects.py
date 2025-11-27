@@ -359,6 +359,58 @@ def create_lecture_page(lesson, course_code=None, year=None):
     }
 
 
+def create_practice_page(lesson, course_code=None, year=None):
+    """실습하기 페이지 생성
+    
+    Args:
+        lesson: 차시 데이터
+        course_code: 과목 코드 (자동 생성용)
+        year: 연도 (자동 생성용)
+    """
+    # 실습 강의 영상 URL 자동 생성
+    practice_video_url = lesson.get("practiceVideoUrl", "")
+    if not practice_video_url:
+        # 강의 영상 URL에서 _P.mp4로 변환
+        lecture_video_url = lesson.get("lectureVideoUrl", "")
+        if lecture_video_url:
+            practice_video_url = lecture_video_url.replace('.mp4', '_P.mp4')
+        elif course_code and year:
+            lesson_num_str = f"{lesson['lessonNumber']:02d}"
+            practice_video_url = f"https://cdn-it.livestudy.com/mov/{year}/{course_code}/{course_code}_{lesson_num_str}_P.mp4"
+    
+    # 실습 자막 파일 경로 자동 생성
+    practice_subtitle = lesson.get("practiceSubtitle", "")
+    if not practice_subtitle:
+        # 자막 경로에서 _P.vtt로 변환
+        lecture_subtitle = lesson.get("lectureSubtitle", "")
+        if lecture_subtitle:
+            practice_subtitle = lecture_subtitle.replace('.vtt', '_P.vtt')
+        elif course_code:
+            lesson_num_str = f"{lesson['lessonNumber']:02d}"
+            practice_subtitle = f"../subtitles/{course_code}_{lesson_num_str}_P.vtt"
+    
+    # 실습 타임스탬프 (기본값은 빈 배열, 필요시 추가 가능)
+    practice_timestamps = []
+    # 실습 타임스탬프가 별도로 있으면 사용, 없으면 빈 배열
+    
+    return {
+        "path": "/practice",
+        "section": 2,
+        "title": "실습하기",
+        "description": "실습영상을 따라 하며 다양한 기능을 익혀보세요.",
+        "script": "실습영상을 따라 하며 다양한 기능을 익혀보세요. ",
+        "component": "practice",
+        "media": practice_video_url,
+        "caption": [{
+            "src": practice_subtitle,
+            "lable": "한국어",
+            "language": "ko",
+            "kind": "subtitles"
+        }],
+        "data": practice_timestamps
+    }
+
+
 def create_check_page(lesson, images_dir=None, course_code=None, image_counter=None):
     """점검하기 페이지 생성"""
     professor_think = lesson.get("professorThink", "")
@@ -735,6 +787,10 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
 
         # 6. 강의보기
         pages.append(create_lecture_page(lesson, course_code, year))
+
+        # 6-1. 실습하기 (실습있음 체크 시)
+        if lesson.get("hasPractice", False):
+            pages.append(create_practice_page(lesson, course_code, year))
 
         # 7. 점검하기
         pages.append(create_check_page(lesson, images_dir, course_code, image_counter))
