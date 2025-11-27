@@ -4,6 +4,7 @@ import ProfessorSection from './components/Professor/ProfessorSection';
 import PreparationSection from './components/Preparation/PreparationSection';
 import LearningSection from './components/Learning/LearningSection';
 import SummarySection from './components/Summary/SummarySectionNew';
+import StartModal from './components/StartModal/StartModal';
 import { convertDataJsonToBuilderFormat, parseSubjectsJson, parseProfessorInfo, markRelativeImages } from './utils/folderParser';
 import './App.css';
 
@@ -25,6 +26,9 @@ function App() {
 
   // 오른쪽 사이드바 접기/펼치기
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+
+  // 시작하기 모달
+  const [showStartModal, setShowStartModal] = useState(false);
 
   // 새 차시 추가
   const addLesson = () => {
@@ -71,6 +75,36 @@ function App() {
         i === index ? updatedLesson : lesson
       )
     }));
+  };
+
+  // 주차 번호 업데이트 (인라인 편집용)
+  const updateLessonWeek = (index, weekNumber) => {
+    const weekNum = parseInt(weekNumber) || 1;
+    const lesson = courseData.lessons[index];
+    updateLesson(index, { ...lesson, weekNumber: weekNum });
+  };
+
+  // 차시 제목 업데이트 (인라인 편집용)
+  const updateLessonTitle = (index, title) => {
+    const lesson = courseData.lessons[index];
+    updateLesson(index, { ...lesson, lessonTitle: title });
+  };
+
+  // 모달에서 차시 생성
+  const createLessonsFromModal = (lessonStructure) => {
+    const newLessons = lessonStructure.map((structure, index) => {
+      const newLesson = createBuilderLessonData();
+      newLesson.weekNumber = structure.weekNumber;
+      newLesson.lessonNumber = index + 1;
+      newLesson.lessonTitle = structure.title;
+      return newLesson;
+    });
+
+    setCourseData(prev => ({
+      ...prev,
+      lessons: newLessons
+    }));
+    setCurrentLessonIndex(0);
   };
 
   // 과목 정보 업데이트
@@ -335,6 +369,14 @@ function App() {
 
   return (
     <div className="app">
+      {/* 시작하기 모달 */}
+      {showStartModal && (
+        <StartModal
+          onClose={() => setShowStartModal(false)}
+          onCreate={createLessonsFromModal}
+        />
+      )}
+
       {/* 헤더 */}
       <header className="header">
         <div className="header-left">
@@ -370,7 +412,11 @@ function App() {
           <div className="lessons-list">
             <div className="lessons-header">
               <h3>차시 목록</h3>
-              <button className="btn-add" onClick={addLesson}>
+              <button
+                className="btn-add"
+                onClick={addLesson}
+                disabled={courseData.lessons.length === 0}
+              >
                 + 새 차시
               </button>
             </div>
@@ -385,10 +431,26 @@ function App() {
                     className={`lesson-tab ${currentLessonIndex === index ? 'active' : ''}`}
                     onClick={() => setCurrentLessonIndex(index)}
                   >
-                    <span className="lesson-number">{lesson.lessonNumber}차시</span>
-                    <span className="lesson-title">
-                      {lesson.lessonTitle || '제목 없음'}
-                    </span>
+                    <div className="lesson-info">
+                      <span className="lesson-number">{lesson.lessonNumber}차시</span>
+                      <input
+                        type="number"
+                        className="week-input-inline"
+                        value={lesson.weekNumber}
+                        onChange={(e) => updateLessonWeek(index, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        min="1"
+                      />
+                      <span className="week-label-inline">주</span>
+                      <input
+                        type="text"
+                        className="title-input-inline"
+                        placeholder="제목 입력"
+                        value={lesson.lessonTitle}
+                        onChange={(e) => updateLessonTitle(index, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
                     <button
                       className="btn-delete"
                       onClick={(e) => {
@@ -411,7 +473,10 @@ function App() {
           {courseData.lessons.length === 0 ? (
             <div className="welcome-screen">
               <h2>Content Builder에 오신 것을 환영합니다! 👋</h2>
-              <p>왼쪽 사이드바에서 "새 차시"를 클릭하여 시작하세요.</p>
+              <p>차시 구조를 먼저 만들어 시작하세요.</p>
+              <button className="btn-start-center" onClick={() => setShowStartModal(true)}>
+                시작하기
+              </button>
             </div>
           ) : currentLesson ? (
             <div className="lesson-editor">
@@ -500,6 +565,7 @@ function App() {
                     placeholder="예: 25itinse"
                     value={courseData.courseCode}
                     onChange={(e) => updateCourseInfo('courseCode', e.target.value)}
+                    disabled={courseData.lessons.length === 0}
                   />
                 </div>
                 <div className="form-group">
@@ -509,6 +575,7 @@ function App() {
                     placeholder="예: 인터넷보안"
                     value={courseData.courseName}
                     onChange={(e) => updateCourseInfo('courseName', e.target.value)}
+                    disabled={courseData.lessons.length === 0}
                   />
                 </div>
               </div>
@@ -519,6 +586,7 @@ function App() {
                 <ProfessorSection
                   professor={courseData.professor}
                   onUpdate={(updated) => setCourseData(prev => ({ ...prev, professor: updated }))}
+                  disabled={courseData.lessons.length === 0}
                 />
               </div>
             </div>

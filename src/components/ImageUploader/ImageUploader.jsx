@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import './ImageUploader.css';
 
-function ImageUploader({ onImageInsert }) {
+function ImageUploader({ onImageInsert, disabled = false }) {
   const [preview, setPreview] = useState(null);
   const [imageName, setImageName] = useState('');
   const fileInputRef = useRef(null);
@@ -57,7 +57,7 @@ function ImageUploader({ onImageInsert }) {
   return (
     <div className="image-uploader">
       <div className="uploader-controls">
-        <label className="btn-upload">
+        <label className={`btn-upload ${disabled ? 'disabled' : ''}`}>
           📷 이미지 선택
           <input
             ref={fileInputRef}
@@ -65,10 +65,11 @@ function ImageUploader({ onImageInsert }) {
             accept="image/*"
             onChange={handleFileSelect}
             style={{ display: 'none' }}
+            disabled={disabled}
           />
         </label>
 
-        {preview && (
+        {preview && !disabled && (
           <>
             <button className="btn-insert" onClick={insertImage}>
               ✅ 삽입

@@ -247,12 +247,14 @@ body {
   background: var(--background);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 14px 18px;
+  padding: 12px 14px;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   position: relative;
 }
 
@@ -270,23 +272,13 @@ body {
 .lesson-tab .lesson-number {
   font-size: 13px;
   font-weight: 600;
-}
-
-.lesson-tab .lesson-title {
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.lesson-tab.active .lesson-title {
-  color: rgba(255, 255, 255, 0.8);
+  flex-shrink: 0;
 }
 
 .btn-delete {
-  position: absolute;
-  top: 8px;
-  right: 8px;
   background: transparent;
   border: none;
+  flex-shrink: 0;
   color: var(--text-tertiary);
   font-size: 20px;
   cursor: pointer;
@@ -530,4 +522,123 @@ button:disabled {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-tertiary);
+}
+
+/* 중앙 시작하기 버튼 */
+.btn-start-center {
+  margin-top: 32px;
+  padding: 14px 32px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.btn-start-center:hover {
+  background: var(--primary-hover);
+  box-shadow: var(--shadow-md);
+}
+
+/* 비활성화 버튼 스타일 */
+.btn-secondary.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* 차시 정보 레이아웃 */
+.lesson-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+/* 인라인 편집 input 스타일 */
+.week-input-inline {
+  width: 40px;
+  padding: 4px 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.week-input-inline:hover {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: var(--border);
+}
+
+.week-input-inline:focus {
+  outline: none;
+  background: white;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.1);
+}
+
+.week-label-inline {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+
+.title-input-inline {
+  flex: 1;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.title-input-inline::placeholder {
+  color: var(--text-tertiary);
+}
+
+.title-input-inline:hover {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: var(--border);
+}
+
+.title-input-inline:focus {
+  outline: none;
+  background: white;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.1);
+}
+
+/* active 상태의 인라인 편집 스타일 */
+.lesson-tab.active .week-input-inline,
+.lesson-tab.active .title-input-inline {
+  color: white;
+}
+
+.lesson-tab.active .week-label-inline {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.lesson-tab.active .week-input-inline:hover,
+.lesson-tab.active .title-input-inline:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.lesson-tab.active .week-input-inline:focus,
+.lesson-tab.active .title-input-inline:focus {
+  background: white;
+  color: var(--text-primary);
+  border-color: white;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
 }

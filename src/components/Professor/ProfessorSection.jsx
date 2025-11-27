@@ -2,7 +2,7 @@ import { useState } from 'react';
 import './ProfessorSection.css';
 import ImageUploader from '../ImageUploader/ImageUploader';
 
-function ProfessorSection({ professor, onUpdate }) {
+function ProfessorSection({ professor, onUpdate, disabled = false }) {
   const addEducation = () => {
     onUpdate({
       ...professor,
@@ -109,6 +109,7 @@ function ProfessorSection({ professor, onUpdate }) {
           placeholder="예: 곽후근"
           value={professor.name}
           onChange={(e) => onUpdate({ ...professor, name: e.target.value })}
+          disabled={disabled}
         />
       </div>
 
@@ -118,6 +119,7 @@ function ProfessorSection({ professor, onUpdate }) {
           onImageInsert={(imageHtml) => {
             onUpdate({ ...professor, photo: imageHtml });
           }}
+          disabled={disabled}
         />
         {professor.photo && (
           <div className="current-image-preview">
@@ -131,7 +133,7 @@ function ProfessorSection({ professor, onUpdate }) {
       <div className="dynamic-list">
         <div className="list-header">
           <label>학력</label>
-          <button className="btn-add-small" onClick={addEducation}>
+          <button className="btn-add-small" onClick={addEducation} disabled={disabled}>
             + 추가
           </button>
         </div>
@@ -142,10 +144,12 @@ function ProfessorSection({ professor, onUpdate }) {
               placeholder="예: 호서대학교 전자공학 학사"
               value={edu}
               onChange={(e) => updateEducation(index, e.target.value)}
+              disabled={disabled}
             />
             <button
               className="btn-remove-small"
               onClick={() => removeEducation(index)}
+              disabled={disabled}
             >
               ×
             </button>
@@ -157,7 +161,7 @@ function ProfessorSection({ professor, onUpdate }) {
       <div className="dynamic-list">
         <div className="list-header">
           <label>경력</label>
-          <button className="btn-add-small" onClick={addCareer}>
+          <button className="btn-add-small" onClick={addCareer} disabled={disabled}>
             + 추가
           </button>
         </div>
@@ -172,6 +176,7 @@ function ProfessorSection({ professor, onUpdate }) {
                     type="date"
                     value={car.startDate || dates.startDate || ''}
                     onChange={(e) => updateCareer(index, 'startDate', e.target.value)}
+                    disabled={disabled}
                   />
                 </div>
                 <div className="form-group">
@@ -180,6 +185,7 @@ function ProfessorSection({ professor, onUpdate }) {
                     type="date"
                     value={car.endDate || dates.endDate || ''}
                     onChange={(e) => updateCareer(index, 'endDate', e.target.value)}
+                    disabled={disabled}
                   />
                 </div>
                 <div className="form-group">
@@ -189,12 +195,14 @@ function ProfessorSection({ professor, onUpdate }) {
                     placeholder="예: 펌킨네트웍스 기술본부 이사"
                     value={car.description || ''}
                     onChange={(e) => updateCareer(index, 'description', e.target.value)}
+                    disabled={disabled}
                   />
                 </div>
               </div>
               <button
                 className="btn-remove-small"
                 onClick={() => removeCareer(index)}
+                disabled={disabled}
               >
                 ×
               </button>
