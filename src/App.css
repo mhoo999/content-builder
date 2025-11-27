@@ -251,9 +251,7 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 8px;
   position: relative;
 }
@@ -276,9 +274,11 @@ body {
 }
 
 .btn-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
   background: transparent;
   border: none;
-  flex-shrink: 0;
   color: var(--text-tertiary);
   font-size: 20px;
   cursor: pointer;
@@ -554,9 +554,15 @@ button:disabled {
 /* 차시 정보 레이아웃 */
 .lesson-info {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
   flex: 1;
+}
+
+.lesson-info-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* 인라인 편집 input 스타일 */
