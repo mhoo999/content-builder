@@ -15,11 +15,18 @@ function StartModal({ onClose, onCreate }) {
       return;
     }
 
-    // 강의 개수만큼 생성 (2개 강의당 1주차)
-    const lessons = Array.from({ length: lessonCount }, (_, index) => ({
-      weekNumber: Math.ceil((index + 1) / 2),
-      title: ''
-    }));
+    // 강의 개수만큼 생성 (2개 강의당 1주차, 8주는 중간고사로 건너뜀)
+    const lessons = Array.from({ length: lessonCount }, (_, index) => {
+      let weekNumber = Math.ceil((index + 1) / 2);
+      // 7주 이후는 8주를 건너뛰고 9주부터 시작
+      if (weekNumber >= 8) {
+        weekNumber += 1;
+      }
+      return {
+        weekNumber,
+        title: ''
+      };
+    });
 
     onCreate(lessons);
     onClose();
@@ -36,7 +43,7 @@ function StartModal({ onClose, onCreate }) {
         <div className="start-modal-body">
           <p className="modal-description">
             몇 개의 강의를 만들까요?<br />
-            <small>2개 강의당 1주차로 자동 생성됩니다.</small>
+            <small>2개 강의당 1주차로 자동 생성됩니다. (8주는 중간고사로 건너뜀)</small>
           </p>
 
           <div className="count-input-wrapper">

@@ -33,7 +33,12 @@ function App() {
   // 새 차시 추가
   const addLesson = () => {
     const newLesson = createBuilderLessonData();
-    newLesson.weekNumber = Math.ceil((courseData.lessons.length + 1) / 2);
+    let weekNumber = Math.ceil((courseData.lessons.length + 1) / 2);
+    // 7주 이후는 8주를 건너뛰고 9주부터 시작
+    if (weekNumber >= 8) {
+      weekNumber += 1;
+    }
+    newLesson.weekNumber = weekNumber;
     newLesson.lessonNumber = courseData.lessons.length + 1;
 
     // 이전 차시의 다운로드 URL 복사
