@@ -107,13 +107,14 @@ def extract_and_save_images(html_content, images_dir, course_code, image_counter
     return result
 
 
-def create_intro_page(professor, images_dir=None, course_code=None, image_counter=None):
-    """인트로 페이지 생성"""
-    photo = professor.get("photo", "")
+def create_intro_page(professor, processed_photo=None):
+    """인트로 페이지 생성
     
-    # 교수 사진 이미지 추출 및 저장
-    if images_dir and course_code and image_counter and photo:
-        photo = extract_and_save_images(photo, images_dir, course_code, image_counter)
+    Args:
+        professor: 교수 정보 딕셔너리
+        processed_photo: 이미 처리된 교수 사진 경로 (None이면 professor.photo 사용)
+    """
+    photo = processed_photo if processed_photo is not None else professor.get("photo", "")
     
     # 경력 변환: [{ period: '', description: '' }] → ['<b>period</b><br />description']
     career_content = []
@@ -595,6 +596,22 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     # 이미지 카운터 (전체 과정에서 공유)
     image_counter = {'count': 0}
 
+    # 교수 사진 미리 처리 (한 번만 처리하여 모든 차시에서 재사용)
+    professor_photo = professor.get("photo", "")
+    processed_professor_photo = professor_photo
+    if professor_photo:
+        # base64 이미지인 경우에만 처리
+        if professor_photo.startswith("data:image/"):
+            processed_professor_photo = extract_and_save_images(
+                professor_photo, images_dir, course_code, image_counter
+            )
+        # 이미 상대경로인 경우 그대로 사용
+        elif professor_photo.startswith("../images/"):
+            processed_professor_photo = professor_photo
+        # 절대경로나 URL인 경우 그대로 사용
+        else:
+            processed_professor_photo = professor_photo
+
     # 각 차시별 data.json 생성
     for lesson in course_data["lessons"]:
         lesson_num = f"{lesson['lessonNumber']:02d}"
@@ -604,8 +621,8 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         # 페이지 생성
         pages = []
 
-        # 1. 인트로
-        pages.append(create_intro_page(professor, images_dir, course_code, image_counter))
+        # 1. 인트로 (처리된 교수 사진 경로 사용)
+        pages.append(create_intro_page(professor, processed_professor_photo))
 
         # 2. 오리엔테이션 (1주1차시만)
         if lesson["hasOrientation"]:
