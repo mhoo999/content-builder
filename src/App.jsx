@@ -112,7 +112,7 @@ function App() {
   };
 
   // 모달에서 차시 생성
-  const createLessonsFromModal = (lessonStructure) => {
+  const createLessonsFromModal = (lessonStructure, courseCode, courseName) => {
     const newLessons = lessonStructure.map((structure, index) => {
       const newLesson = createBuilderLessonData();
       newLesson.weekNumber = structure.weekNumber;
@@ -123,6 +123,8 @@ function App() {
 
     setCourseData(prev => ({
       ...prev,
+      courseCode: courseCode || prev.courseCode,
+      courseName: courseName || prev.courseName,
       lessons: newLessons
     }));
     setCurrentLessonIndex(0);
@@ -571,23 +573,15 @@ function App() {
                 <h3>과목 정보</h3>
                 <div className="form-group">
                   <label>과목 코드</label>
-                  <input
-                    type="text"
-                    placeholder="예: 25itinse"
-                    value={courseData.courseCode}
-                    onChange={(e) => updateCourseInfo('courseCode', e.target.value)}
-                    disabled={courseData.lessons.length === 0}
-                  />
+                  <div className="readonly-input">
+                    {courseData.courseCode || <span className="empty-value">-</span>}
+                  </div>
                 </div>
                 <div className="form-group">
                   <label>과정명</label>
-                  <input
-                    type="text"
-                    placeholder="예: 인터넷보안"
-                    value={courseData.courseName}
-                    onChange={(e) => updateCourseInfo('courseName', e.target.value)}
-                    disabled={courseData.lessons.length === 0}
-                  />
+                  <div className="readonly-input">
+                    {courseData.courseName || <span className="empty-value">-</span>}
+                  </div>
                 </div>
               </div>
 
