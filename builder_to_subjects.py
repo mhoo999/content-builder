@@ -250,19 +250,31 @@ def create_term_page(terms, images_dir=None, course_code=None, image_counter=Non
     for term in terms:
         if term.get("title") or term.get("content"):
             title = term.get("title", "")
-            content = term.get("content", "")
+            content_list = term.get("content", [])
             
             # 제목의 줄바꿈을 <br />로 변환
             if title:
                 title = title.replace('\n', '<br />')
             
-            # 내용 이미지 추출 및 저장 (images_dir가 제공된 경우)
-            if images_dir and course_code and image_counter and content:
-                content = extract_and_save_images(content, images_dir, course_code, image_counter)
+            # content가 배열인 경우 각 항목 앞에 불릿(•) 추가
+            # content가 문자열인 경우 (기존 형식 호환) 배열로 변환
+            if isinstance(content_list, str):
+                content_list = [content_list] if content_list else []
+            
+            # 각 항목을 처리하고 불릿 추가
+            processed_content = []
+            for content_item in content_list:
+                if content_item:
+                    # 이미지 추출 및 저장 (images_dir가 제공된 경우)
+                    processed_item = content_item
+                    if images_dir and course_code and image_counter:
+                        processed_item = extract_and_save_images(content_item, images_dir, course_code, image_counter)
+                    # 불릿 추가
+                    processed_content.append(f"• {processed_item}")
             
             term_data.append({
                 "title": title,
-                "content": [content] if content else []
+                "content": processed_content if processed_content else []
             })
 
     return {

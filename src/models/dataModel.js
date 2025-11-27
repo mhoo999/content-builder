@@ -244,9 +244,9 @@ export const createBuilderLessonData = () => ({
 
   // 용어체크 (3개)
   terms: [
-    { title: "", content: "" },
-    { title: "", content: "" },
-    { title: "", content: "" },
+    { title: "", content: [""] }, // content를 배열로 변경
+    { title: "", content: [""] },
+    { title: "", content: [""] },
   ],
 
   // 학습목표

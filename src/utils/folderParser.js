@@ -55,11 +55,29 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
     let title = term.title || '';
     title = title.replace(/<br\s*\/?>/gi, '\n').trim();
     
+    // content 처리: 배열인 경우 불릿(•) 제거 후 배열로 유지
+    let content = [];
+    if (Array.isArray(term.content)) {
+      content = term.content.map(item => {
+        // 불릿(•) 제거
+        if (typeof item === 'string') {
+          return item.replace(/^•\s*/, '').trim();
+        }
+        return item;
+      }).filter(item => item); // 빈 항목 제거
+    } else if (term.content) {
+      // 문자열인 경우 (기존 형식 호환) 불릿 제거 후 배열로 변환
+      const cleaned = term.content.replace(/^•\s*/, '').trim();
+      content = cleaned ? [cleaned] : [''];
+    } else {
+      content = [''];
+    }
+    
     return {
       title: title,
-      content: Array.isArray(term.content) ? term.content.join('\n') : (term.content || '')
+      content: content.length > 0 ? content : ['']
     };
-  }) || [{ title: '', content: '' }];
+  }) || [{ title: '', content: [''] }];
 
   // 학습목표 파싱
   const objectivesPage = findPageByComponent(pages, 'objectives');

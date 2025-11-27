@@ -1,5 +1,4 @@
 import './PreparationSection.css';
-import RichTextEditor from '../RichTextEditor';
 
 function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
   const isFirstLesson = lessonData.weekNumber === 1 && lessonData.lessonNumber === 1;
@@ -41,6 +40,28 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
   const handleTermChange = (index, field, value) => {
     const newTerms = [...lessonData.terms];
     newTerms[index] = { ...newTerms[index], [field]: value };
+    onUpdate({ ...lessonData, terms: newTerms });
+  };
+
+  const handleTermContentChange = (termIndex, contentIndex, value) => {
+    const newTerms = [...lessonData.terms];
+    const newContent = [...(newTerms[termIndex].content || [])];
+    newContent[contentIndex] = value;
+    newTerms[termIndex] = { ...newTerms[termIndex], content: newContent };
+    onUpdate({ ...lessonData, terms: newTerms });
+  };
+
+  const addTermContent = (termIndex) => {
+    const newTerms = [...lessonData.terms];
+    const newContent = [...(newTerms[termIndex].content || []), ''];
+    newTerms[termIndex] = { ...newTerms[termIndex], content: newContent };
+    onUpdate({ ...lessonData, terms: newTerms });
+  };
+
+  const removeTermContent = (termIndex, contentIndex) => {
+    const newTerms = [...lessonData.terms];
+    const newContent = (newTerms[termIndex].content || []).filter((_, i) => i !== contentIndex);
+    newTerms[termIndex] = { ...newTerms[termIndex], content: newContent };
     onUpdate({ ...lessonData, terms: newTerms });
   };
 
@@ -91,7 +112,7 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
           <button
             className="btn-add-small"
             onClick={() => {
-              const newTerms = [...lessonData.terms, { title: '', content: '' }];
+              const newTerms = [...lessonData.terms, { title: '', content: [''] }];
               onUpdate({ ...lessonData, terms: newTerms });
             }}
           >
@@ -125,12 +146,35 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
               <small className="hint">💡 Enter 키로 줄바꿈 가능</small>
             </div>
             <div className="form-group">
-              <label>내용</label>
-              <RichTextEditor
-                value={term.content}
-                onChange={(value) => handleTermChange(index, 'content', value)}
-                placeholder="예: 암호화하기 전의 메시지"
-              />
+              <div className="list-header">
+                <label>내용</label>
+                <button
+                  className="btn-add-small"
+                  onClick={() => addTermContent(index)}
+                  type="button"
+                >
+                  + 추가
+                </button>
+              </div>
+              {(term.content || ['']).map((contentItem, contentIndex) => (
+                <div key={contentIndex} className="dynamic-item">
+                  <input
+                    type="text"
+                    placeholder={`내용 ${contentIndex + 1}`}
+                    value={contentItem}
+                    onChange={(e) => handleTermContentChange(index, contentIndex, e.target.value)}
+                  />
+                  {(term.content || []).length > 1 && (
+                    <button
+                      className="btn-remove-small"
+                      onClick={() => removeTermContent(index, contentIndex)}
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         ))}
