@@ -4,8 +4,10 @@
 
 .timestamp-inputs {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 10px;
+  align-items: center;
 }
 
 .timestamp-input-wrapper {
@@ -14,8 +16,9 @@
   align-items: center;
 }
 
-.timestamp-input-wrapper input {
-  flex: 1;
+.timestamp-input-wrapper input,
+.timestamp-inputs input {
+  width: 120px;
   padding: 12px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -26,7 +29,8 @@
   color: var(--text-primary);
 }
 
-.timestamp-input-wrapper input:focus {
+.timestamp-input-wrapper input:focus,
+.timestamp-inputs input:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.1);
