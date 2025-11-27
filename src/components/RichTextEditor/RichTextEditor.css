@@ -375,3 +375,216 @@
     flex-wrap: wrap;
   }
 }
+
+/* 수식 스타일 */
+.notion-editor-content .math-inline {
+  display: inline-block;
+  margin: 0 2px;
+  vertical-align: baseline;
+}
+
+.notion-editor-content .math-block {
+  display: block;
+  margin: 1em 0;
+  text-align: center;
+}
+
+.notion-editor-content .math-empty {
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.notion-editor-content .math-error {
+  background: #fee2e2;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #dc2626;
+  font-size: 0.9em;
+}
+
+/* 수식 모달 */
+.math-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.math-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.math-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.math-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #37352f;
+}
+
+.math-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.math-modal-close:hover {
+  background: #f3f4f6;
+}
+
+.math-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.math-modal-body .form-group {
+  margin-bottom: 16px;
+}
+
+.math-modal-body label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #37352f;
+}
+
+.math-formula-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 14px;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.math-formula-input:focus {
+  outline: none;
+  border-color: #2383e2;
+  box-shadow: 0 0 0 3px rgba(35, 131, 226, 0.1);
+}
+
+.math-preview {
+  margin-top: 16px;
+  padding: 12px;
+  background: #f7f8fa;
+  border-radius: 6px;
+  border: 1px solid #e1e4e8;
+}
+
+.math-preview label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.math-preview-content {
+  padding: 12px;
+  background: white;
+  border-radius: 4px;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.math-examples {
+  margin-top: 16px;
+  padding: 12px;
+  background: #f0f7ff;
+  border-radius: 6px;
+  border: 1px solid #b3d9ff;
+}
+
+.math-examples small {
+  font-size: 12px;
+  color: #1e40af;
+  line-height: 1.6;
+}
+
+.math-examples code {
+  background: #dbeafe;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 11px;
+  color: #1e3a8a;
+}
+
+.math-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid #e1e4e8;
+  background: #f7f8fa;
+}
+
+.math-modal-footer button {
+  padding: 8px 16px;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  background: white;
+  color: #37352f;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.math-modal-footer button:hover {
+  background: #f3f4f6;
+}
+
+.math-modal-footer button.primary {
+  background: #2383e2;
+  color: white;
+  border-color: #2383e2;
+}
+
+.math-modal-footer button.primary:hover {
+  background: #1a6bc4;
+  border-color: #1a6bc4;
+}

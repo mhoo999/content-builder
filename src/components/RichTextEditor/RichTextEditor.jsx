@@ -7,7 +7,9 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { Math } from './MathExtension';
+import katex from 'katex';
 import './RichTextEditor.css';
 
 // 커스텀 Image extension - data-original-src 속성 지원
@@ -32,6 +34,9 @@ const CustomImage = Image.extend({
 
 function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세요...' }) {
   const fileInputRef = useRef(null);
+  const [showMathModal, setShowMathModal] = useState(false);
+  const [mathFormula, setMathFormula] = useState('');
+  const [mathDisplay, setMathDisplay] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -58,6 +63,7 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
       TableRow,
       TableHeader,
       TableCell,
+      Math,
     ],
     content: value || '',
     onUpdate: ({ editor }) => {
@@ -147,6 +153,32 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
 
     return () => clearTimeout(timer);
   }, [editor]);
+
+  const handleMathInsert = () => {
+    if (!editor) return;
+    setShowMathModal(true);
+    setMathFormula('');
+    setMathDisplay(false);
+  };
+
+  const handleMathConfirm = () => {
+    if (!editor || !mathFormula.trim()) return;
+    
+    editor.chain().focus().setMath({
+      formula: mathFormula.trim(),
+      display: mathDisplay,
+    }).run();
+    
+    setShowMathModal(false);
+    setMathFormula('');
+    setMathDisplay(false);
+  };
+
+  const handleMathCancel = () => {
+    setShowMathModal(false);
+    setMathFormula('');
+    setMathDisplay(false);
+  };
 
   useEffect(() => {
     return () => {
@@ -282,6 +314,13 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
           >
             ⊞ 표
           </button>
+          <button
+            type="button"
+            onClick={handleMathInsert}
+            title="수식 삽입 (LaTeX)"
+          >
+            ∑ 수식
+          </button>
         </div>
 
         {/* 표 편집 버튼들 (표 안에 있을 때만 표시) */}
@@ -358,10 +397,95 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
 
       {/* 힌트 */}
       <div className="notion-editor-hint">
-        <span>💡 마크다운: # 제목, - 목록, &gt; 인용, ``` 코드 | 이미지 드래그 앤 드롭 · 붙여넣기 가능</span>
+        <span>💡 마크다운: # 제목, - 목록, &gt; 인용, ``` 코드 | 이미지 드래그 앤 드롭 · 붙여넣기 가능 | 수식: ∑ 버튼 클릭</span>
       </div>
+
+      {/* 수식 입력 모달 */}
+      {showMathModal && (
+        <div className="math-modal-overlay" onClick={handleMathCancel}>
+          <div className="math-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="math-modal-header">
+              <h3>LaTeX 수식 입력</h3>
+              <button type="button" onClick={handleMathCancel} className="math-modal-close">
+                ×
+              </button>
+            </div>
+            <div className="math-modal-body">
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={mathDisplay}
+                    onChange={(e) => setMathDisplay(e.target.checked)}
+                  />
+                  블록 수식 (별도 줄에 표시)
+                </label>
+              </div>
+              <div className="form-group">
+                <label>LaTeX 수식</label>
+                <textarea
+                  value={mathFormula}
+                  onChange={(e) => setMathFormula(e.target.value)}
+                  placeholder="예: x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}"
+                  rows={3}
+                  className="math-formula-input"
+                />
+              </div>
+              {mathFormula && (
+                <div className="math-preview">
+                  <label>미리보기:</label>
+                  <div className="math-preview-content">
+                    <MathPreview formula={mathFormula} display={mathDisplay} />
+                  </div>
+                </div>
+              )}
+              <div className="math-examples">
+                <small>
+                  <strong>예시:</strong><br />
+                  인라인: <code>x^2 + y^2 = r^2</code><br />
+                  블록: <code>\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}</code>
+                </small>
+              </div>
+            </div>
+            <div className="math-modal-footer">
+              <button type="button" onClick={handleMathCancel}>
+                취소
+              </button>
+              <button type="button" onClick={handleMathConfirm} className="primary">
+                삽입
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+// 수식 미리보기 컴포넌트
+function MathPreview({ formula, display }) {
+  const [error, setError] = useState(null);
+  const previewRef = useRef(null);
+
+  useEffect(() => {
+    if (!previewRef.current || !formula) return;
+    
+    try {
+      katex.render(formula, previewRef.current, {
+        throwOnError: true,
+        displayMode: display,
+      });
+      setError(null);
+    } catch (e) {
+      setError(e.message);
+    }
+  }, [formula, display]);
+
+  if (error) {
+    return <span className="math-error">오류: {error}</span>;
+  }
+
+  return <span ref={previewRef} />;
 }
 
 export default RichTextEditor;
