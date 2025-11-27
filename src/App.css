@@ -567,7 +567,7 @@ button:disabled {
 
 /* 인라인 편집 input 스타일 */
 .week-input-inline {
-  width: 40px;
+  width: 50px;
   padding: 4px 6px;
   background: transparent;
   border: 1px solid transparent;

@@ -482,53 +482,8 @@ function App() {
             </div>
           ) : currentLesson ? (
             <div className="lesson-editor">
-              <h2>
-                {(() => {
-                  // 같은 주차에 속한 차시들 중에서 현재 차시가 몇 번째인지 계산
-                  const sameWeekLessons = courseData.lessons.filter(
-                    lesson => lesson.weekNumber === currentLesson.weekNumber
-                  ).sort((a, b) => a.lessonNumber - b.lessonNumber);
-                  const weekLessonNumber = sameWeekLessons.findIndex(
-                    lesson => lesson.lessonNumber === currentLesson.lessonNumber
-                  ) + 1;
-                  return `${currentLesson.weekNumber}주 ${weekLessonNumber}차 ${currentLesson.lessonTitle || '제목 없음'}`;
-                })()}
-              </h2>
-              <p className="subtitle">
-                차시명: {currentLesson.lessonTitle || '제목 없음'}
-              </p>
-
-              {/* 기본 정보 */}
-              <div className="form-section">
-                <h3>📝 기본 정보</h3>
-                <div className="form-group">
-                  <label>차시명</label>
-                  <input
-                    type="text"
-                    placeholder="예: 암호학의 기본 개념"
-                    value={currentLesson.lessonTitle}
-                    onChange={(e) => {
-                      const updated = { ...currentLesson, lessonTitle: e.target.value };
-                      updateLesson(currentLessonIndex, updated);
-                    }}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>주차</label>
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="예: 1"
-                    value={currentLesson.weekNumber}
-                    onChange={(e) => {
-                      const weekNum = parseInt(e.target.value, 10) || 1;
-                      const updated = { ...currentLesson, weekNumber: weekNum };
-                      updateLesson(currentLessonIndex, updated);
-                    }}
-                  />
-                  <small className="hint">💡 주차 번호를 입력하세요 (예: 1주, 2주)</small>
-                </div>
-              </div>
+              <h2>{currentLesson.lessonNumber}차시 {currentLesson.weekNumber}주차</h2>
+              <p className="subtitle">{currentLesson.lessonTitle || '제목 없음'}</p>
 
               {/* 준비하기 섹션 */}
               <PreparationSection
