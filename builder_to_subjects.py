@@ -208,8 +208,24 @@ def create_intro_page(professor, processed_photo=None):
     }
 
 
-def create_orientation_page(orientation):
-    """오리엔테이션 페이지 생성"""
+def create_orientation_page(orientation, course_code=None, year=None):
+    """오리엔테이션 페이지 생성
+    
+    Args:
+        orientation: 오리엔테이션 정보 딕셔너리
+        course_code: 과목 코드 (자동 생성용)
+        year: 연도 (자동 생성용)
+    """
+    # videoUrl이 비어있고 course_code와 year가 있으면 자동 생성
+    video_url = orientation.get("videoUrl", "")
+    if not video_url and course_code and year:
+        video_url = f"https://cdn-it.livestudy.com/mov/{year}/{course_code}/{course_code}_ot.mp4"
+    
+    # subtitlePath가 비어있고 course_code가 있으면 자동 생성
+    subtitle_path = orientation.get("subtitlePath", "")
+    if not subtitle_path and course_code:
+        subtitle_path = f"../subtitles/{course_code}_ot.vtt"
+    
     return {
         "path": "/orientation",
         "section": 1,
@@ -217,9 +233,9 @@ def create_orientation_page(orientation):
         "description": "본격적인 학습에 앞서 오리엔테이션을 먼저 들어주세요.",
         "script": "본격적인 학습에 앞서 교수님의 오리엔테이션을 먼저 들어주세요.",
         "component": "orientation",
-        "media": orientation["videoUrl"],
+        "media": video_url,
         "caption": [{
-            "src": orientation["subtitlePath"],
+            "src": subtitle_path,
             "lable": "한국어",
             "language": "ko",
             "kind": "subtitles"
@@ -605,6 +621,7 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
 
     course_code = course_data["courseCode"]
     course_name = course_data["courseName"]
+    year = course_data.get("year", "")
     professor = course_data["professor"]
     # imported_images는 더 이상 사용하지 않음
     # 이미지는 HTML 내용의 base64를 직접 추출하여 파일로 저장함
@@ -682,9 +699,9 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         # 1. 인트로 (처리된 교수 사진 경로 사용)
         pages.append(create_intro_page(professor, processed_professor_photo))
 
-        # 2. 오리엔테이션 (1주1차시만)
+        # 2. 오리엔테이션 (1주1차시만, 자동 활성화)
         if lesson["hasOrientation"]:
-            pages.append(create_orientation_page(lesson["orientation"]))
+            pages.append(create_orientation_page(lesson["orientation"], course_code, year))
 
         # 3. 용어체크
         pages.append(create_term_page(lesson["terms"], images_dir, course_code, image_counter))

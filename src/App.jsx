@@ -13,6 +13,7 @@ function App() {
   const [courseData, setCourseData] = useState(() => ({
     courseCode: '',
     courseName: '',
+    year: '',
     backgroundImage: '',
     professor: createProfessorData(),
     lessons: []
@@ -112,12 +113,21 @@ function App() {
   };
 
   // 모달에서 차시 생성
-  const createLessonsFromModal = (lessonStructure, courseCode, courseName) => {
+  const createLessonsFromModal = (lessonStructure, courseCode, courseName, year) => {
     const newLessons = lessonStructure.map((structure, index) => {
       const newLesson = createBuilderLessonData();
       newLesson.weekNumber = structure.weekNumber;
       newLesson.lessonNumber = index + 1;
       newLesson.lessonTitle = structure.title;
+      
+      // 1강 1주차 1차시인 경우 오리엔테이션 자동 활성화 및 URL 자동 생성
+      if (newLesson.weekNumber === 1 && newLesson.lessonNumber === 1) {
+        newLesson.hasOrientation = true;
+        // 오리엔테이션 URL 자동 생성: https://cdn-it.livestudy.com/mov/{연도}/{코드명}/{코드명}_ot.mp4
+        newLesson.orientation.videoUrl = `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/${courseCode}_ot.mp4`;
+        newLesson.orientation.subtitlePath = `../subtitles/${courseCode}_ot.vtt`;
+      }
+      
       return newLesson;
     });
 
@@ -125,6 +135,7 @@ function App() {
       ...prev,
       courseCode: courseCode || prev.courseCode,
       courseName: courseName || prev.courseName,
+      year: year || prev.year,
       lessons: newLessons
     }));
     setCurrentLessonIndex(0);
@@ -375,6 +386,7 @@ function App() {
       setCourseData({
         courseCode: courseCode,
         courseName: courseName,
+        year: '', // Import 시에는 연도 추출하지 않음 (수동 입력 필요)
         backgroundImage: '',
         professor: professorInfo,
         lessons: lessons
@@ -545,6 +557,8 @@ function App() {
               <PreparationSection
                 lessonData={currentLesson}
                 onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+                courseCode={courseData.courseCode}
+                year={courseData.year}
               />
 
               {/* 학습하기 섹션 */}

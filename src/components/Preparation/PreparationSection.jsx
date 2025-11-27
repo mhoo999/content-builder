@@ -1,12 +1,35 @@
 import './PreparationSection.css';
 import RichTextEditor from '../RichTextEditor';
 
-function PreparationSection({ lessonData, onUpdate }) {
+function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
   const isFirstLesson = lessonData.weekNumber === 1 && lessonData.lessonNumber === 1;
 
-  const handleOrientationToggle = (e) => {
-    onUpdate({ ...lessonData, hasOrientation: e.target.checked });
-  };
+  // 1강 1주차 1차시인 경우 오리엔테이션 자동 활성화 및 URL 자동 생성
+  if (isFirstLesson) {
+    if (!lessonData.hasOrientation) {
+      const autoVideoUrl = courseCode && year ? `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/${courseCode}_ot.mp4` : '';
+      const autoSubtitlePath = courseCode ? `../subtitles/${courseCode}_ot.vtt` : '';
+      onUpdate({ 
+        ...lessonData, 
+        hasOrientation: true,
+        orientation: {
+          videoUrl: autoVideoUrl,
+          subtitlePath: autoSubtitlePath
+        }
+      });
+    } else if (courseCode && year && !lessonData.orientation.videoUrl) {
+      // 이미 활성화되어 있지만 URL이 없는 경우 자동 생성
+      const autoVideoUrl = `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/${courseCode}_ot.mp4`;
+      const autoSubtitlePath = `../subtitles/${courseCode}_ot.vtt`;
+      onUpdate({
+        ...lessonData,
+        orientation: {
+          videoUrl: autoVideoUrl,
+          subtitlePath: autoSubtitlePath
+        }
+      });
+    }
+  }
 
   const handleOrientationChange = (field, value) => {
     onUpdate({
@@ -37,42 +60,27 @@ function PreparationSection({ lessonData, onUpdate }) {
     <div className="form-section">
       <h3>📖 준비하기</h3>
 
-      {/* 오리엔테이션 (1주1차시만) */}
+      {/* 오리엔테이션 (1주1차시만, 자동 활성화) */}
       {isFirstLesson && (
         <div className="subsection">
-          <div className="checkbox-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={lessonData.hasOrientation}
-                onChange={handleOrientationToggle}
-              />
-              <span>오리엔테이션 영상 제공</span>
-            </label>
+          <div className="form-group">
+            <label>오리엔테이션 영상 URL</label>
+            <input
+              type="url"
+              placeholder={courseCode && year ? `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/${courseCode}_ot.mp4` : "https://cdn-it.livestudy.com/mov/{연도}/{코드명}/{코드명}_ot.mp4"}
+              value={lessonData.orientation.videoUrl || (courseCode && year ? `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/${courseCode}_ot.mp4` : '')}
+              onChange={(e) => handleOrientationChange('videoUrl', e.target.value)}
+            />
           </div>
-
-          {lessonData.hasOrientation && (
-            <>
-              <div className="form-group">
-                <label>오리엔테이션 영상 URL</label>
-                <input
-                  type="url"
-                  placeholder="https://cdn-it.livestudy.com/mov/2025/25itinse/25itinse_ot.mp4"
-                  value={lessonData.orientation.videoUrl}
-                  onChange={(e) => handleOrientationChange('videoUrl', e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label>자막 파일 경로</label>
-                <input
-                  type="text"
-                  placeholder="../subtitles/25itinse_ot.vtt"
-                  value={lessonData.orientation.subtitlePath}
-                  onChange={(e) => handleOrientationChange('subtitlePath', e.target.value)}
-                />
-              </div>
-            </>
-          )}
+          <div className="form-group">
+            <label>자막 파일 경로</label>
+            <input
+              type="text"
+              placeholder={courseCode ? `../subtitles/${courseCode}_ot.vtt` : "../subtitles/{코드명}_ot.vtt"}
+              value={lessonData.orientation.subtitlePath || (courseCode ? `../subtitles/${courseCode}_ot.vtt` : '')}
+              onChange={(e) => handleOrientationChange('subtitlePath', e.target.value)}
+            />
+          </div>
         </div>
       )}
 

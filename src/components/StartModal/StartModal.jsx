@@ -5,11 +5,13 @@ function StartModal({ onClose, onCreate }) {
   const [lessonCount, setLessonCount] = useState(26);
   const [courseCode, setCourseCode] = useState('');
   const [courseName, setCourseName] = useState('');
+  const [year, setYear] = useState(new Date().getFullYear().toString());
 
   // 필수 입력 검증
   const isFormValid = () => {
     return courseCode.trim() !== '' && 
            courseName.trim() !== '' && 
+           year.trim() !== '' &&
            lessonCount >= 1 && 
            lessonCount <= 100;
   };
@@ -33,7 +35,7 @@ function StartModal({ onClose, onCreate }) {
       };
     });
 
-    onCreate(lessons, courseCode.trim(), courseName.trim());
+    onCreate(lessons, courseCode.trim(), courseName.trim(), year.trim());
     onClose();
   };
 
@@ -66,6 +68,16 @@ function StartModal({ onClose, onCreate }) {
                 placeholder="예: 인터넷보안"
                 value={courseName}
                 onChange={(e) => setCourseName(e.target.value)}
+              />
+            </div>
+            <div className="form-group-modal">
+              <label>연도 <span className="required">*</span></label>
+              <input
+                type="text"
+                className="course-input"
+                placeholder="예: 2025"
+                value={year}
+                onChange={(e) => setYear(e.target.value.replace(/\D/g, ''))}
               />
             </div>
           </div>
