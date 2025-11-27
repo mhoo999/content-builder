@@ -5,9 +5,11 @@
 .timestamp-inputs {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
 }
 
 .timestamp-input-wrapper {

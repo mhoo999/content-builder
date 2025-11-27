@@ -160,15 +160,13 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
                   onBlur={() => handleTimestampBlur("timestamps", index)}
                   pattern="[0-9]:[0-9]{2}:[0-9]{2}"
                 />
-                {(lessonData.timestamps || []).length > 2 && (
-                  <button
-                    className="btn-remove-inline"
-                    onClick={() => removeTimestamp("timestamps", index)}
-                    type="button"
-                  >
-                    ×
-                  </button>
-                )}
+                <button
+                  className="btn-remove-inline"
+                  onClick={() => removeTimestamp("timestamps", index)}
+                  type="button"
+                >
+                  ×
+                </button>
               </div>
             ))}
           </div>
@@ -239,15 +237,13 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
                       onBlur={() => handleTimestampBlur("practiceTimestamps", index)}
                       pattern="[0-9]:[0-9]{2}:[0-9]{2}"
                     />
-                    {(lessonData.practiceTimestamps || []).length > 2 && (
-                      <button
-                        className="btn-remove-inline"
-                        onClick={() => removeTimestamp("practiceTimestamps", index)}
-                        type="button"
-                      >
-                        ×
-                      </button>
-                    )}
+                    <button
+                      className="btn-remove-inline"
+                      onClick={() => removeTimestamp("practiceTimestamps", index)}
+                      type="button"
+                    >
+                      ×
+                    </button>
                   </div>
                 ))}
               </div>
