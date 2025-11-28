@@ -205,17 +205,34 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
 
 /**
  * subjects.json 파일 파싱하여 주차별 차시 정보 추출
+ * subjects.json 구조: { "subjects": [{ "title": "...", "lists": ["<span>1차</span> 제목", ...] }] }
  */
 export const parseSubjectsJson = (subjectsJson) => {
-  const weeks = subjectsJson.weeks || [];
   const lessonTitles = {};
   let lessonCounter = 1;
 
-  weeks.forEach(week => {
-    const weekLessons = week.lessons || [];
-    weekLessons.forEach(lessonTitle => {
-      lessonTitles[lessonCounter] = lessonTitle;
-      lessonCounter++;
+  // subjects 배열 파싱
+  const subjects = subjectsJson.subjects || [];
+  
+  subjects.forEach(subject => {
+    const lists = subject.lists || [];
+    
+    lists.forEach(listItem => {
+      // HTML 태그 제거: "<span>1차</span> 제목" -> "제목"
+      // 또는 단순 문자열인 경우 그대로 사용
+      let title = listItem;
+      
+      if (typeof listItem === 'string') {
+        // <span>...</span> 태그 제거
+        title = listItem.replace(/<span[^>]*>.*?<\/span>\s*/g, '').trim();
+        // 다른 HTML 태그도 제거
+        title = title.replace(/<[^>]+>/g, '').trim();
+      }
+      
+      if (title) {
+        lessonTitles[lessonCounter] = title;
+        lessonCounter++;
+      }
     });
   });
 
