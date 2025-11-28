@@ -229,6 +229,28 @@
   list-style-type: decimal;
 }
 
+/* 체크리스트 */
+.notion-editor-content .task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.notion-editor-content .task-item {
+  display: flex;
+  align-items: flex-start;
+  margin: 0.25em 0;
+}
+
+.notion-editor-content .task-item input[type="checkbox"] {
+  margin-right: 0.5em;
+  margin-top: 0.2em;
+  cursor: pointer;
+}
+
+.notion-editor-content .task-item > div {
+  flex: 1;
+}
+
 /* 인용 */
 .notion-editor-content blockquote {
   border-left: 3px solid #2383e2;

@@ -1,12 +1,13 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Underline } from '@tiptap/extension-underline';
 import { Image } from '@tiptap/extension-image';
 import { Placeholder } from '@tiptap/extension-placeholder';
 import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
+import { TaskList } from '@tiptap/extension-task-list';
+import { TaskItem } from '@tiptap/extension-task-item';
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { Math } from './MathExtension';
 import katex from 'katex';
@@ -46,11 +47,21 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
     extensions: [
       StarterKit.configure({
         heading: {
-          levels: [1, 2, 3],
+          levels: [1, 3], // H1, H3만 사용
         },
-        underline: false, // Underline extension을 별도로 추가하므로 비활성화
+        bold: false, // 제거
+        italic: false, // 제거
+        strike: false, // 제거
+        code: false, // 제거
+        codeBlock: false, // 제거
+        blockquote: false, // 제거
+        orderedList: false, // 제거
+        horizontalRule: false, // 제거
+        hardBreak: false, // 제거
+        history: true, // 유지 (실행 취소/다시 실행)
+        dropcursor: true, // 유지 (드래그 앤 드롭)
+        gapcursor: true, // 유지 (커서)
       }),
-      Underline,
       CustomImage.configure({
         inline: false,
         allowBase64: true,
@@ -68,6 +79,14 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
       TableRow,
       TableHeader,
       TableCell,
+      TaskList.configure({
+        HTMLAttributes: {
+          class: 'task-list',
+        },
+      }),
+      TaskItem.configure({
+        nested: true,
+      }),
       Math,
     ],
     content: value || '',
@@ -269,56 +288,11 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
           </button>
           <button
             type="button"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
-            title="제목 2 (## + space)"
-          >
-            H2
-          </button>
-          <button
-            type="button"
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
             title="제목 3 (### + space)"
           >
             H3
-          </button>
-        </div>
-
-        <span className="toolbar-divider" />
-
-        <div className="toolbar-group">
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            className={editor.isActive('bold') ? 'is-active' : ''}
-            title="굵게 (Ctrl+B)"
-          >
-            <strong>B</strong>
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={editor.isActive('italic') ? 'is-active' : ''}
-            title="기울임 (Ctrl+I)"
-          >
-            <em>I</em>
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-            className={editor.isActive('underline') ? 'is-active' : ''}
-            title="밑줄 (Ctrl+U)"
-          >
-            <u>U</u>
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-            className={editor.isActive('strike') ? 'is-active' : ''}
-            title="취소선"
-          >
-            <s>S</s>
           </button>
         </div>
 
@@ -335,27 +309,11 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
           </button>
           <button
             type="button"
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={editor.isActive('orderedList') ? 'is-active' : ''}
-            title="번호 매기기 목록 (1. + space)"
+            onClick={() => editor.chain().focus().toggleTaskList().run()}
+            className={editor.isActive('taskList') ? 'is-active' : ''}
+            title="체크리스트"
           >
-            1.
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className={editor.isActive('blockquote') ? 'is-active' : ''}
-            title="인용 (&gt; + space)"
-          >
-            "
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-            className={editor.isActive('codeBlock') ? 'is-active' : ''}
-            title="코드 블록 (``` + enter)"
-          >
-            {'</>'}
+            ✓
           </button>
         </div>
 
@@ -459,7 +417,7 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
 
       {/* 힌트 */}
       <div className="notion-editor-hint">
-        <span>💡 마크다운: # 제목, - 목록, &gt; 인용, ``` 코드 | 이미지 드래그 앤 드롭 · 붙여넣기 가능 | 수식: ∑ 버튼 클릭</span>
+        <span>💡 마크다운: # H1, ### H3, - 블릿 | 이미지 드래그 앤 드롭 · 붙여넣기 가능 | 수식: ∑ 버튼 클릭</span>
       </div>
 
       {/* 수식 입력 모달 */}
