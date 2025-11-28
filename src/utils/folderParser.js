@@ -7,9 +7,20 @@
 /**
  * HTML 문자열에서 상대경로 이미지에 data-original-src 속성 추가
  * (base64 변환 없이 경로만 표시)
+ * 배열인 경우 각 항목에 대해 처리
  */
 export const markRelativeImages = (html) => {
   if (!html) return html;
+
+  // 배열인 경우 각 항목에 대해 재귀적으로 처리
+  if (Array.isArray(html)) {
+    return html.map(item => markRelativeImages(item));
+  }
+
+  // 문자열이 아닌 경우 그대로 반환
+  if (typeof html !== 'string') {
+    return html;
+  }
 
   // ../images/filename.png 패턴 찾기
   const pattern = /<img\s+([^>]*)src=["'](\.\.\/images\/[^"']+)["']([^>]*)>/gi;
