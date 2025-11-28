@@ -79,6 +79,21 @@ body {
   font-weight: 500;
 }
 
+.save-status.error {
+  color: var(--error);
+}
+
+.storage-warning {
+  font-size: 11px;
+  color: var(--error);
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #fee2e2;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: help;
+}
+
 .btn-home-link {
   padding: 8px 16px;
   background: var(--surface);
