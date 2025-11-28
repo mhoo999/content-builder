@@ -62,6 +62,23 @@ body {
   color: var(--text-primary);
 }
 
+.logo-clickable {
+  cursor: pointer;
+  transition: opacity 0.2s;
+  user-select: none;
+}
+
+.logo-clickable:hover {
+  opacity: 0.7;
+}
+
+.save-status {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-left: 12px;
+  font-weight: 500;
+}
+
 .btn-home-link {
   padding: 8px 16px;
   background: var(--surface);

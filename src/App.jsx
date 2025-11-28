@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createCourseData, createBuilderLessonData, createProfessorData } from './models/dataModel';
 import ProfessorSection from './components/Professor/ProfessorSection';
 import PreparationSection from './components/Preparation/PreparationSection';
@@ -8,16 +8,46 @@ import StartModal from './components/StartModal/StartModal';
 import { convertDataJsonToBuilderFormat, parseSubjectsJson, parseProfessorInfo, markRelativeImages } from './utils/folderParser';
 import './App.css';
 
+const STORAGE_KEY = 'content-builder-autosave';
+
 function App() {
+  // localStorage에서 초기 데이터 로드
+  const loadSavedData = () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // 유효성 검사
+        if (parsed && typeof parsed === 'object') {
+          return {
+            courseCode: parsed.courseCode || '',
+            courseName: parsed.courseName || '',
+            year: parsed.year || '',
+            backgroundImage: parsed.backgroundImage || '',
+            professor: parsed.professor || createProfessorData(),
+            lessons: Array.isArray(parsed.lessons) ? parsed.lessons : []
+          };
+        }
+      }
+    } catch (error) {
+      console.warn('저장된 데이터를 불러오는 중 오류 발생:', error);
+    }
+    return {
+      courseCode: '',
+      courseName: '',
+      year: '',
+      backgroundImage: '',
+      professor: createProfessorData(),
+      lessons: []
+    };
+  };
+
   // 전역 과목 데이터
-  const [courseData, setCourseData] = useState(() => ({
-    courseCode: '',
-    courseName: '',
-    year: '',
-    backgroundImage: '',
-    professor: createProfessorData(),
-    lessons: []
-  }));
+  const [courseData, setCourseData] = useState(loadSavedData);
+  
+  // 저장 상태
+  const [saveStatus, setSaveStatus] = useState('저장됨');
+  const saveTimeoutRef = useRef(null);
 
   // 임포트된 이미지 저장소 (경로 -> base64)
   const [importedImages, setImportedImages] = useState({});
@@ -30,6 +60,75 @@ function App() {
 
   // 시작하기 모달
   const [showStartModal, setShowStartModal] = useState(false);
+
+  // 자동 저장 함수 (debounce 적용)
+  const autoSave = useCallback((data) => {
+    // 이전 타이머 취소
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    setSaveStatus('저장 중...');
+
+    // 1초 후 저장 (debounce)
+    saveTimeoutRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        setSaveStatus('저장됨');
+      } catch (error) {
+        console.error('자동 저장 실패:', error);
+        setSaveStatus('저장 실패');
+      }
+    }, 1000);
+  }, []);
+
+  // courseData 변경 시 자동 저장
+  useEffect(() => {
+    // 초기 로드 시에는 저장하지 않음
+    if (courseData.lessons.length > 0 || courseData.courseCode) {
+      autoSave(courseData);
+    }
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [courseData, autoSave]);
+
+  // 페이지 언로드 시 즉시 저장
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(courseData));
+      } catch (error) {
+        console.error('페이지 종료 시 저장 실패:', error);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [courseData]);
+
+  // 초기화 함수 (로고 클릭 시)
+  const resetToHome = () => {
+    if (window.confirm('작업 내용이 저장되어 있습니다. 정말 처음으로 돌아가시겠습니까?')) {
+      // localStorage는 유지하고 화면만 초기화
+      setCourseData({
+        courseCode: '',
+        courseName: '',
+        year: '',
+        backgroundImage: '',
+        professor: createProfessorData(),
+        lessons: []
+      });
+      setCurrentLessonIndex(0);
+      setShowStartModal(true);
+      setSaveStatus('저장됨');
+    }
+  };
 
   // 새 차시 추가
   const addLesson = () => {
@@ -428,7 +527,14 @@ function App() {
       {/* 헤더 */}
       <header className="header">
         <div className="header-left">
-          <h1>📚 Content Builder</h1>
+          <h1 
+            className="logo-clickable" 
+            onClick={resetToHome}
+            title="처음으로 돌아가기"
+          >
+            📚 Content Builder
+          </h1>
+          <span className="save-status">{saveStatus}</span>
         </div>
         <div className="header-actions">
           <label className="btn-secondary">
