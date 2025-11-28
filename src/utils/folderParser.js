@@ -148,7 +148,7 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   };
   
   // 넘버링 제거 (HTML 태그는 유지하여 에디터로 표시)
-  const learningContents = learningContentsRaw.map(cleanText);
+  let learningContents = learningContentsRaw.map(cleanText);
   const learningObjectives = learningObjectivesRaw.map(cleanText);
 
   // 생각묻기 & 점검하기 파싱
@@ -169,6 +169,16 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   const practiceVideoUrl = practicePage?.media || '';
   const practiceSubtitle = practicePage?.caption?.[0]?.src || '';
   const practiceTimestamps = practicePage?.data?.map(item => item.time || '') || ['0:00:04', '0:00:00'];
+  
+  // 실습있음인데 학습내용에 practice 항목이 없으면 추가
+  if (hasPractice) {
+    const hasPracticeContent = learningContents.some(
+      (content) => typeof content === 'string' && content.includes("class='practice'")
+    );
+    if (!hasPracticeContent) {
+      learningContents.push("<div class='practice'><ul><li></li></ul></div>");
+    }
+  }
 
   // 연습문제 파싱
   const exercisePage = findPageByComponent(pages, 'exercise');

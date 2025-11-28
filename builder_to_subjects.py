@@ -314,10 +314,30 @@ def create_term_page(terms, images_dir=None, course_code=None, image_counter=Non
     }
 
 
+def is_practice_content_empty(content):
+    """실습 항목 내용이 비어있는지 확인"""
+    if not content or not isinstance(content, str):
+        return True
+    # practice 항목인지 확인
+    if "class='practice'" not in content:
+        return False
+    # HTML 태그 제거 후 텍스트만 추출
+    import re
+    text = re.sub(r'<[^>]+>', '', content)
+    text = text.strip()
+    # 비어있거나 공백만 있으면 True
+    return not text or not text.strip()
+    
 def create_objectives_page(contents, objectives):
     """학습목표 페이지 생성"""
+    # 실습 항목 제외하고 학습내용 필터링
+    filtered_contents = []
+    for c in contents:
+        if c and not is_practice_content_empty(c):
+            filtered_contents.append(c)
+    
     # 학습내용과 학습목표에 자동 넘버링 추가
-    numbered_contents = [f"{i+1}. {c}" for i, c in enumerate(contents) if c]
+    numbered_contents = [f"{i+1}. {c}" for i, c in enumerate(filtered_contents) if c]
     numbered_objectives = [f"{i+1}. {o}" for i, o in enumerate(objectives) if o]
     
     return {
@@ -836,9 +856,19 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         # 6. 강의보기
         pages.append(create_lecture_page(lesson, course_code, year))
 
-        # 6-1. 실습하기 (실습있음 체크 시)
+        # 6-1. 실습하기 (실습있음 체크 시, 실습 내용이 있는 경우만)
         if lesson.get("hasPractice", False):
-            pages.append(create_practice_page(lesson, course_code, year))
+            # 학습내용에서 practice 항목 찾기
+            learning_contents = lesson.get("learningContents", [])
+            practice_content = None
+            for content in learning_contents:
+                if isinstance(content, str) and "class='practice'" in content:
+                    practice_content = content
+                    break
+            
+            # practice 항목이 있고 내용이 비어있지 않으면 실습 페이지 생성
+            if practice_content and not is_practice_content_empty(practice_content):
+                pages.append(create_practice_page(lesson, course_code, year))
 
         # 7. 점검하기
         pages.append(create_check_page(lesson, images_dir, course_code, image_counter))
