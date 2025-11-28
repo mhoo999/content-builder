@@ -113,7 +113,7 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
 
       {/* 오리엔테이션 (1주1차시만, 자동 활성화) */}
       {isFirstLesson && (
-        <div className="subsection">
+        <div id="subsection-orientation" className="subsection">
           <div className="form-group">
             <label>오리엔테이션 영상 URL</label>
             <input
@@ -145,7 +145,7 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
       )}
 
       {/* 용어체크 */}
-      <div className="subsection">
+      <div id="subsection-terms" className="subsection">
         <div className="list-header">
           <h4>용어체크</h4>
           <button
@@ -216,75 +216,118 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
       </div>
 
       {/* 학습목표 */}
-      <div className="subsection">
+      <div id="subsection-objectives" className="subsection">
         <h4>학습목표</h4>
 
-        <div className="learning-group">
+        <div id="subsection-contents" className="learning-group">
           <div className="list-header">
             <label className="group-label">학습내용</label>
             <button
               className="btn-add-small"
               onClick={() => {
-                const newContents = [...lessonData.learningContents, ""]
-                onUpdate({ ...lessonData, learningContents: newContents })
+                // 학습내용만 추가 (실습과 완전히 분리)
+                const learningContents = lessonData.learningContents
+                  ? [
+                      ...lessonData.learningContents.filter(
+                        (content) => !(typeof content === "string" && content.includes("class='practice'")),
+                      ),
+                      "",
+                    ]
+                  : [""]
+                onUpdate({ ...lessonData, learningContents: learningContents })
               }}
             >
               + 추가
             </button>
           </div>
-          {lessonData.learningContents.map((content, index) => {
-            const isHtml = isHtmlContent(content)
-            const isPractice = typeof content === "string" && content.includes("class='practice'")
-            const displayLabel = isPractice ? "실습" : `학습내용 ${index + 1}`
-
-            return (
-              <div key={index} className={isHtml ? "dynamic-item-vertical" : "dynamic-item"}>
-                {isHtml && (
-                  <div className="item-header">
-                    <label>{displayLabel}</label>
-                    {!isPractice && lessonData.learningContents.length > 1 && (
-                      <button
-                        className="btn-remove-small"
-                        onClick={() => {
-                          const newContents = lessonData.learningContents.filter((_, i) => i !== index)
-                          onUpdate({ ...lessonData, learningContents: newContents })
-                        }}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                )}
-                {isHtml ? (
-                  <RichTextEditor
-                    value={content}
-                    onChange={(value) => handleLearningContentChange(index, value)}
-                    placeholder={isPractice ? "실습 내용" : `학습내용 ${index + 1}`}
-                  />
-                ) : (
-                  <>
-                    <input
-                      type="text"
-                      placeholder={`학습내용 ${index + 1}`}
-                      value={content}
-                      onChange={(e) => handleLearningContentChange(index, e.target.value)}
-                    />
-                    {lessonData.learningContents.length > 1 && (
-                      <button
-                        className="btn-remove-small"
-                        onClick={() => {
-                          const newContents = lessonData.learningContents.filter((_, i) => i !== index)
-                          onUpdate({ ...lessonData, learningContents: newContents })
-                        }}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
+          {/* 학습내용만 표시 (실습과 완전히 분리) */}
+          {(() => {
+            const nonPracticeContents = (lessonData.learningContents || []).filter(
+              (content) => !(typeof content === "string" && content.includes("class='practice'")),
             )
-          })}
+            return nonPracticeContents.map((content, index) => {
+              const isHtml = isHtmlContent(content)
+              const contentNumber = index + 1
+              // 원본 배열에서의 인덱스 찾기
+              const actualIndex = lessonData.learningContents.findIndex((c) => c === content)
+
+              return (
+                <div
+                  key={`learning-content-${actualIndex}-${index}`}
+                  className={isHtml ? "dynamic-item-vertical" : "dynamic-item"}
+                >
+                  {isHtml && (
+                    <div className="item-header">
+                      <label>학습내용 {contentNumber}</label>
+                      {nonPracticeContents.length > 1 && (
+                        <button
+                          className="btn-remove-small"
+                          onClick={() => {
+                            const newContents = lessonData.learningContents.filter((_, i) => i !== actualIndex)
+                            onUpdate({ ...lessonData, learningContents: newContents })
+                          }}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {isHtml ? (
+                    <RichTextEditor
+                      value={content}
+                      onChange={(value) => handleLearningContentChange(actualIndex, value)}
+                      placeholder={`학습내용 ${contentNumber}`}
+                    />
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        placeholder={`학습내용 ${contentNumber}`}
+                        value={content}
+                        onChange={(e) => handleLearningContentChange(actualIndex, e.target.value)}
+                      />
+                      {nonPracticeContents.length > 1 && (
+                        <button
+                          className="btn-remove-small"
+                          onClick={() => {
+                            const newContents = lessonData.learningContents.filter((_, i) => i !== actualIndex)
+                            onUpdate({ ...lessonData, learningContents: newContents })
+                          }}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )
+            })
+          })()}
+
+          {/* 실습 에디터 별도 표시 (항상 마지막) */}
+          {lessonData.hasPractice && (
+            <div key="practice-editor" className="dynamic-item-vertical">
+              <div className="item-header">
+                <label>실습</label>
+              </div>
+              <RichTextEditor
+                value={
+                  lessonData.practiceContent ||
+                  lessonData.learningContents?.find(
+                    (content) => typeof content === "string" && content.includes("class='practice'"),
+                  ) ||
+                  "<div class='practice'><ul><li></li></ul></div>"
+                }
+                onChange={(value) => {
+                  onUpdate({
+                    ...lessonData,
+                    practiceContent: value,
+                  })
+                }}
+                placeholder="실습 내용"
+              />
+            </div>
+          )}
         </div>
 
         <div className="learning-group">

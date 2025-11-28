@@ -1,37 +1,37 @@
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import { BulletList } from '@tiptap/extension-bullet-list';
-import { Image } from '@tiptap/extension-image';
-import { Placeholder } from '@tiptap/extension-placeholder';
-import { Table } from '@tiptap/extension-table';
-import { TableRow } from '@tiptap/extension-table-row';
-import { TableCell } from '@tiptap/extension-table-cell';
-import { TableHeader } from '@tiptap/extension-table-header';
-import { mergeAttributes } from '@tiptap/core';
-import { useEffect, useRef, useCallback, useState } from 'react';
-import { Math } from './MathExtension';
-import katex from 'katex';
-import './RichTextEditor.css';
+import { useEditor, EditorContent } from "@tiptap/react"
+import StarterKit from "@tiptap/starter-kit"
+import { BulletList } from "@tiptap/extension-bullet-list"
+import { Image } from "@tiptap/extension-image"
+import { Placeholder } from "@tiptap/extension-placeholder"
+import { Table } from "@tiptap/extension-table"
+import { TableRow } from "@tiptap/extension-table-row"
+import { TableCell } from "@tiptap/extension-table-cell"
+import { TableHeader } from "@tiptap/extension-table-header"
+import { mergeAttributes } from "@tiptap/core"
+import { useEffect, useRef, useCallback, useState } from "react"
+import { Math } from "./MathExtension"
+import katex from "katex"
+import "./RichTextEditor.css"
 
 // 커스텀 Image extension - data-original-src 속성 지원
 const CustomImage = Image.extend({
-  name: 'customImage',
+  name: "customImage",
   addAttributes() {
     return {
       ...this.parent?.(),
-      'data-original-src': {
+      "data-original-src": {
         default: null,
-        parseHTML: element => element.getAttribute('data-original-src'),
-        renderHTML: attributes => {
-          if (!attributes['data-original-src']) {
-            return {};
+        parseHTML: (element) => element.getAttribute("data-original-src"),
+        renderHTML: (attributes) => {
+          if (!attributes["data-original-src"]) {
+            return {}
           }
-          return { 'data-original-src': attributes['data-original-src'] };
+          return { "data-original-src": attributes["data-original-src"] }
         },
       },
-    };
+    }
   },
-});
+})
 
 // 커스텀 BulletList extension - class 속성 지원 (체크 표시용)
 const CustomBulletList = BulletList.extend({
@@ -40,17 +40,25 @@ const CustomBulletList = BulletList.extend({
       ...this.parent?.(),
       class: {
         default: null,
-        parseHTML: element => element.getAttribute('class'),
-        renderHTML: attributes => {
+        parseHTML: (element) => {
+          const classAttr = element.getAttribute("class")
+          return classAttr || null
+        },
+        renderHTML: (attributes) => {
           if (!attributes.class) {
-            return {};
+            return {}
           }
-          return { class: attributes.class };
+          // class 속성을 명시적으로 반환
+          return { class: attributes.class }
         },
       },
-    };
+    }
   },
-});
+  // renderHTML을 오버라이드하여 class 속성이 확실히 포함되도록 함
+  renderHTML({ HTMLAttributes }) {
+    return ["ul", { ...HTMLAttributes }, 0]
+  },
+})
 
 // 커스텀 TableCell extension - text-align 속성 지원
 const CustomTableCell = TableCell.extend({
@@ -59,17 +67,17 @@ const CustomTableCell = TableCell.extend({
       ...this.parent?.(),
       style: {
         default: null,
-        parseHTML: element => element.getAttribute('style'),
-        renderHTML: attributes => {
+        parseHTML: (element) => element.getAttribute("style"),
+        renderHTML: (attributes) => {
           if (!attributes.style) {
-            return {};
+            return {}
           }
-          return { style: attributes.style };
+          return { style: attributes.style }
         },
       },
-    };
+    }
   },
-});
+})
 
 // 커스텀 TableHeader extension - text-align 속성 지원
 const CustomTableHeader = TableHeader.extend({
@@ -78,27 +86,27 @@ const CustomTableHeader = TableHeader.extend({
       ...this.parent?.(),
       style: {
         default: null,
-        parseHTML: element => element.getAttribute('style'),
-        renderHTML: attributes => {
+        parseHTML: (element) => element.getAttribute("style"),
+        renderHTML: (attributes) => {
           if (!attributes.style) {
-            return {};
+            return {}
           }
-          return { style: attributes.style };
+          return { style: attributes.style }
         },
       },
-    };
+    }
   },
-});
+})
 
-function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세요...' }) {
-  const fileInputRef = useRef(null);
-  const [showMathModal, setShowMathModal] = useState(false);
-  const [mathFormula, setMathFormula] = useState('');
-  const [mathDisplay, setMathDisplay] = useState(false);
-  
+function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세요..." }) {
+  const fileInputRef = useRef(null)
+  const [showMathModal, setShowMathModal] = useState(false)
+  const [mathFormula, setMathFormula] = useState("")
+  const [mathDisplay, setMathDisplay] = useState(false)
+
   // LaTeX 예시 (백슬래시 이스케이프)
-  const mathExampleInline = 'x^2 + y^2 = r^2';
-  const mathExampleBlock = '\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}';
+  const mathExampleInline = "x^2 + y^2 = r^2"
+  const mathExampleBlock = "\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}"
 
   const editor = useEditor({
     extensions: [
@@ -125,12 +133,12 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
         inline: false,
         allowBase64: true,
         HTMLAttributes: {
-          class: 'notion-image',
+          class: "notion-image",
         },
       }),
       Placeholder.configure({
         placeholder,
-        emptyEditorClass: 'is-editor-empty',
+        emptyEditorClass: "is-editor-empty",
       }),
       Table.configure({
         resizable: true,
@@ -140,188 +148,195 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
       CustomTableCell,
       Math,
     ],
-    content: value || '',
+    content: value || "",
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      onChange(editor.getHTML())
     },
     editorProps: {
       attributes: {
-        class: 'notion-editor-content',
+        class: "notion-editor-content",
       },
       handleDrop: (view, event, slice, moved) => {
         if (!moved && event.dataTransfer?.files?.length) {
-          const file = event.dataTransfer.files[0];
-          if (file.type.startsWith('image/')) {
-            event.preventDefault();
-            handleImageFile(file);
-            return true;
+          const file = event.dataTransfer.files[0]
+          if (file.type.startsWith("image/")) {
+            event.preventDefault()
+            handleImageFile(file)
+            return true
           }
         }
-        return false;
+        return false
       },
       handlePaste: (view, event) => {
-        const items = event.clipboardData?.items;
+        const items = event.clipboardData?.items
         if (items) {
           for (const item of items) {
-            if (item.type.startsWith('image/')) {
-              event.preventDefault();
-              const file = item.getAsFile();
-              if (file) handleImageFile(file);
-              return true;
+            if (item.type.startsWith("image/")) {
+              event.preventDefault()
+              const file = item.getAsFile()
+              if (file) handleImageFile(file)
+              return true
             }
           }
         }
-        return false;
+        return false
       },
     },
-  });
+  })
 
-  const handleImageFile = useCallback((file) => {
-    if (!editor) return;
+  const handleImageFile = useCallback(
+    (file) => {
+      if (!editor) return
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      editor.chain().focus().setImage({ src: e.target.result }).run();
-    };
-    reader.readAsDataURL(file);
-  }, [editor]);
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        editor.chain().focus().setImage({ src: e.target.result }).run()
+      }
+      reader.readAsDataURL(file)
+    },
+    [editor],
+  )
 
   const handleImageUpload = () => {
-    fileInputRef.current?.click();
-  };
+    fileInputRef.current?.click()
+  }
 
   const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      handleImageFile(file);
+    const file = e.target.files?.[0]
+    if (file && file.type.startsWith("image/")) {
+      handleImageFile(file)
     }
-    e.target.value = '';
-  };
+    e.target.value = ""
+  }
 
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value || '');
+      editor.commands.setContent(value || "")
     }
-  }, [value, editor]);
+  }, [value, editor])
 
   // 이미지에 title 속성 추가 (호버 시 경로 표시) - 에디터 마운트 시 1회만 실행
   useEffect(() => {
-    if (!editor) return;
+    if (!editor) return
 
     const addImageTitles = () => {
-      if (!editor.view || editor.isDestroyed) return;
+      if (!editor.view || editor.isDestroyed) return
       try {
-        const images = editor.view.dom.querySelectorAll('img[data-original-src]');
-        images.forEach(img => {
-          const originalSrc = img.getAttribute('data-original-src');
+        const images = editor.view.dom.querySelectorAll("img[data-original-src]")
+        images.forEach((img) => {
+          const originalSrc = img.getAttribute("data-original-src")
           if (originalSrc && !img.title) {
-            img.title = `원본 경로: ${originalSrc}`;
+            img.title = `원본 경로: ${originalSrc}`
           }
-        });
+        })
       } catch (e) {
         // ignore
       }
-    };
+    }
 
     // 초기 로드 시 실행
-    const timer = setTimeout(addImageTitles, 200);
+    const timer = setTimeout(addImageTitles, 200)
 
-    return () => clearTimeout(timer);
-  }, [editor]);
+    return () => clearTimeout(timer)
+  }, [editor])
 
   // 수식 렌더링 (renderHTML에서 렌더링하지 못하므로 클라이언트 측에서 처리)
   useEffect(() => {
-    if (!editor) return;
+    if (!editor) return
 
     const renderMath = () => {
-      if (!editor.view || editor.isDestroyed) return;
+      if (!editor.view || editor.isDestroyed) return
       try {
-        const mathSpans = editor.view.dom.querySelectorAll('span[data-formula]');
-        mathSpans.forEach(span => {
+        const mathSpans = editor.view.dom.querySelectorAll("span[data-formula]")
+        mathSpans.forEach((span) => {
           // 이미 렌더링된 경우 스킵
-          if (span.querySelector('.katex')) return;
-          
-          const formula = span.getAttribute('data-formula');
-          const display = span.hasAttribute('data-display');
-          
+          if (span.querySelector(".katex")) return
+
+          const formula = span.getAttribute("data-formula")
+          const display = span.hasAttribute("data-display")
+
           if (!formula) {
-            span.className = 'math-empty';
-            span.textContent = '수식';
-            return;
+            span.className = "math-empty"
+            span.textContent = "수식"
+            return
           }
 
           try {
             const html = katex.renderToString(formula, {
               throwOnError: false,
               displayMode: display,
-            });
-            span.innerHTML = html;
-            span.className = display ? 'math-block' : 'math-inline';
+            })
+            span.innerHTML = html
+            span.className = display ? "math-block" : "math-inline"
           } catch (error) {
-            span.className = 'math-error';
-            span.textContent = `수식 오류: ${formula}`;
+            span.className = "math-error"
+            span.textContent = `수식 오류: ${formula}`
           }
-        });
+        })
       } catch (e) {
         // ignore
       }
-    };
+    }
 
     // 에디터 업데이트 시 수식 렌더링
     const handleUpdate = () => {
-      setTimeout(renderMath, 0);
-    };
-    
-    editor.on('update', handleUpdate);
-    editor.on('selectionUpdate', handleUpdate);
+      setTimeout(renderMath, 0)
+    }
+
+    editor.on("update", handleUpdate)
+    editor.on("selectionUpdate", handleUpdate)
 
     // 초기 렌더링
-    setTimeout(renderMath, 100);
+    setTimeout(renderMath, 100)
 
     return () => {
       if (editor && !editor.isDestroyed) {
-        editor.off('update', handleUpdate);
-        editor.off('selectionUpdate', handleUpdate);
+        editor.off("update", handleUpdate)
+        editor.off("selectionUpdate", handleUpdate)
       }
-    };
-  }, [editor]);
+    }
+  }, [editor])
 
   const handleMathInsert = () => {
-    if (!editor) return;
-    setShowMathModal(true);
-    setMathFormula('');
-    setMathDisplay(false);
-  };
+    if (!editor) return
+    setShowMathModal(true)
+    setMathFormula("")
+    setMathDisplay(false)
+  }
 
   const handleMathConfirm = () => {
-    if (!editor || !mathFormula.trim()) return;
-    
-    editor.chain().focus().setMath({
-      formula: mathFormula.trim(),
-      display: mathDisplay,
-    }).run();
-    
-    setShowMathModal(false);
-    setMathFormula('');
-    setMathDisplay(false);
-  };
+    if (!editor || !mathFormula.trim()) return
+
+    editor
+      .chain()
+      .focus()
+      .setMath({
+        formula: mathFormula.trim(),
+        display: mathDisplay,
+      })
+      .run()
+
+    setShowMathModal(false)
+    setMathFormula("")
+    setMathDisplay(false)
+  }
 
   const handleMathCancel = () => {
-    setShowMathModal(false);
-    setMathFormula('');
-    setMathDisplay(false);
-  };
+    setShowMathModal(false)
+    setMathFormula("")
+    setMathDisplay(false)
+  }
 
   useEffect(() => {
     return () => {
       if (editor) {
-        editor.destroy();
+        editor.destroy()
       }
-    };
-  }, [editor]);
+    }
+  }, [editor])
 
   if (!editor) {
-    return <div className="notion-editor-loading">로딩 중...</div>;
+    return <div className="notion-editor-loading">로딩 중...</div>
   }
 
   return (
@@ -332,7 +347,7 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
+            className={editor.isActive("heading", { level: 1 }) ? "is-active" : ""}
             title="제목 1 (# + space)"
           >
             H1
@@ -340,7 +355,7 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-            className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
+            className={editor.isActive("heading", { level: 3 }) ? "is-active" : ""}
             title="제목 3 (### + space)"
           >
             H3
@@ -354,50 +369,54 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
             type="button"
             onClick={() => {
               // 일반 블릿 목록 생성/토글
-              const { $from } = editor.state.selection;
-              let listPos = null;
-              let listNode = null;
-              
+              const { $from } = editor.state.selection
+              let listPos = null
+              let listNode = null
+
               // 블릿 목록 노드 찾기
               for (let depth = $from.depth; depth > 0; depth--) {
-                const node = $from.node(depth);
-                if (node.type.name === 'bulletList') {
-                  listNode = node;
-                  listPos = $from.before(depth);
-                  break;
+                const node = $from.node(depth)
+                if (node.type.name === "bulletList") {
+                  listNode = node
+                  listPos = $from.before(depth)
+                  break
                 }
               }
-              
+
               if (listNode && listPos !== null) {
                 // 이미 블릿 목록이 있으면 체크 표시 제거하고 일반 블릿으로
-                const isCheckBullet = listNode.attrs?.class === 'check-bullet';
+                const isCheckBullet = listNode.attrs?.class === "check-bullet"
                 if (isCheckBullet) {
-                  editor.chain().focus().command(({ tr }) => {
-                    const node = tr.doc.nodeAt(listPos);
-                    if (node) {
-                      tr.setNodeMarkup(listPos, null, { ...node.attrs, class: null });
-                    }
-                    return true;
-                  }).run();
+                  editor
+                    .chain()
+                    .focus()
+                    .command(({ tr }) => {
+                      const node = tr.doc.nodeAt(listPos)
+                      if (node) {
+                        tr.setNodeMarkup(listPos, null, { ...node.attrs, class: null })
+                      }
+                      return true
+                    })
+                    .run()
                 } else {
                   // 이미 일반 블릿이면 토글 (제거)
-                  editor.chain().focus().toggleBulletList().run();
+                  editor.chain().focus().toggleBulletList().run()
                 }
               } else {
                 // 블릿 목록 생성
-                editor.chain().focus().toggleBulletList().run();
+                editor.chain().focus().toggleBulletList().run()
               }
             }}
             className={(() => {
-              if (!editor.isActive('bulletList')) return '';
-              const { $from } = editor.state.selection;
+              if (!editor.isActive("bulletList")) return ""
+              const { $from } = editor.state.selection
               for (let depth = $from.depth; depth > 0; depth--) {
-                const node = $from.node(depth);
-                if (node.type.name === 'bulletList') {
-                  return node.attrs?.class === 'check-bullet' ? '' : 'is-active';
+                const node = $from.node(depth)
+                if (node.type.name === "bulletList") {
+                  return node.attrs?.class === "check-bullet" ? "" : "is-active"
                 }
               }
-              return editor.isActive('bulletList') ? 'is-active' : '';
+              return editor.isActive("bulletList") ? "is-active" : ""
             })()}
             title="블릿 목록 (- + space)"
           >
@@ -407,72 +426,84 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
             type="button"
             onClick={() => {
               // 체크 표시 블릿 목록 생성/토글
-              const { $from } = editor.state.selection;
-              let listPos = null;
-              let listNode = null;
-              
+              const { $from } = editor.state.selection
+              let listPos = null
+              let listNode = null
+
               // 블릿 목록 노드 찾기
               for (let depth = $from.depth; depth > 0; depth--) {
-                const node = $from.node(depth);
-                if (node.type.name === 'bulletList') {
-                  listNode = node;
-                  listPos = $from.before(depth);
-                  break;
+                const node = $from.node(depth)
+                if (node.type.name === "bulletList") {
+                  listNode = node
+                  listPos = $from.before(depth)
+                  break
                 }
               }
-              
+
               if (listNode && listPos !== null) {
                 // 이미 블릿 목록이 있으면 체크 표시 토글
-                const isCheckBullet = listNode.attrs?.class === 'check-bullet';
-                
+                const isCheckBullet = listNode.attrs?.class === "check-bullet"
+
                 if (isCheckBullet) {
                   // 체크 표시 제거 (일반 블릿으로)
-                  editor.chain().focus().command(({ tr }) => {
-                    const node = tr.doc.nodeAt(listPos);
-                    if (node) {
-                      tr.setNodeMarkup(listPos, null, { ...node.attrs, class: null });
-                    }
-                    return true;
-                  }).run();
+                  editor
+                    .chain()
+                    .focus()
+                    .command(({ tr }) => {
+                      const node = tr.doc.nodeAt(listPos)
+                      if (node) {
+                        tr.setNodeMarkup(listPos, null, { ...node.attrs, class: null })
+                      }
+                      return true
+                    })
+                    .run()
                 } else {
                   // 체크 표시 추가
-                  editor.chain().focus().command(({ tr }) => {
-                    const node = tr.doc.nodeAt(listPos);
-                    if (node) {
-                      tr.setNodeMarkup(listPos, null, { ...node.attrs, class: 'check-bullet' });
-                    }
-                    return true;
-                  }).run();
+                  editor
+                    .chain()
+                    .focus()
+                    .command(({ tr }) => {
+                      const node = tr.doc.nodeAt(listPos)
+                      if (node) {
+                        tr.setNodeMarkup(listPos, null, { ...node.attrs, class: "check-bullet" })
+                      }
+                      return true
+                    })
+                    .run()
                 }
               } else {
                 // 체크 표시 블릿 목록 생성
-                editor.chain().focus().toggleBulletList().run();
+                editor.chain().focus().toggleBulletList().run()
                 setTimeout(() => {
-                  editor.chain().focus().command(({ tr, state }) => {
-                    const { $from } = state.selection;
-                    for (let depth = $from.depth; depth > 0; depth--) {
-                      const node = $from.node(depth);
-                      if (node.type.name === 'bulletList') {
-                        const pos = $from.before(depth);
-                        tr.setNodeMarkup(pos, null, { ...node.attrs, class: 'check-bullet' });
-                        break;
+                  editor
+                    .chain()
+                    .focus()
+                    .command(({ tr, state }) => {
+                      const { $from } = state.selection
+                      for (let depth = $from.depth; depth > 0; depth--) {
+                        const node = $from.node(depth)
+                        if (node.type.name === "bulletList") {
+                          const pos = $from.before(depth)
+                          tr.setNodeMarkup(pos, null, { ...node.attrs, class: "check-bullet" })
+                          break
+                        }
                       }
-                    }
-                    return true;
-                  }).run();
-                }, 10);
+                      return true
+                    })
+                    .run()
+                }, 10)
               }
             }}
             className={(() => {
-              if (!editor.isActive('bulletList')) return '';
-              const { $from } = editor.state.selection;
+              if (!editor.isActive("bulletList")) return ""
+              const { $from } = editor.state.selection
               for (let depth = $from.depth; depth > 0; depth--) {
-                const node = $from.node(depth);
-                if (node.type.name === 'bulletList') {
-                  return node.attrs?.class === 'check-bullet' ? 'is-active' : '';
+                const node = $from.node(depth)
+                if (node.type.name === "bulletList") {
+                  return node.attrs?.class === "check-bullet" ? "is-active" : ""
                 }
               }
-              return '';
+              return ""
             })()}
             title="체크 표시 블릿 (✓)"
           >
@@ -483,11 +514,7 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
         <span className="toolbar-divider" />
 
         <div className="toolbar-group">
-          <button
-            type="button"
-            onClick={handleImageUpload}
-            title="이미지 삽입 (드래그 앤 드롭 가능)"
-          >
+          <button type="button" onClick={handleImageUpload} title="이미지 삽입 (드래그 앤 드롭 가능)">
             🖼 이미지
           </button>
           <div className="table-insert-group">
@@ -495,7 +522,7 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
               type="button"
               onClick={() => {
                 // 가로형 표 삽입 (첫 번째 행이 제목)
-                editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+                editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
               }}
               title="가로형 표 삽입 (첫 번째 행이 제목)"
             >
@@ -505,73 +532,73 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
               type="button"
               onClick={() => {
                 // 세로형 표 삽입 (첫 번째 열이 제목)
-                editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: false }).run();
+                editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: false }).run()
                 // 첫 번째 열의 모든 셀을 헤더로 변환
                 setTimeout(() => {
-                  editor.chain().focus().command(({ tr, state }) => {
-                    const { $from } = state.selection;
-                    let tablePos = null;
-                    
-                    // 테이블 노드 찾기
-                    for (let depth = $from.depth; depth > 0; depth--) {
-                      const node = $from.node(depth);
-                      if (node.type.name === 'table') {
-                        tablePos = $from.before(depth);
-                        break;
+                  editor
+                    .chain()
+                    .focus()
+                    .command(({ tr, state }) => {
+                      const { $from } = state.selection
+                      let tablePos = null
+
+                      // 테이블 노드 찾기
+                      for (let depth = $from.depth; depth > 0; depth--) {
+                        const node = $from.node(depth)
+                        if (node.type.name === "table") {
+                          tablePos = $from.before(depth)
+                          break
+                        }
                       }
-                    }
-                    
-                    if (tablePos === null) return false;
-                    
-                    const tableNode = tr.doc.nodeAt(tablePos);
-                    if (!tableNode) return false;
-                    
-                    // 테이블의 각 행을 순회하며 첫 번째 열의 셀을 헤더로 변환
-                    let pos = tablePos + 1;
-                    tableNode.forEach((rowNode) => {
-                      if (rowNode.type.name === 'tableRow') {
-                        const rowStart = pos;
-                        pos += 1; // row 시작
-                        
-                        // 첫 번째 셀 찾기
-                        rowNode.forEach((cellNode, cellOffset) => {
-                          if (cellOffset === 0 && cellNode.type.name === 'tableCell') {
-                            // 첫 번째 셀을 헤더로 변환
-                            const cellPos = rowStart + 1;
-                            const headerType = state.schema.nodes.tableHeader;
-                            if (headerType) {
-                              tr.setNodeMarkup(cellPos, headerType, cellNode.attrs);
+
+                      if (tablePos === null) return false
+
+                      const tableNode = tr.doc.nodeAt(tablePos)
+                      if (!tableNode) return false
+
+                      // 테이블의 각 행을 순회하며 첫 번째 열의 셀을 헤더로 변환
+                      let pos = tablePos + 1
+                      tableNode.forEach((rowNode) => {
+                        if (rowNode.type.name === "tableRow") {
+                          const rowStart = pos
+                          pos += 1 // row 시작
+
+                          // 첫 번째 셀 찾기
+                          rowNode.forEach((cellNode, cellOffset) => {
+                            if (cellOffset === 0 && cellNode.type.name === "tableCell") {
+                              // 첫 번째 셀을 헤더로 변환
+                              const cellPos = rowStart + 1
+                              const headerType = state.schema.nodes.tableHeader
+                              if (headerType) {
+                                tr.setNodeMarkup(cellPos, headerType, cellNode.attrs)
+                              }
                             }
-                          }
-                          pos += cellNode.nodeSize;
-                        });
-                        
-                        pos = rowStart + rowNode.nodeSize;
-                      } else {
-                        pos += rowNode.nodeSize;
-                      }
-                    });
-                    
-                    return true;
-                  }).run();
-                }, 100);
+                            pos += cellNode.nodeSize
+                          })
+
+                          pos = rowStart + rowNode.nodeSize
+                        } else {
+                          pos += rowNode.nodeSize
+                        }
+                      })
+
+                      return true
+                    })
+                    .run()
+                }, 100)
               }}
               title="세로형 표 삽입 (첫 번째 열이 제목)"
             >
               ⊞ 세로
             </button>
           </div>
-          <button
-            type="button"
-            onClick={handleMathInsert}
-            title="수식 삽입 (LaTeX)"
-          >
+          <button type="button" onClick={handleMathInsert} title="수식 삽입 (LaTeX)">
             ∑ 수식
           </button>
         </div>
 
         {/* 표 편집 버튼들 (표 안에 있을 때만 표시) */}
-        {editor.isActive('table') && (
+        {editor.isActive("table") && (
           <>
             <span className="toolbar-divider" />
             <div className="toolbar-group table-controls">
@@ -589,32 +616,16 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
               >
                 열 →
               </button>
-              <button
-                type="button"
-                onClick={() => editor.chain().focus().deleteColumn().run()}
-                title="열 삭제"
-              >
+              <button type="button" onClick={() => editor.chain().focus().deleteColumn().run()} title="열 삭제">
                 열 ×
               </button>
-              <button
-                type="button"
-                onClick={() => editor.chain().focus().addRowBefore().run()}
-                title="위에 행 추가"
-              >
+              <button type="button" onClick={() => editor.chain().focus().addRowBefore().run()} title="위에 행 추가">
                 ↑ 행
               </button>
-              <button
-                type="button"
-                onClick={() => editor.chain().focus().addRowAfter().run()}
-                title="아래에 행 추가"
-              >
+              <button type="button" onClick={() => editor.chain().focus().addRowAfter().run()} title="아래에 행 추가">
                 행 ↓
               </button>
-              <button
-                type="button"
-                onClick={() => editor.chain().focus().deleteRow().run()}
-                title="행 삭제"
-              >
+              <button type="button" onClick={() => editor.chain().focus().deleteRow().run()} title="행 삭제">
                 행 ×
               </button>
               <span className="toolbar-divider" />
@@ -622,19 +633,23 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
                 type="button"
                 onClick={() => {
                   // 현재 셀에 좌측 정렬 적용
-                  editor.chain().focus().command(({ tr, state }) => {
-                    const { $from } = state.selection;
-                    for (let depth = $from.depth; depth > 0; depth--) {
-                      const node = $from.node(depth);
-                      if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
-                        const pos = $from.before(depth);
-                        const attrs = { ...node.attrs, style: 'text-align: left;' };
-                        tr.setNodeMarkup(pos, null, attrs);
-                        return true;
+                  editor
+                    .chain()
+                    .focus()
+                    .command(({ tr, state }) => {
+                      const { $from } = state.selection
+                      for (let depth = $from.depth; depth > 0; depth--) {
+                        const node = $from.node(depth)
+                        if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+                          const pos = $from.before(depth)
+                          const attrs = { ...node.attrs, style: "text-align: left;" }
+                          tr.setNodeMarkup(pos, null, attrs)
+                          return true
+                        }
                       }
-                    }
-                    return false;
-                  }).run();
+                      return false
+                    })
+                    .run()
                 }}
                 title="좌측 정렬"
               >
@@ -644,19 +659,23 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
                 type="button"
                 onClick={() => {
                   // 현재 셀에 중앙 정렬 적용
-                  editor.chain().focus().command(({ tr, state }) => {
-                    const { $from } = state.selection;
-                    for (let depth = $from.depth; depth > 0; depth--) {
-                      const node = $from.node(depth);
-                      if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
-                        const pos = $from.before(depth);
-                        const attrs = { ...node.attrs, style: 'text-align: center;' };
-                        tr.setNodeMarkup(pos, null, attrs);
-                        return true;
+                  editor
+                    .chain()
+                    .focus()
+                    .command(({ tr, state }) => {
+                      const { $from } = state.selection
+                      for (let depth = $from.depth; depth > 0; depth--) {
+                        const node = $from.node(depth)
+                        if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+                          const pos = $from.before(depth)
+                          const attrs = { ...node.attrs, style: "text-align: center;" }
+                          tr.setNodeMarkup(pos, null, attrs)
+                          return true
+                        }
                       }
-                    }
-                    return false;
-                  }).run();
+                      return false
+                    })
+                    .run()
                 }}
                 title="중앙 정렬"
               >
@@ -679,13 +698,7 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
       <EditorContent editor={editor} />
 
       {/* 숨겨진 파일 입력 */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange}
-        style={{ display: 'none' }}
-      />
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: "none" }} />
 
       {/* 힌트 */}
       <div className="notion-editor-hint">
@@ -705,11 +718,7 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
             <div className="math-modal-body">
               <div className="form-group">
                 <label>
-                  <input
-                    type="checkbox"
-                    checked={mathDisplay}
-                    onChange={(e) => setMathDisplay(e.target.checked)}
-                  />
+                  <input type="checkbox" checked={mathDisplay} onChange={(e) => setMathDisplay(e.target.checked)} />
                   블록 수식 (별도 줄에 표시)
                 </label>
               </div>
@@ -733,8 +742,10 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
               )}
               <div className="math-examples">
                 <small>
-                  <strong>예시:</strong><br />
-                  인라인: <code>{mathExampleInline}</code><br />
+                  <strong>예시:</strong>
+                  <br />
+                  인라인: <code>{mathExampleInline}</code>
+                  <br />
                   블록: <code>{mathExampleBlock}</code>
                 </small>
               </div>
@@ -760,33 +771,33 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
         </div>
       )}
     </div>
-  );
+  )
 }
 
 // 수식 미리보기 컴포넌트
 function MathPreview({ formula, display }) {
-  const [error, setError] = useState(null);
-  const previewRef = useRef(null);
+  const [error, setError] = useState(null)
+  const previewRef = useRef(null)
 
   useEffect(() => {
-    if (!previewRef.current || !formula) return;
-    
+    if (!previewRef.current || !formula) return
+
     try {
       katex.render(formula, previewRef.current, {
         throwOnError: true,
         displayMode: display,
-      });
-      setError(null);
+      })
+      setError(null)
     } catch (e) {
-      setError(e.message);
+      setError(e.message)
     }
-  }, [formula, display]);
+  }, [formula, display])
 
   if (error) {
-    return <span className="math-error">오류: {error}</span>;
+    return <span className="math-error">오류: {error}</span>
   }
 
-  return <span ref={previewRef} />;
+  return <span ref={previewRef} />
 }
 
-export default RichTextEditor;
+export default RichTextEditor

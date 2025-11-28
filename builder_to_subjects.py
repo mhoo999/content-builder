@@ -14,6 +14,9 @@ import base64
 from pathlib import Path
 from urllib.parse import unquote
 
+# 수식과 표는 브라우저에서 이미 이미지로 변환되어 base64로 들어옴
+# Python 스크립트는 base64 이미지를 파일로 저장하는 역할만 수행
+
 # Windows 인코딩 문제 해결 (UTF-8 강제)
 if sys.platform == 'win32':
     import io
@@ -24,6 +27,7 @@ if sys.platform == 'win32':
 def clean_html_for_export(html_content):
     """
     HTML에서 에디터 관련 속성 정리 (data-original-src를 src로 변환, notion-image 클래스 등)
+    주의: class="check-bullet"은 체크 불릿 표시를 위해 보존해야 함
 
     Args:
         html_content: HTML 문자열
@@ -53,6 +57,7 @@ def clean_html_for_export(html_content):
 
     # class="notion-image" 제거 및 alt='' 추가, 태그 형식 정리
     # <img class="notion-image" src="..."> → <img src='...' alt='' />
+    # 주의: class="check-bullet"은 ul 태그에 사용되므로 보존해야 함
     def fix_img_tag(match):
         full_tag = match.group(0)
         # src 추출
@@ -63,6 +68,50 @@ def clean_html_for_export(html_content):
         return full_tag
 
     html_content = re.sub(r'<img[^>]*class=["\']notion-image["\'][^>]*>', fix_img_tag, html_content)
+
+    # 체크 불릿 리스트를 <p>✓ 텍스트</p> 형태로 변환
+    # <ul class="check-bullet"><li>항목1</li><li>항목2</li></ul>
+    # → <p>✓ 항목1</p><p>✓ 항목2</p>
+    def convert_check_bullet(match):
+        ul_tag = match.group(0)
+        # li 태그들을 찾아서 변환
+        li_pattern = r'<li[^>]*>(.*?)</li>'
+        li_matches = re.findall(li_pattern, ul_tag, re.DOTALL)
+        
+        if not li_matches:
+            return ul_tag
+        
+        # 각 li를 <p>✓ 내용</p> 형태로 변환
+        p_tags = []
+        for li_content in li_matches:
+            # li 내용에서 앞뒤 공백 제거
+            content = li_content.strip()
+            
+            # 이미 ✓가 있으면 중복 방지
+            if content.startswith('✓'):
+                # 이미 ✓가 있으면 그대로 사용
+                # 하지만 <p> 태그가 없으면 추가
+                if not content.startswith('<p>'):
+                    content = f'<p>{content}</p>'
+            elif content.startswith('<p>'):
+                # 이미 <p> 태그가 있으면 첫 번째 <p> 태그 뒤에 ✓ 추가
+                # <p>내용</p> → <p>✓ 내용</p>
+                content = re.sub(r'<p>', '<p>✓ ', content, count=1)
+            else:
+                # <p> 태그가 없으면 <p>✓ 내용</p> 형태로 감싸기
+                content = f'<p>✓ {content}</p>'
+            
+            p_tags.append(content)
+        
+        return ''.join(p_tags)
+    
+    # class="check-bullet"이 있는 ul 태그를 찾아서 변환
+    html_content = re.sub(
+        r'<ul[^>]*class=["\']check-bullet["\'][^>]*>.*?</ul>',
+        convert_check_bullet,
+        html_content,
+        flags=re.DOTALL
+    )
 
     return html_content
 
@@ -117,6 +166,7 @@ def save_base64_image(base64_data_url, images_dir, course_code, image_counter):
 def extract_and_save_images(html_content, images_dir, course_code, image_counter):
     """
     HTML에서 base64 이미지를 추출하여 파일로 저장하고 상대경로로 교체
+    수식과 표를 이미지로 변환
 
     Args:
         html_content: HTML 문자열 (base64 이미지 포함)
@@ -132,19 +182,27 @@ def extract_and_save_images(html_content, images_dir, course_code, image_counter
 
     # 먼저 에디터 관련 속성 정리
     html_content = clean_html_for_export(html_content)
+    
+    # 수식과 표는 브라우저에서 이미 이미지로 변환되어 base64로 들어옴
+    # extract_and_save_images 함수가 base64 이미지를 자동으로 처리함
 
     # base64 이미지 패턴 찾기: <img src="data:image/...;base64,..." />
-    pattern = r'<img\s+[^>]*src=["\'](data:image/([^;]+);base64,([^"\']+))["\'][^>]*>'
+    # base64 데이터는 매우 길 수 있으므로 non-greedy가 아닌 greedy로 매칭
+    # 하지만 닫는 따옴표까지 매칭해야 하므로 더 정확한 패턴 사용
+    pattern = r'<img\s+([^>]*?)src=["\'](data:image/([^;]+);base64,([^"\']+))["\']([^>]*?)>'
 
     def replace_image(match):
-        full_tag = match.group(0)
-        full_data_url = match.group(1)
-        image_type = match.group(2)  # png, jpeg, jpg, gif 등
-        base64_data = match.group(3)
+        before_src = match.group(1)  # src 이전 속성들
+        full_data_url = match.group(2)  # 전체 data URL
+        image_type = match.group(3)  # png, jpeg, jpg, gif 등
+        base64_data = match.group(4)  # base64 데이터
+        after_src = match.group(5)  # src 이후 속성들
 
-        # 이미지 카운터 증가
+        # 이미지 카운터 증가 (각 이미지마다 고유 번호 부여)
         image_counter['count'] += 1
         image_num = image_counter['count']
+        
+        print(f"📷 이미지 {image_num} 처리 중: {image_type} ({len(base64_data)} bytes)")
 
         # 파일명 생성: {과목코드}_img_{번호}.{확장자}
         ext = 'png' if image_type == 'png' else ('jpg' if image_type in ['jpeg', 'jpg'] else image_type)
@@ -159,13 +217,17 @@ def extract_and_save_images(html_content, images_dir, course_code, image_counter
 
             # 상대경로로 교체 (data.json에서 images 폴더로의 경로: ../images/)
             relative_path = f"../images/{filename}"
-            # img 태그의 src 속성만 교체
-            return full_tag.replace(full_data_url, relative_path)
+            # img 태그의 src 속성만 교체 (다른 속성은 유지)
+            new_tag = f'<img {before_src}src="{relative_path}"{after_src}>'
+            print(f"✅ 이미지 저장 완료: {filename}")
+            return new_tag
         except Exception as e:
             print(f"⚠️ 이미지 저장 실패: {e}")
-            return full_tag  # 실패 시 원본 유지
+            # 실패 시 원본 태그 유지
+            return match.group(0)
 
-    # 모든 base64 이미지를 찾아서 교체
+    # 모든 base64 이미지를 찾아서 교체 (순차적으로 처리)
+    # re.sub는 모든 매치를 순차적으로 처리하므로 각 이미지마다 카운터가 증가함
     result = re.sub(pattern, replace_image, html_content)
     return result
 
@@ -280,11 +342,7 @@ def create_term_page(terms, images_dir=None, course_code=None, image_counter=Non
             if isinstance(content_list, str):
                 content_list = [content_list] if content_list else []
             
-            # 각 항목을 처리하고 불릿 추가
-            # 주의: import 시 불릿을 제거했으므로, export 시 항상 추가해야 함
-            # 하지만 원본에 불릿이 없었던 경우를 고려하여, 
-            # import 시 원본에 불릿이 있었는지 여부를 저장하는 것이 이상적이지만,
-            # 현재는 항상 추가하는 것으로 처리
+            # 각 항목을 처리 (불릿은 HTML 클래스에서 제공되므로 추가하지 않음)
             processed_content = []
             for content_item in content_list:
                 if content_item:
@@ -292,9 +350,6 @@ def create_term_page(terms, images_dir=None, course_code=None, image_counter=Non
                     processed_item = content_item
                     if images_dir and course_code and image_counter:
                         processed_item = extract_and_save_images(content_item, images_dir, course_code, image_counter)
-                    # 불릿 추가 (import 시 제거했으므로 항상 추가)
-                    if not processed_item.strip().startswith("•"):
-                        processed_item = f"• {processed_item}"
                     processed_content.append(processed_item)
             
             term_data.append({
@@ -328,17 +383,29 @@ def is_practice_content_empty(content):
     # 비어있거나 공백만 있으면 True
     return not text or not text.strip()
     
-def create_objectives_page(contents, objectives):
+def create_objectives_page(contents, objectives, images_dir=None, course_code=None, image_counter=None):
     """학습목표 페이지 생성"""
     # 실습 항목 제외하고 학습내용 필터링
     filtered_contents = []
     for c in contents:
         if c and not is_practice_content_empty(c):
+            # 이미지 추출 및 저장
+            if images_dir and course_code and image_counter:
+                c = extract_and_save_images(c, images_dir, course_code, image_counter)
             filtered_contents.append(c)
+    
+    # 학습목표도 이미지 처리
+    processed_objectives = []
+    for obj in objectives:
+        if obj:
+            # 이미지 추출 및 저장
+            if images_dir and course_code and image_counter:
+                obj = extract_and_save_images(obj, images_dir, course_code, image_counter)
+            processed_objectives.append(obj)
     
     # 학습내용과 학습목표에 자동 넘버링 추가
     numbered_contents = [f"{i+1}. {c}" for i, c in enumerate(filtered_contents) if c]
-    numbered_objectives = [f"{i+1}. {o}" for i, o in enumerate(objectives) if o]
+    numbered_objectives = [f"{i+1}. {o}" for i, o in enumerate(processed_objectives) if o]
     
     return {
         "path": "/objectives",
@@ -508,13 +575,23 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
         for ex in lesson["exercises"]:
             question = ex.get("question", "")
             commentary = ex.get("commentary", "")
+            options = ex.get("options", ["", "", "", ""])
 
-            # 문항과 해설의 이미지 추출 및 저장
+            # 문항, 해설, 선택지의 이미지 추출 및 저장
             if images_dir and course_code and image_counter:
                 if question:
                     question = extract_and_save_images(question, images_dir, course_code, image_counter)
                 if commentary:
                     commentary = extract_and_save_images(commentary, images_dir, course_code, image_counter)
+                # 선택지도 이미지 처리
+                if ex.get("type") == "multiple":
+                    processed_options = []
+                    for opt in options:
+                        if opt:
+                            processed_options.append(extract_and_save_images(opt, images_dir, course_code, image_counter))
+                        else:
+                            processed_options.append(opt)
+                    options = processed_options
 
             if question:
                 if ex.get("type") == "boolean":
@@ -529,7 +606,7 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
                     exercises.append({
                         "type": "multiple",
                         "subject": question,
-                        "value": ex.get("options", ["", "", "", ""]),
+                        "value": options,
                         "answer": ex.get("answer", "1"),
                         "commentary": commentary
                     })
@@ -540,12 +617,22 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
                 ex = lesson[key]
                 question = ex["question"]
                 commentary = ex.get("commentary", "")
+                options = ex.get("options", ["", "", "", ""])
 
-                # 문항과 해설의 이미지 추출 및 저장
+                # 문항, 해설, 선택지의 이미지 추출 및 저장
                 if images_dir and course_code and image_counter:
                     question = extract_and_save_images(question, images_dir, course_code, image_counter)
                     if commentary:
                         commentary = extract_and_save_images(commentary, images_dir, course_code, image_counter)
+                    # 선택지도 이미지 처리
+                    if ex.get("type") == "multiple":
+                        processed_options = []
+                        for opt in options:
+                            if opt:
+                                processed_options.append(extract_and_save_images(opt, images_dir, course_code, image_counter))
+                            else:
+                                processed_options.append(opt)
+                        options = processed_options
 
                 if ex.get("type") == "boolean" or key == "exercise1":
                     exercises.append({
@@ -559,7 +646,7 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
                     exercises.append({
                         "type": "multiple",
                         "subject": question,
-                        "value": ex.get("options", ["", "", "", ""]),
+                        "value": options,
                         "answer": ex.get("answer", "1"),
                         "commentary": commentary
                     })
@@ -578,6 +665,7 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
 
 def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter=None):
     """학습정리 페이지 생성"""
+    import re
     summary = [s for s in lesson["summary"] if s]
     
     # 학습정리 내용의 이미지 추출 및 저장
@@ -586,6 +674,22 @@ def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter
             extract_and_save_images(s, images_dir, course_code, image_counter) if s else s
             for s in summary
         ]
+    
+    # 모든 항목의 첫 번째 <p> 태그에 class='main-title' 추가
+    processed_summary = []
+    for s in summary:
+        if s and isinstance(s, str):
+            # 이미 class='main-title'이 있으면 그대로 유지
+            if "<p class='main-title'>" in s or '<p class="main-title">' in s or "<p class=\"main-title\">" in s:
+                processed_summary.append(s)
+            else:
+                # 첫 번째 <p> 태그를 찾아서 class='main-title' 추가
+                # <p> 또는 <p 속성> 형태를 찾아서 <p class='main-title'>로 변경
+                # <p> 태그 뒤에 공백이나 >가 오는 경우 처리
+                s = re.sub(r'<p(\s[^>]*)?>', r"<p class='main-title'\1>", s, count=1)
+                processed_summary.append(s)
+        else:
+            processed_summary.append(s)
 
     return {
         "path": "/theorem",
@@ -596,7 +700,7 @@ def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter
         "component": "theorem",
         "media": "../../../resources/media/common_summary.mp3",
         "data": {
-            "theorem": summary,
+            "theorem": processed_summary,
             "reference": ""
         }
     }
@@ -747,8 +851,16 @@ def save_imported_images(imported_images, images_dir):
 
 
 def convert_builder_to_subjects(builder_json_path, output_dir=None):
-    """Builder JSON을 subjects 폴더 구조로 변환"""
+    """Builder JSON을 subjects 폴더 구조로 변환
+    
+    Args:
+        builder_json_path: Path 객체 또는 문자열 (JSON 파일 경로)
+        output_dir: Path 객체 또는 문자열 (출력 디렉토리, None이면 현재 디렉토리/subjects)
+    """
 
+    # Path 객체로 변환 (크로스 플랫폼 호환성)
+    builder_json_path = Path(builder_json_path)
+    
     # JSON 로드
     with open(builder_json_path, 'r', encoding='utf-8') as f:
         course_data = json.load(f)
@@ -845,9 +957,26 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         pages.append(create_term_page(lesson["terms"], images_dir, course_code, image_counter))
 
         # 4. 학습목표
+        # 학습내용에 실습 내용 추가 (실습이 있고 내용이 있는 경우)
+        learning_contents_for_objectives = list(lesson.get("learningContents", []))
+        if lesson.get("hasPractice", False):
+            practice_content = lesson.get("practiceContent", "")
+            # practiceContent가 없으면 학습내용에서 찾기 (기존 데이터 호환성)
+            if not practice_content:
+                for content in learning_contents_for_objectives:
+                    if isinstance(content, str) and "class='practice'" in content:
+                        practice_content = content
+                        break
+            # 실습 내용이 있고 비어있지 않으면 학습내용에 추가
+            if practice_content and not is_practice_content_empty(practice_content):
+                learning_contents_for_objectives.append(practice_content)
+        
         pages.append(create_objectives_page(
-            lesson["learningContents"],
-            lesson["learningObjectives"]
+            learning_contents_for_objectives,
+            lesson["learningObjectives"],
+            images_dir,
+            course_code,
+            image_counter
         ))
 
         # 5. 생각묻기
@@ -858,13 +987,16 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
 
         # 6-1. 실습하기 (실습있음 체크 시, 실습 내용이 있는 경우만)
         if lesson.get("hasPractice", False):
-            # 학습내용에서 practice 항목 찾기
-            learning_contents = lesson.get("learningContents", [])
-            practice_content = None
-            for content in learning_contents:
-                if isinstance(content, str) and "class='practice'" in content:
-                    practice_content = content
-                    break
+            # practiceContent 필드에서 실습 내용 가져오기 (학습내용과 분리)
+            practice_content = lesson.get("practiceContent", "")
+            
+            # practiceContent가 없으면 학습내용에서 찾기 (기존 데이터 호환성)
+            if not practice_content:
+                learning_contents = lesson.get("learningContents", [])
+                for content in learning_contents:
+                    if isinstance(content, str) and "class='practice'" in content:
+                        practice_content = content
+                        break
             
             # practice 항목이 있고 내용이 비어있지 않으면 실습 페이지 생성
             if practice_content and not is_practice_content_empty(practice_content):
@@ -936,12 +1068,14 @@ if __name__ == "__main__":
     builder_json_path = sys.argv[1]
     output_dir = sys.argv[2] if len(sys.argv) > 2 else None
 
-    # Windows 경로 처리: 백슬래시를 정규화
-    builder_json_path = os.path.normpath(builder_json_path)
+    # Windows 경로 처리: Path 객체로 변환하여 크로스 플랫폼 호환성 보장
+    builder_json_path = Path(builder_json_path).resolve()
     if output_dir:
-        output_dir = os.path.normpath(output_dir)
+        output_dir = Path(output_dir).expanduser().resolve()
+    else:
+        output_dir = None
 
-    if not os.path.exists(builder_json_path):
+    if not builder_json_path.exists():
         print(f"❌ 파일을 찾을 수 없습니다: {builder_json_path}")
         sys.exit(1)
 

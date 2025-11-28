@@ -105,30 +105,27 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
         ? ["0:00:04", "0:00:00"]
         : lessonData.practiceTimestamps || []
 
-    // 학습내용에 실습 항목 추가/제거
-    const learningContents = [...(lessonData.learningContents || [])]
-    const practiceContent = "<div class='practice'><ul><li></li></ul></div>"
+    // 학습내용에서 실습 항목 제거 (기존 데이터 마이그레이션)
+    const learningContents = lessonData.learningContents
+      ? lessonData.learningContents.filter(
+          (content) => !(typeof content === "string" && content.includes("class='practice'")),
+        )
+      : []
 
-    // practice 항목 찾기 (class='practice'를 포함하는 항목)
-    const practiceIndex = learningContents.findIndex(
-      (content) => typeof content === "string" && content.includes("class='practice'"),
-    )
-
-    if (hasPractice && practiceIndex === -1) {
-      // 실습있음 체크 시 practice 항목 추가 (학습내용 마지막에)
-      learningContents.push(practiceContent)
-    } else if (!hasPractice && practiceIndex !== -1) {
-      // 실습없음 체크 시 practice 항목 제거
-      learningContents.splice(practiceIndex, 1)
-    }
+    // 실습 내용 초기화 (기존 practiceContent가 없으면 기본값 설정)
+    const practiceContent =
+      hasPractice && !lessonData.practiceContent
+        ? "<div class='practice'><ul><li></li></ul></div>"
+        : lessonData.practiceContent || ""
 
     onUpdate({
       ...lessonData,
       hasPractice: hasPractice,
+      practiceContent: hasPractice ? practiceContent : "",
       practiceVideoUrl: hasPractice && lectureVideoUrl ? lectureVideoUrl.replace(".mp4", "_P.mp4") : "",
       practiceSubtitle: hasPractice && lectureSubtitle ? lectureSubtitle.replace(".vtt", "_P.vtt") : "",
       practiceTimestamps: practiceTimestamps,
-      learningContents: learningContents,
+      learningContents: learningContents, // 실습 항목 제거된 학습내용
     })
   }
 
@@ -141,7 +138,7 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
       <h3>🎓 학습하기</h3>
 
       {/* 생각묻기 */}
-      <div className="subsection">
+      <div id="subsection-opinion" className="subsection">
         <h4>생각묻기</h4>
         <div className="form-group">
           <label>질문</label>
@@ -155,7 +152,7 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
       </div>
 
       {/* 강의보기 */}
-      <div className="subsection">
+      <div id="subsection-lecture" className="subsection">
         <h4>강의보기</h4>
         <div className="form-group">
           <label>강의 영상 URL</label>
@@ -286,7 +283,7 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
       </div>
 
       {/* 점검하기 */}
-      <div className="subsection">
+      <div id="subsection-check" className="subsection">
         <h4>점검하기</h4>
         <div className="form-group">
           <label>질문 (생각묻기와 동일)</label>

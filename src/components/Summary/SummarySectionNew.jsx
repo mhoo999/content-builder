@@ -158,7 +158,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year }) {
       <h3>✅ 정리하기</h3>
 
       {/* 연습문제 */}
-      <div className="subsection">
+      <div id="subsection-exercises" className="subsection">
         <div className="list-header">
           <h4>연습문제</h4>
           <button className="btn-add-small" onClick={addExercise}>
@@ -262,7 +262,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year }) {
       </div>
 
       {/* 학습정리 */}
-      <div className="subsection">
+      <div id="subsection-summary" className="subsection">
         <div className="list-header">
           <h4>학습정리</h4>
           <button className="btn-add-small" onClick={addSummary}>

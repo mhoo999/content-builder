@@ -121,8 +121,12 @@ function App() {
   // 현재 편집 중인 차시
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0)
 
+  // 왼쪽 사이드바 접기/펼치기
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
   // 오른쪽 사이드바 접기/펼치기
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
+  // 오른쪽 사이드바 탭 (info: 과목정보/교수정보, toc: 목차)
+  const [rightSidebarTab, setRightSidebarTab] = useState("info")
 
   // 시작하기 모달
   const [showStartModal, setShowStartModal] = useState(false)
@@ -374,10 +378,16 @@ function App() {
       return // 사용자가 취소
     }
 
+    // 수식과 표를 이미지로 변환
+    console.log("수식과 표를 이미지로 변환하는 중...")
+    const { convertAllMathAndTablesInData } = await import("./utils/convertToImages")
+    const convertedData = await convertAllMathAndTablesInData(courseData)
+    console.log("변환 완료, export 데이터 확인:", convertedData)
+
     // 익스포트할 데이터 준비
     // importedImages는 이미 base64로 변환되어 있음 (export 시 원본 이미지 복사용)
     const exportData = {
-      ...courseData,
+      ...convertedData,
       importedImages: importedImages, // export 시 원본 이미지 복사용
     }
 
@@ -605,6 +615,13 @@ function App() {
 
       {/* 헤더 */}
       <header className="header">
+        <button
+          className="header-toggle-btn header-toggle-left"
+          onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+          title={leftSidebarOpen ? "차시 목록 닫기" : "차시 목록 열기"}
+        >
+          {leftSidebarOpen ? "◀" : "▶"}
+        </button>
         <div className="header-left">
           <h1 className="logo-clickable" onClick={resetToHome} title="처음으로 돌아가기">
             📚 Content Builder
@@ -642,12 +659,19 @@ function App() {
             📁 Export to Subjects
           </button>
         </div>
+        <button
+          className="header-toggle-btn header-toggle-right"
+          onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+          title={rightSidebarOpen ? "과목 정보 닫기" : "과목 정보 열기"}
+        >
+          {rightSidebarOpen ? "▶" : "◀"}
+        </button>
       </header>
 
       {/* 메인 컨텐츠 */}
       <div className="main-content">
         {/* 왼쪽 사이드바 (차시 목록만) */}
-        <aside className="sidebar sidebar-left">
+        <aside className={`sidebar sidebar-left ${leftSidebarOpen ? "open" : "collapsed"}`}>
           <div className="lessons-list">
             <div className="lessons-header">
               <h3>차시 목록</h3>
@@ -710,28 +734,28 @@ function App() {
                               const lectureVideoUrl = lesson.lectureVideoUrl || ""
                               const lectureSubtitle = lesson.lectureSubtitle || ""
 
-                              // 학습내용에 실습 항목 추가/제거
-                              const learningContents = [...(lesson.learningContents || [])]
-                              const practiceContent = "<div class='practice'><ul><li></li></ul></div>"
+                              // 학습내용에서 실습 항목 제거 (기존 데이터 마이그레이션)
+                              const learningContents = lesson.learningContents
+                                ? lesson.learningContents.filter(
+                                    (content) => !(typeof content === "string" && content.includes("class='practice'")),
+                                  )
+                                : []
 
-                              const practiceIndex = learningContents.findIndex(
-                                (content) => typeof content === "string" && content.includes("class='practice'"),
-                              )
-
-                              if (hasPractice && practiceIndex === -1) {
-                                learningContents.push(practiceContent)
-                              } else if (!hasPractice && practiceIndex !== -1) {
-                                learningContents.splice(practiceIndex, 1)
-                              }
+                              // 실습 내용 초기화 (기존 practiceContent가 없으면 기본값 설정)
+                              const practiceContent =
+                                hasPractice && !lesson.practiceContent
+                                  ? "<div class='practice'><ul><li></li></ul></div>"
+                                  : lesson.practiceContent || ""
 
                               updateLesson(index, {
                                 ...lesson,
                                 hasPractice: hasPractice,
+                                practiceContent: hasPractice ? practiceContent : "",
                                 practiceVideoUrl:
                                   hasPractice && lectureVideoUrl ? lectureVideoUrl.replace(".mp4", "_P.mp4") : "",
                                 practiceSubtitle:
                                   hasPractice && lectureSubtitle ? lectureSubtitle.replace(".vtt", "_P.vtt") : "",
-                                learningContents: learningContents,
+                                learningContents: learningContents, // 실습 항목 제거된 학습내용
                               })
                             }}
                             onClick={(e) => e.stopPropagation()}
@@ -791,28 +815,34 @@ function App() {
                 <p className="subtitle">{currentLesson.lessonTitle || "제목 없음"}</p>
 
                 {/* 준비하기 섹션 */}
-                <PreparationSection
-                  lessonData={currentLesson}
-                  onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
-                  courseCode={courseData.courseCode}
-                  year={courseData.year}
-                />
+                <div id="section-preparation">
+                  <PreparationSection
+                    lessonData={currentLesson}
+                    onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+                    courseCode={courseData.courseCode}
+                    year={courseData.year}
+                  />
+                </div>
 
                 {/* 학습하기 섹션 */}
-                <LearningSection
-                  lessonData={currentLesson}
-                  onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
-                  courseCode={courseData.courseCode}
-                  year={courseData.year}
-                />
+                <div id="section-learning">
+                  <LearningSection
+                    lessonData={currentLesson}
+                    onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+                    courseCode={courseData.courseCode}
+                    year={courseData.year}
+                  />
+                </div>
 
                 {/* 정리하기 섹션 */}
-                <SummarySection
-                  lessonData={currentLesson}
-                  onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
-                  courseCode={courseData.courseCode}
-                  year={courseData.year}
-                />
+                <div id="section-summary">
+                  <SummarySection
+                    lessonData={currentLesson}
+                    onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+                    courseCode={courseData.courseCode}
+                    year={courseData.year}
+                  />
+                </div>
               </div>
             ) : null}
           </div>
@@ -825,32 +855,225 @@ function App() {
           </div>
           {rightSidebarOpen && (
             <div className="sidebar-content">
-              {/* 과목 정보 */}
-              <div className="sidebar-section">
-                <h3>과목 정보</h3>
-                <div className="form-group">
-                  <label>과목 코드</label>
-                  <div className="readonly-input">
-                    {courseData.courseCode || <span className="empty-value">-</span>}
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>과정명</label>
-                  <div className="readonly-input">
-                    {courseData.courseName || <span className="empty-value">-</span>}
-                  </div>
-                </div>
+              {/* 탭 헤더 */}
+              <div className="sidebar-tabs">
+                <button
+                  className={`sidebar-tab ${rightSidebarTab === "info" ? "active" : ""}`}
+                  onClick={() => setRightSidebarTab("info")}
+                >
+                  정보
+                </button>
+                <button
+                  className={`sidebar-tab ${rightSidebarTab === "toc" ? "active" : ""}`}
+                  onClick={() => setRightSidebarTab("toc")}
+                >
+                  목차
+                </button>
               </div>
 
-              {/* 교수 정보 */}
-              <div className="sidebar-section">
-                <h3>교수 정보</h3>
-                <ProfessorSection
-                  professor={courseData.professor}
-                  onUpdate={(updated) => setCourseData((prev) => ({ ...prev, professor: updated }))}
-                  disabled={courseData.lessons.length === 0}
-                />
-              </div>
+              {/* 탭 내용 */}
+              {rightSidebarTab === "info" && (
+                <>
+                  {/* 과목 정보 */}
+                  <div className="sidebar-section">
+                    <h3>과목 정보</h3>
+                    <div className="form-group">
+                      <label>과목 코드</label>
+                      <div className="readonly-input">
+                        {courseData.courseCode || <span className="empty-value">-</span>}
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>과정명</label>
+                      <div className="readonly-input">
+                        {courseData.courseName || <span className="empty-value">-</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 교수 정보 */}
+                  <div className="sidebar-section">
+                    <h3>교수 정보</h3>
+                    <ProfessorSection
+                      professor={courseData.professor}
+                      onUpdate={(updated) => setCourseData((prev) => ({ ...prev, professor: updated }))}
+                      disabled={courseData.lessons.length === 0}
+                    />
+                  </div>
+                </>
+              )}
+
+              {rightSidebarTab === "toc" && courseData.lessons.length > 0 && currentLesson && (
+                <div className="sidebar-section">
+                  <h3>목차</h3>
+                  <nav className="toc-nav">
+                    <a
+                      href="#section-preparation"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const element = document.getElementById("section-preparation")
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      }}
+                      className="toc-link toc-main"
+                    >
+                      📚 준비하기
+                    </a>
+                    {currentLesson.weekNumber === 1 && currentLesson.lessonNumber === 1 && (
+                      <a
+                        href="#subsection-orientation"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const element = document.getElementById("subsection-orientation")
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="toc-link toc-sub"
+                      >
+                        오리엔테이션
+                      </a>
+                    )}
+                    <a
+                      href="#subsection-terms"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const element = document.getElementById("subsection-terms")
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      }}
+                      className="toc-link toc-sub"
+                    >
+                      용어체크
+                    </a>
+                    <a
+                      href="#subsection-objectives"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const element = document.getElementById("subsection-objectives")
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      }}
+                      className="toc-link toc-sub"
+                    >
+                      학습목표
+                    </a>
+                    <a
+                      href="#subsection-contents"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const element = document.getElementById("subsection-contents")
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      }}
+                      className="toc-link toc-sub"
+                    >
+                      학습내용
+                    </a>
+                    <a
+                      href="#section-learning"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const element = document.getElementById("section-learning")
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      }}
+                      className="toc-link toc-main"
+                    >
+                      🎓 학습하기
+                    </a>
+                    <a
+                      href="#subsection-opinion"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const element = document.getElementById("subsection-opinion")
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      }}
+                      className="toc-link toc-sub"
+                    >
+                      생각묻기
+                    </a>
+                    <a
+                      href="#subsection-lecture"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const element = document.getElementById("subsection-lecture")
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      }}
+                      className="toc-link toc-sub"
+                    >
+                      강의보기
+                    </a>
+                    <a
+                      href="#subsection-check"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const element = document.getElementById("subsection-check")
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      }}
+                      className="toc-link toc-sub"
+                    >
+                      점검하기
+                    </a>
+                    <a
+                      href="#section-summary"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const element = document.getElementById("section-summary")
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      }}
+                      className="toc-link toc-main"
+                    >
+                      ✅ 정리하기
+                    </a>
+                    <a
+                      href="#subsection-exercises"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const element = document.getElementById("subsection-exercises")
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      }}
+                      className="toc-link toc-sub"
+                    >
+                      연습문제
+                    </a>
+                    <a
+                      href="#subsection-summary"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const element = document.getElementById("subsection-summary")
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      }}
+                      className="toc-link toc-sub"
+                    >
+                      학습정리
+                    </a>
+                  </nav>
+                </div>
+              )}
+
+              {rightSidebarTab === "toc" && courseData.lessons.length === 0 && (
+                <div className="sidebar-section">
+                  <p className="empty-message">차시를 먼저 생성해주세요.</p>
+                </div>
+              )}
             </div>
           )}
         </aside>
