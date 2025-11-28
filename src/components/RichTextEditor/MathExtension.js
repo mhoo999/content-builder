@@ -35,6 +35,20 @@ export const Math = Node.create({
     ];
   },
 
+  renderHTML({ node, HTMLAttributes }) {
+    const { formula, display } = node.attrs;
+    
+    const attrs = mergeAttributes(HTMLAttributes, {
+      class: display ? 'math-block' : 'math-inline',
+      'data-formula': formula || '',
+      'data-display': display ? '' : null,
+    });
+    
+    // atom 노드는 자식이 없어야 하므로 빈 배열 반환
+    // 실제 렌더링은 addNodeView에서 처리
+    return ['span', attrs];
+  },
+
   addNodeView() {
     return ({ node, HTMLAttributes, getPos, editor }) => {
       const { formula, display } = node.attrs;

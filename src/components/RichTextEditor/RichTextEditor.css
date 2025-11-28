@@ -552,6 +552,28 @@
   color: #1e3a8a;
 }
 
+.math-help-link {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e1e4e8;
+}
+
+.math-help-link a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2383e2;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.math-help-link a:hover {
+  color: #1a6bc4;
+  text-decoration: underline;
+}
+
 .math-modal-footer {
   display: flex;
   align-items: center;

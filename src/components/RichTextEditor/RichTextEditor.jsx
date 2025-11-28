@@ -159,6 +159,57 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
     return () => clearTimeout(timer);
   }, [editor]);
 
+  // 수식 렌더링 (renderHTML에서 렌더링하지 못하므로 클라이언트 측에서 처리)
+  useEffect(() => {
+    if (!editor) return;
+
+    const renderMath = () => {
+      if (!editor.view || editor.isDestroyed) return;
+      try {
+        const mathSpans = editor.view.dom.querySelectorAll('span[data-formula]');
+        mathSpans.forEach(span => {
+          // 이미 렌더링된 경우 스킵
+          if (span.querySelector('.katex')) return;
+          
+          const formula = span.getAttribute('data-formula');
+          const display = span.hasAttribute('data-display');
+          
+          if (!formula) {
+            span.className = 'math-empty';
+            span.textContent = '수식';
+            return;
+          }
+
+          try {
+            const html = katex.renderToString(formula, {
+              throwOnError: false,
+              displayMode: display,
+            });
+            span.innerHTML = html;
+            span.className = display ? 'math-block' : 'math-inline';
+          } catch (error) {
+            span.className = 'math-error';
+            span.textContent = `수식 오류: ${formula}`;
+          }
+        });
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    // 에디터 업데이트 시 수식 렌더링
+    const unsubscribe = editor.on('update', () => {
+      setTimeout(renderMath, 0);
+    });
+
+    // 초기 렌더링
+    setTimeout(renderMath, 100);
+
+    return () => {
+      unsubscribe();
+    };
+  }, [editor]);
+
   const handleMathInsert = () => {
     if (!editor) return;
     setShowMathModal(true);
@@ -450,6 +501,15 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
                   인라인: <code>{mathExampleInline}</code><br />
                   블록: <code>{mathExampleBlock}</code>
                 </small>
+              </div>
+              <div className="math-help-link">
+                <a
+                  href="https://ko.wikipedia.org/wiki/%EB%8F%84%EC%9B%80%EB%A7%90:TeX_%EB%AC%B8%EB%B2%95"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  📚 LaTeX 문법 도움말
+                </a>
               </div>
             </div>
             <div className="math-modal-footer">
