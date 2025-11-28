@@ -105,12 +105,30 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
         ? ["0:00:04", "0:00:00"]
         : lessonData.practiceTimestamps || []
 
+    // 학습내용에 실습 항목 추가/제거
+    const learningContents = [...(lessonData.learningContents || [])]
+    const practiceContent = "<div class='practice'><ul><li></li></ul></div>"
+    
+    // practice 항목 찾기 (class='practice'를 포함하는 항목)
+    const practiceIndex = learningContents.findIndex(content => 
+      typeof content === 'string' && content.includes("class='practice'")
+    )
+
+    if (hasPractice && practiceIndex === -1) {
+      // 실습있음 체크 시 practice 항목 추가 (학습내용 마지막에)
+      learningContents.push(practiceContent)
+    } else if (!hasPractice && practiceIndex !== -1) {
+      // 실습없음 체크 시 practice 항목 제거
+      learningContents.splice(practiceIndex, 1)
+    }
+
     onUpdate({
       ...lessonData,
       hasPractice: hasPractice,
       practiceVideoUrl: hasPractice && lectureVideoUrl ? lectureVideoUrl.replace(".mp4", "_P.mp4") : "",
       practiceSubtitle: hasPractice && lectureSubtitle ? lectureSubtitle.replace(".vtt", "_P.vtt") : "",
       practiceTimestamps: practiceTimestamps,
+      learningContents: learningContents,
     })
   }
 
@@ -159,6 +177,12 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
             onChange={(e) => handleLectureChange("lectureSubtitle", e.target.value)}
           />
         </div>
+        <div className="checkbox-group" style={{ marginTop: "16px" }}>
+          <label>
+            <input type="checkbox" checked={lessonData.hasPractice || false} onChange={handlePracticeToggle} />
+            <span>실습있음</span>
+          </label>
+        </div>
         <div className="timestamp-group">
           <div className="list-header">
             <label className="group-label">타임스탬프</label>
@@ -191,12 +215,6 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
               </div>
             ))}
           </div>
-        </div>
-        <div className="checkbox-group" style={{ marginTop: "16px" }}>
-          <label>
-            <input type="checkbox" checked={lessonData.hasPractice || false} onChange={handlePracticeToggle} />
-            <span>실습있음</span>
-          </label>
         </div>
         {(lessonData.hasPractice || false) && (
           <>

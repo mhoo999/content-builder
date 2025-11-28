@@ -222,35 +222,27 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
         <div className="learning-group">
           <div className="list-header">
             <label className="group-label">학습내용</label>
-            <div className="header-buttons">
-              <button
-                className="btn-add-small"
-                onClick={() => {
-                  const newContents = [...lessonData.learningContents, ""]
-                  onUpdate({ ...lessonData, learningContents: newContents })
-                }}
-              >
-                + 추가
-              </button>
-              <button
-                className="btn-add-small"
-                onClick={() => {
-                  const newContents = [...lessonData.learningContents, "<p></p>"]
-                  onUpdate({ ...lessonData, learningContents: newContents })
-                }}
-              >
-                + 에디터 추가
-              </button>
-            </div>
+            <button
+              className="btn-add-small"
+              onClick={() => {
+                const newContents = [...lessonData.learningContents, ""]
+                onUpdate({ ...lessonData, learningContents: newContents })
+              }}
+            >
+              + 추가
+            </button>
           </div>
           {lessonData.learningContents.map((content, index) => {
             const isHtml = isHtmlContent(content)
+            const isPractice = typeof content === 'string' && content.includes("class='practice'")
+            const displayLabel = isPractice ? "실습" : `학습내용 ${index + 1}`
+            
             return (
               <div key={index} className={isHtml ? "dynamic-item-vertical" : "dynamic-item"}>
                 {isHtml && (
                   <div className="item-header">
-                    <label>학습내용 {index + 1}</label>
-                    {lessonData.learningContents.length > 1 && (
+                    <label>{displayLabel}</label>
+                    {!isPractice && lessonData.learningContents.length > 1 && (
                       <button
                         className="btn-remove-small"
                         onClick={() => {
@@ -267,7 +259,7 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
                   <RichTextEditor
                     value={content}
                     onChange={(value) => handleLearningContentChange(index, value)}
-                    placeholder={`학습내용 ${index + 1}`}
+                    placeholder={isPractice ? "실습 내용" : `학습내용 ${index + 1}`}
                   />
                 ) : (
                   <>
@@ -298,26 +290,15 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
         <div className="learning-group">
           <div className="list-header">
             <label className="group-label">학습목표</label>
-            <div className="header-buttons">
-              <button
-                className="btn-add-small"
-                onClick={() => {
-                  const newObjectives = [...lessonData.learningObjectives, ""]
-                  onUpdate({ ...lessonData, learningObjectives: newObjectives })
-                }}
-              >
-                + 추가
-              </button>
-              <button
-                className="btn-add-small"
-                onClick={() => {
-                  const newObjectives = [...lessonData.learningObjectives, "<p></p>"]
-                  onUpdate({ ...lessonData, learningObjectives: newObjectives })
-                }}
-              >
-                + 에디터 추가
-              </button>
-            </div>
+            <button
+              className="btn-add-small"
+              onClick={() => {
+                const newObjectives = [...lessonData.learningObjectives, ""]
+                onUpdate({ ...lessonData, learningObjectives: newObjectives })
+              }}
+            >
+              + 추가
+            </button>
           </div>
           {lessonData.learningObjectives.map((objective, index) => {
             const isHtml = isHtmlContent(objective)
