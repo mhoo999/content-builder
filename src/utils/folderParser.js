@@ -5,16 +5,16 @@
  */
 
 /**
- * HTML 문자열에서 상대경로 이미지에 data-original-src 속성 추가 및 base64 변환
- * (importedImages에서 base64를 찾아서 src에 설정)
+ * HTML 문자열에서 상대경로 이미지에 data-original-src 속성 추가
+ * (base64 변환 없이 경로만 표시, 원본과 동일하게 유지)
  * 배열인 경우 각 항목에 대해 처리
  */
-export const markRelativeImages = (html, importedImages = {}) => {
+export const markRelativeImages = (html) => {
   if (!html) return html;
 
   // 배열인 경우 각 항목에 대해 재귀적으로 처리
   if (Array.isArray(html)) {
-    return html.map(item => markRelativeImages(item, importedImages));
+    return html.map(item => markRelativeImages(item));
   }
 
   // 문자열이 아닌 경우 그대로 반환
@@ -26,30 +26,12 @@ export const markRelativeImages = (html, importedImages = {}) => {
   const pattern = /<img\s+([^>]*)src=["'](\.\.\/images\/[^"']+)["']([^>]*)>/gi;
 
   return html.replace(pattern, (match, before, fullPath, after) => {
-    // 이미 data-original-src가 있으면 base64로 변환만 시도
+    // 이미 data-original-src가 있으면 스킵
     if (match.includes('data-original-src')) {
-      // data-original-src에서 경로 추출
-      const originalSrcMatch = match.match(/data-original-src=["']([^"']+)["']/);
-      if (originalSrcMatch) {
-        const originalSrc = originalSrcMatch[1];
-        // importedImages에서 base64 찾기
-        if (importedImages[originalSrc]) {
-          // src를 base64로 교체
-          return match.replace(/src=["'][^"']+["']/, `src="${importedImages[originalSrc]}"`);
-        }
-      }
       return match;
     }
-    
-    // importedImages에서 base64 찾기
-    const base64 = importedImages[fullPath];
-    if (base64) {
-      // base64로 교체하고 data-original-src 속성 추가
-      return `<img ${before}src="${base64}" data-original-src="${fullPath}"${after}>`;
-    } else {
-      // base64가 없으면 경로만 유지하고 data-original-src 속성 추가
-      return `<img ${before}src="${fullPath}" data-original-src="${fullPath}"${after}>`;
-    }
+    // data-original-src 속성 추가 (경로는 그대로 유지)
+    return `<img ${before}src="${fullPath}" data-original-src="${fullPath}"${after}>`;
   });
 };
 

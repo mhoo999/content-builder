@@ -443,7 +443,7 @@ function App() {
         lessonTitles = parseSubjectsJson(subjectsData)
       }
 
-      // 이미지 파일들 찾아서 저장소에 저장
+      // 이미지 파일들 찾기 (base64 변환하지 않음, 원본과 동일하게 상대경로만 유지)
       const imageFiles = files.filter((f) => {
         const path = f.webkitRelativePath.toLowerCase()
         return (
@@ -456,28 +456,20 @@ function App() {
         )
       })
 
-      // 이미지를 base64로 변환하여 저장 (경로를 키로 사용)
-      const imageStore = {}
-      await Promise.all(
-        imageFiles.map(async (file) => {
-          const pathParts = file.webkitRelativePath.split("/")
-          // images/filename.ext 형태로 키 생성
-          const imagesIndex = pathParts.findIndex((p) => p === "images")
-          if (imagesIndex !== -1) {
-            const relativePath = "../" + pathParts.slice(imagesIndex).join("/")
-            const base64 = await new Promise((resolve) => {
-              const reader = new FileReader()
-              reader.onload = (e) => resolve(e.target.result)
-              reader.readAsDataURL(file)
-            })
-            imageStore[relativePath] = base64
-          }
-        }),
-      )
+      // 이미지 파일 경로만 저장 (base64 변환하지 않음)
+      const imagePaths = {}
+      imageFiles.forEach((file) => {
+        const pathParts = file.webkitRelativePath.split("/")
+        const imagesIndex = pathParts.findIndex((p) => p === "images")
+        if (imagesIndex !== -1) {
+          const relativePath = "../" + pathParts.slice(imagesIndex).join("/")
+          imagePaths[relativePath] = file // File 객체 저장 (export 시 사용)
+        }
+      })
 
-      // 이미지 저장소 업데이트
-      setImportedImages(imageStore)
-      console.log(`Imported ${Object.keys(imageStore).length} images`)
+      // 이미지 저장소 업데이트 (File 객체 저장, base64 아님)
+      setImportedImages(imagePaths)
+      console.log(`Imported ${Object.keys(imagePaths).length} images`)
 
       // 모든 data.json 파일 찾기
       const dataJsonFiles = files.filter((f) => f.webkitRelativePath.endsWith("/assets/data/data.json"))
@@ -505,41 +497,36 @@ function App() {
       lessonData.sort((a, b) => a.lessonNumber - b.lessonNumber)
 
       // 교수 정보 추출 (첫 번째 차시에서)
-      let professorInfo = lessonData.length > 0 ? parseProfessorInfo(lessonData[0].dataJson) : createProfessorData()
-      
-      // 교수 사진도 base64로 변환 (이미지가 있는 경우)
-      if (professorInfo.photo && imageStore[professorInfo.photo]) {
-        professorInfo.photo = imageStore[professorInfo.photo]
-      }
+      const professorInfo = lessonData.length > 0 ? parseProfessorInfo(lessonData[0].dataJson) : createProfessorData()
 
-      // Builder 형식으로 변환 + 상대경로 이미지 마킹 및 base64 변환
+      // Builder 형식으로 변환 + 상대경로 이미지 마킹 (base64 변환 없음)
       const lessons = lessonData.map((item, index) => {
         const builderLesson = convertDataJsonToBuilderFormat(item.dataJson, item.lessonNumber)
         builderLesson.lessonTitle = lessonTitles[item.lessonNumber] || `${item.lessonNumber}차시`
 
-        // 이미지가 포함된 필드들에 data-original-src 속성 추가 및 base64 변환
+        // 이미지가 포함된 필드들에 data-original-src 속성 추가 (경로만 유지)
         // 용어 내용
         if (builderLesson.terms) {
           builderLesson.terms = builderLesson.terms.map((term) => ({
             ...term,
-            content: markRelativeImages(term.content, imageStore),
+            content: markRelativeImages(term.content),
           }))
         }
         // 교수님 의견
         if (builderLesson.professorThink) {
-          builderLesson.professorThink = markRelativeImages(builderLesson.professorThink, imageStore)
+          builderLesson.professorThink = markRelativeImages(builderLesson.professorThink)
         }
         // 연습문제 (문항, 해설)
         if (builderLesson.exercises) {
           builderLesson.exercises = builderLesson.exercises.map((ex) => ({
             ...ex,
-            question: markRelativeImages(ex.question, imageStore),
-            commentary: markRelativeImages(ex.commentary, imageStore),
+            question: markRelativeImages(ex.question),
+            commentary: markRelativeImages(ex.commentary),
           }))
         }
         // 학습정리
         if (builderLesson.summary) {
-          builderLesson.summary = builderLesson.summary.map((s) => markRelativeImages(s, imageStore))
+          builderLesson.summary = builderLesson.summary.map((s) => markRelativeImages(s))
         }
 
         return builderLesson
@@ -586,7 +573,7 @@ function App() {
       })
 
       setCurrentLessonIndex(0)
-      const imageCount = Object.keys(imageStore).length
+      const imageCount = Object.keys(imagePaths).length
       alert(
         `${lessons.length}개 차시를 성공적으로 불러왔습니다!\n\n과목코드: ${courseCode}\n과정명: ${courseName}\n이미지: ${imageCount}개 저장됨`,
       )
