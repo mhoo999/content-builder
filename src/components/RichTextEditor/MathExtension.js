@@ -35,36 +35,6 @@ export const Math = Node.create({
     ];
   },
 
-  renderHTML({ node, HTMLAttributes }) {
-    const { formula, display } = node.attrs;
-    
-    if (!formula) {
-      return ['span', mergeAttributes(HTMLAttributes, { class: 'math-empty' }), '수식'];
-    }
-
-    try {
-      const html = katex.renderToString(formula, {
-        throwOnError: false,
-        displayMode: display,
-      });
-      
-      const attrs = mergeAttributes(HTMLAttributes, {
-        class: display ? 'math-block' : 'math-inline',
-        'data-formula': formula,
-        'data-display': display ? '' : null,
-      });
-      
-      // HTML 문자열을 직접 삽입하기 위해 dangerouslySetInnerHTML과 유사한 방식 사용
-      return ['span', attrs, 0];
-    } catch (error) {
-      return [
-        'span',
-        mergeAttributes(HTMLAttributes, { class: 'math-error' }),
-        `수식 오류: ${formula}`,
-      ];
-    }
-  },
-
   addNodeView() {
     return ({ node, HTMLAttributes, getPos, editor }) => {
       const { formula, display } = node.attrs;
