@@ -29,6 +29,26 @@
   gap: 2px;
 }
 
+.table-insert-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.table-insert-group button {
+  border-radius: 0;
+  border: none;
+  border-right: 1px solid #e1e4e8;
+  min-width: 50px;
+}
+
+.table-insert-group button:last-child {
+  border-right: none;
+}
+
 .toolbar-divider {
   width: 1px;
   height: 20px;
@@ -332,7 +352,8 @@
 }
 
 .notion-editor-content th {
-  background: #f7f8fa;
+  background: #ff831e;
+  color: #ffffff;
   font-weight: 600;
 }
 

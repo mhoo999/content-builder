@@ -451,13 +451,70 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
           >
             🖼 이미지
           </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-            title="표 삽입"
-          >
-            ⊞ 표
-          </button>
+          <div className="table-insert-group">
+            <button
+              type="button"
+              onClick={() => {
+                // 가로형 표 삽입 (첫 번째 행이 제목)
+                editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+              }}
+              title="가로형 표 삽입 (첫 번째 행이 제목)"
+            >
+              ⊞ 가로
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                // 세로형 표 삽입 (첫 번째 열이 제목)
+                editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: false }).run();
+                // 첫 번째 열의 모든 셀을 헤더로 변환
+                setTimeout(() => {
+                  const { $from } = editor.state.selection;
+                  let tablePos = null;
+                  
+                  // 테이블 노드 찾기
+                  for (let depth = $from.depth; depth > 0; depth--) {
+                    const node = $from.node(depth);
+                    if (node.type.name === 'table') {
+                      tablePos = $from.before(depth);
+                      break;
+                    }
+                  }
+                  
+                  if (tablePos !== null) {
+                    editor.chain().focus().command(({ tr, state }) => {
+                      const tableNode = tr.doc.nodeAt(tablePos);
+                      if (!tableNode) return false;
+                      
+                      let currentPos = tablePos + 1;
+                      
+                      // 테이블의 각 행을 순회
+                      tableNode.forEach((rowNode, rowOffset, rowPos) => {
+                        if (rowNode.type.name === 'tableRow') {
+                          // 첫 번째 셀 찾기
+                          rowNode.forEach((cellNode, cellOffset, cellPosInRow) => {
+                            if (cellOffset === 0 && cellNode.type.name === 'tableCell') {
+                              // 첫 번째 셀을 헤더로 변환
+                              const absolutePos = tablePos + 1 + rowPos + cellPosInRow;
+                              const headerType = state.schema.nodes.tableHeader;
+                              if (headerType) {
+                                tr.setNodeMarkup(absolutePos, headerType, cellNode.attrs);
+                              }
+                            }
+                          });
+                        }
+                      });
+                      
+                      return true;
+                    }).run();
+                  }
+                }, 50);
+              }}
+              title="세로형 표 삽입 (첫 번째 열이 제목)"
+            >
+              ⊞ 세로
+            </button>
+          </div>
           <button
             type="button"
             onClick={handleMathInsert}
