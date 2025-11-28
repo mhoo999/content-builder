@@ -355,6 +355,7 @@ export const parseProfessorInfo = (dataJson) => {
     name: prof.name || '',
     photo: prof.photo || '',
     education: educationItem?.content || [''],
-    career: parsedCareer.length > 0 ? parsedCareer : [{ period: '', description: '' }]
+    career: parsedCareer.length > 0 ? parsedCareer : [{ period: '', description: '' }],
+    introMedia: introPage?.media || '' // 인트로 페이지 media 경로 저장
   };
 };

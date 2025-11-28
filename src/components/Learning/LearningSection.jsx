@@ -33,12 +33,12 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
     // 오른쪽부터 초, 분, 시 순서로 해석
     // 예: "3" → 3초, "430" → 4분 30초, "490" → 4분 00초 (초는 0-59까지만)
     let numStr = numbers
-    
+
     // 오른쪽부터 2자리씩 추출
     let seconds = 0
     let minutes = 0
     let hours = 0
-    
+
     if (numStr.length >= 1) {
       seconds = parseInt(numStr.slice(-2) || "0", 10)
     }
@@ -48,12 +48,12 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
     if (numStr.length >= 5) {
       hours = parseInt(numStr.slice(-6, -4) || "0", 10)
     }
-    
+
     // 초가 60 이상이면 0으로 처리 (분에 더하지 않음)
     if (seconds >= 60) {
       seconds = 0
     }
-    
+
     // 분이 60 이상이면 0으로 처리 (시에 더하지 않음)
     if (minutes >= 60) {
       minutes = 0

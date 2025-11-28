@@ -90,9 +90,9 @@ function App() {
             // 저장된 데이터가 있으면 사용자에게 알림
             const restored = confirm(
               `저장된 작업 내용을 찾았습니다.\n\n` +
-              `과목: ${parsed.courseName || parsed.courseCode || "없음"}\n` +
-              `차시 수: ${parsed.lessons?.length || 0}개\n\n` +
-              `불러오시겠습니까?`
+                `과목: ${parsed.courseName || parsed.courseCode || "없음"}\n` +
+                `차시 수: ${parsed.lessons?.length || 0}개\n\n` +
+                `불러오시겠습니까?`,
             )
             if (!restored) {
               // 불러오지 않으면 localStorage 초기화
@@ -147,7 +147,7 @@ function App() {
       try {
         const dataStr = JSON.stringify(data)
         const dataSize = new Blob([dataStr]).size
-        
+
         // localStorage 용량 제한 확인 (약 5MB)
         if (dataSize > 5 * 1024 * 1024) {
           setSaveStatus("저장 실패 (용량 초과)")
@@ -608,7 +608,10 @@ function App() {
             {saveStatus}
           </span>
           {!isLocalStorageAvailable() && (
-            <span className="storage-warning" title="시크릿 모드에서는 자동 저장이 작동하지 않습니다. 수동으로 Export하여 백업하세요.">
+            <span
+              className="storage-warning"
+              title="시크릿 모드에서는 자동 저장이 작동하지 않습니다. 수동으로 Export하여 백업하세요."
+            >
               ⚠️ 저장 불가
             </span>
           )}

@@ -165,6 +165,11 @@ def create_intro_page(professor, processed_photo=None):
     """
     photo = processed_photo if processed_photo is not None else professor.get("photo", "")
     
+    # 인트로 media 경로: 원본이 있으면 사용, 없으면 기본값
+    intro_media = professor.get("introMedia", "")
+    if not intro_media:
+        intro_media = "../../../resources/media/common_start.mp4"
+    
     # 경력 변환: [{ period: '', description: '' }] → ['<b>period</b><br />description']
     career_content = []
     if isinstance(professor.get("career"), list):
@@ -188,7 +193,7 @@ def create_intro_page(professor, processed_photo=None):
         "section": 0,
         "title": "인트로",
         "component": "intro",
-        "media": "../../../resources/media/common_start.mp4",
+        "media": intro_media,
         "data": {
             "professor": {
                 "name": professor["name"],
@@ -262,6 +267,10 @@ def create_term_page(terms, images_dir=None, course_code=None, image_counter=Non
                 content_list = [content_list] if content_list else []
             
             # 각 항목을 처리하고 불릿 추가
+            # 주의: import 시 불릿을 제거했으므로, export 시 항상 추가해야 함
+            # 하지만 원본에 불릿이 없었던 경우를 고려하여, 
+            # import 시 원본에 불릿이 있었는지 여부를 저장하는 것이 이상적이지만,
+            # 현재는 항상 추가하는 것으로 처리
             processed_content = []
             for content_item in content_list:
                 if content_item:
@@ -269,8 +278,10 @@ def create_term_page(terms, images_dir=None, course_code=None, image_counter=Non
                     processed_item = content_item
                     if images_dir and course_code and image_counter:
                         processed_item = extract_and_save_images(content_item, images_dir, course_code, image_counter)
-                    # 불릿 추가
-                    processed_content.append(f"• {processed_item}")
+                    # 불릿 추가 (import 시 제거했으므로 항상 추가)
+                    if not processed_item.strip().startswith("•"):
+                        processed_item = f"• {processed_item}"
+                    processed_content.append(processed_item)
             
             term_data.append({
                 "title": title,
@@ -291,9 +302,22 @@ def create_term_page(terms, images_dir=None, course_code=None, image_counter=Non
 
 def create_objectives_page(contents, objectives):
     """학습목표 페이지 생성"""
-    # 학습내용과 학습목표에 자동 넘버링 추가
-    numbered_contents = [f"{i+1}. {c}" for i, c in enumerate(contents) if c]
-    numbered_objectives = [f"{i+1}. {o}" for i, o in enumerate(objectives) if o]
+    # 학습내용과 학습목표에 자동 넘버링 추가 (원본에 넘버링이 없으면 추가)
+    def add_numbering_if_needed(items):
+        result = []
+        for i, item in enumerate(items):
+            if not item:
+                continue
+            # 원본에 넘버링이 이미 있으면 그대로 사용
+            if re.match(r'^\d+\.\s+', item):
+                result.append(item)
+            else:
+                # 넘버링이 없으면 추가
+                result.append(f"{i+1}. {item}")
+        return result
+    
+    numbered_contents = add_numbering_if_needed(contents)
+    numbered_objectives = add_numbering_if_needed(objectives)
     
     return {
         "path": "/objectives",
