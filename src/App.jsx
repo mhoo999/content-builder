@@ -375,11 +375,10 @@ function App() {
     }
 
     // 익스포트할 데이터 준비
-    // 이미지는 Python 스크립트에서 HTML의 base64를 찾아서 파일로 저장하고 상대경로로 교체함
-    // importedImages는 Export 시 JSON에 포함하지 않음 (이미 HTML에 base64로 포함되어 있거나 상대경로로 변환됨)
+    // importedImages는 이미 base64로 변환되어 있음 (export 시 원본 이미지 복사용)
     const exportData = {
       ...courseData,
-      // importedImages는 제외 - Python 스크립트가 HTML에서 base64 이미지를 직접 처리함
+      importedImages: importedImages, // export 시 원본 이미지 복사용
     }
 
     try {
@@ -456,20 +455,28 @@ function App() {
         )
       })
 
-      // 이미지 파일 경로만 저장 (base64 변환하지 않음)
-      const imagePaths = {}
-      imageFiles.forEach((file) => {
-        const pathParts = file.webkitRelativePath.split("/")
-        const imagesIndex = pathParts.findIndex((p) => p === "images")
-        if (imagesIndex !== -1) {
-          const relativePath = "../" + pathParts.slice(imagesIndex).join("/")
-          imagePaths[relativePath] = file // File 객체 저장 (export 시 사용)
-        }
-      })
+      // 이미지 파일을 base64로 변환하여 저장 (표시용 + export 시 원본 복사용)
+      const imageStore = {}
+      await Promise.all(
+        imageFiles.map(async (file) => {
+          const pathParts = file.webkitRelativePath.split("/")
+          const imagesIndex = pathParts.findIndex((p) => p === "images")
+          if (imagesIndex !== -1) {
+            const relativePath = "../" + pathParts.slice(imagesIndex).join("/")
+            // File 객체를 base64로 변환 (표시용)
+            const base64 = await new Promise((resolve) => {
+              const reader = new FileReader()
+              reader.onload = (e) => resolve(e.target.result)
+              reader.readAsDataURL(file)
+            })
+            imageStore[relativePath] = base64
+          }
+        }),
+      )
 
-      // 이미지 저장소 업데이트 (File 객체 저장, base64 아님)
-      setImportedImages(imagePaths)
-      console.log(`Imported ${Object.keys(imagePaths).length} images`)
+      // 이미지 저장소 업데이트 (base64로 변환된 데이터 저장)
+      setImportedImages(imageStore)
+      console.log(`Imported ${Object.keys(imageStore).length} images`)
 
       // 모든 data.json 파일 찾기
       const dataJsonFiles = files.filter((f) => f.webkitRelativePath.endsWith("/assets/data/data.json"))
@@ -497,36 +504,41 @@ function App() {
       lessonData.sort((a, b) => a.lessonNumber - b.lessonNumber)
 
       // 교수 정보 추출 (첫 번째 차시에서)
-      const professorInfo = lessonData.length > 0 ? parseProfessorInfo(lessonData[0].dataJson) : createProfessorData()
+      let professorInfo = lessonData.length > 0 ? parseProfessorInfo(lessonData[0].dataJson) : createProfessorData()
+      
+      // 교수 사진도 임시 base64로 변환 (표시용)
+      if (professorInfo.photo && imageStore[professorInfo.photo]) {
+        professorInfo.photo = imageStore[professorInfo.photo]
+      }
 
-      // Builder 형식으로 변환 + 상대경로 이미지 마킹 (base64 변환 없음)
+      // Builder 형식으로 변환 + 상대경로 이미지 마킹 및 임시 base64 변환 (표시용)
       const lessons = lessonData.map((item, index) => {
         const builderLesson = convertDataJsonToBuilderFormat(item.dataJson, item.lessonNumber)
         builderLesson.lessonTitle = lessonTitles[item.lessonNumber] || `${item.lessonNumber}차시`
 
-        // 이미지가 포함된 필드들에 data-original-src 속성 추가 (경로만 유지)
+        // 이미지가 포함된 필드들에 data-original-src 속성 추가 및 임시 base64 변환
         // 용어 내용
         if (builderLesson.terms) {
           builderLesson.terms = builderLesson.terms.map((term) => ({
             ...term,
-            content: markRelativeImages(term.content),
+            content: markRelativeImages(term.content, imageStore),
           }))
         }
         // 교수님 의견
         if (builderLesson.professorThink) {
-          builderLesson.professorThink = markRelativeImages(builderLesson.professorThink)
+          builderLesson.professorThink = markRelativeImages(builderLesson.professorThink, imageStore)
         }
         // 연습문제 (문항, 해설)
         if (builderLesson.exercises) {
           builderLesson.exercises = builderLesson.exercises.map((ex) => ({
             ...ex,
-            question: markRelativeImages(ex.question),
-            commentary: markRelativeImages(ex.commentary),
+            question: markRelativeImages(ex.question, imageStore),
+            commentary: markRelativeImages(ex.commentary, imageStore),
           }))
         }
         // 학습정리
         if (builderLesson.summary) {
-          builderLesson.summary = builderLesson.summary.map((s) => markRelativeImages(s))
+          builderLesson.summary = builderLesson.summary.map((s) => markRelativeImages(s, imageStore))
         }
 
         return builderLesson
@@ -573,7 +585,7 @@ function App() {
       })
 
       setCurrentLessonIndex(0)
-      const imageCount = Object.keys(imagePaths).length
+      const imageCount = Object.keys(imageStore).length
       alert(
         `${lessons.length}개 차시를 성공적으로 불러왔습니다!\n\n과목코드: ${courseCode}\n과정명: ${courseName}\n이미지: ${imageCount}개 저장됨`,
       )

@@ -23,7 +23,7 @@ if sys.platform == 'win32':
 
 def clean_html_for_export(html_content):
     """
-    HTML에서 에디터 관련 속성 정리 (data-original-src, notion-image 클래스 등)
+    HTML에서 에디터 관련 속성 정리 (data-original-src를 src로 변환, notion-image 클래스 등)
 
     Args:
         html_content: HTML 문자열
@@ -34,8 +34,22 @@ def clean_html_for_export(html_content):
     if not html_content:
         return html_content
 
-    # data-original-src 속성 제거
-    html_content = re.sub(r'\s*data-original-src=["\'][^"\']*["\']', '', html_content)
+    # data-original-src가 있으면 src를 data-original-src로 교체하고 data-original-src 제거
+    # <img src="base64..." data-original-src="../images/file.png"> 
+    # → <img src="../images/file.png">
+    def replace_with_original_src(match):
+        full_tag = match.group(0)
+        original_src_match = re.search(r'data-original-src=["\']([^"\']+)["\']', full_tag)
+        if original_src_match:
+            original_src = original_src_match.group(1)
+            # src를 data-original-src로 교체
+            full_tag = re.sub(r'src=["\'][^"\']+["\']', f'src=\"{original_src}\"', full_tag)
+            # data-original-src 제거
+            full_tag = re.sub(r'\s*data-original-src=["\'][^"\']*["\']', '', full_tag)
+            return full_tag
+        return full_tag
+    
+    html_content = re.sub(r'<img[^>]*data-original-src=["\'][^"\']+["\'][^>]*>', replace_with_original_src, html_content)
 
     # class="notion-image" 제거 및 alt='' 추가, 태그 형식 정리
     # <img class="notion-image" src="..."> → <img src='...' alt='' />
@@ -723,9 +737,8 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     course_name = course_data["courseName"]
     year = course_data.get("year", "")
     professor = course_data["professor"]
-    # imported_images는 더 이상 사용하지 않음
-    # 이미지는 HTML 내용의 base64를 직접 추출하여 파일로 저장함
-    imported_images = {}
+    # imported_images: import 시 가져온 원본 이미지들 (경로 -> base64)
+    imported_images = course_data.get("importedImages", {})
 
     if not course_code:
         print("❌ 과목 코드가 없습니다!")
@@ -756,6 +769,11 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     # images 폴더 생성
     images_dir = course_dir / "images"
     images_dir.mkdir(exist_ok=True)
+
+    # import된 원본 이미지들 복사 (data-original-src에 있는 경로의 이미지들)
+    if imported_images:
+        saved_count = save_imported_images(imported_images, images_dir)
+        print(f"✅ 원본 이미지 {saved_count}개 복사 완료")
 
     # 이미지 카운터 (전체 과정에서 공유)
     # HTML 내용의 base64 이미지를 추출하여 파일로 저장하고 상대경로로 교체
