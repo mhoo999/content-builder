@@ -212,7 +212,7 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
         </div>
         {(lessonData.hasPractice || false) && (
           <>
-            <div className="form-group">
+            <div className="form-group" style={{ marginTop: "24px" }}>
               <label>실습 강의 영상 URL</label>
               <input
                 type="url"
