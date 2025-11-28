@@ -120,7 +120,14 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   const lecturePage = findPageByComponent(pages, 'lecture');
   const lectureVideoUrl = lecturePage?.media || '';
   const lectureSubtitle = lecturePage?.caption?.[0]?.src || '';
-  const timestamps = lecturePage?.data?.map(item => item.time || '') || ['', '', ''];
+  const timestamps = lecturePage?.data?.map(item => item.time || '') || ['0:00:04', '0:00:00'];
+
+  // 실습 파싱
+  const practicePage = findPageByComponent(pages, 'practice');
+  const hasPractice = !!practicePage;
+  const practiceVideoUrl = practicePage?.media || '';
+  const practiceSubtitle = practicePage?.caption?.[0]?.src || '';
+  const practiceTimestamps = practicePage?.data?.map(item => item.time || '') || ['0:00:04', '0:00:00'];
 
   // 연습문제 파싱
   const exercisePage = findPageByComponent(pages, 'exercise');
@@ -193,7 +200,12 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
 
     lectureVideoUrl: lectureVideoUrl,
     lectureSubtitle: lectureSubtitle,
-    timestamps: timestamps,
+    timestamps: timestamps.length > 0 ? timestamps : ['0:00:04', '0:00:00'],
+
+    hasPractice: hasPractice,
+    practiceVideoUrl: practiceVideoUrl,
+    practiceSubtitle: practiceSubtitle,
+    practiceTimestamps: practiceTimestamps.length > 0 ? practiceTimestamps : ['0:00:04', '0:00:00'],
 
     exercises: exercises,
     summary: summary,
