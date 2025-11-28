@@ -238,7 +238,11 @@
 }
 
 .notion-editor-content li {
-  /* 기본 브라우저 스타일 유지 */
+  margin: 0.25em 0;
+}
+
+.notion-editor-content ul > li {
+  list-style-type: disc;
 }
 
 .notion-editor-content ul.check-bullet {
@@ -258,6 +262,10 @@
   left: -1.2em;
   color: #2383e2;
   font-weight: bold;
+}
+
+.notion-editor-content ol > li {
+  list-style-type: decimal;
 }
 
 /* 인용 */
