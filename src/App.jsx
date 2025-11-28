@@ -505,7 +505,7 @@ function App() {
 
       // 교수 정보 추출 (첫 번째 차시에서)
       let professorInfo = lessonData.length > 0 ? parseProfessorInfo(lessonData[0].dataJson) : createProfessorData()
-      
+
       // 교수 사진도 임시 base64로 변환 (표시용)
       if (professorInfo.photo && imageStore[professorInfo.photo]) {
         professorInfo.photo = imageStore[professorInfo.photo]
@@ -528,12 +528,13 @@ function App() {
         if (builderLesson.professorThink) {
           builderLesson.professorThink = markRelativeImages(builderLesson.professorThink, imageStore)
         }
-        // 연습문제 (문항, 해설)
+        // 연습문제 (문항, 해설, 선택지)
         if (builderLesson.exercises) {
           builderLesson.exercises = builderLesson.exercises.map((ex) => ({
             ...ex,
             question: markRelativeImages(ex.question, imageStore),
             commentary: markRelativeImages(ex.commentary, imageStore),
+            options: ex.options ? ex.options.map((opt) => markRelativeImages(opt, imageStore)) : [],
           }))
         }
         // 학습정리

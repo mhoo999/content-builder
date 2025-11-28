@@ -22,8 +22,9 @@ export const markRelativeImages = (html, importedImages = {}) => {
     return html;
   }
 
-  // ../images/filename.png 패턴 찾기
-  const pattern = /<img\s+([^>]*)src=["'](\.\.\/images\/[^"']+)["']([^>]*)>/gi;
+  // ../images/filename.png 또는 images/filename.png 패턴 찾기
+  // 더 유연한 패턴: ../images/ 또는 images/로 시작하는 경로
+  const pattern = /<img\s+([^>]*)src=["']([^"']*images\/[^"']+)["']([^>]*)>/gi;
 
   return html.replace(pattern, (match, before, fullPath, after) => {
     // 이미 data-original-src가 있으면 base64로 변환만 시도
@@ -40,14 +41,23 @@ export const markRelativeImages = (html, importedImages = {}) => {
       return match;
     }
     
-    // importedImages에서 base64 찾기 (이미 변환된 데이터)
-    const base64 = importedImages[fullPath];
+    // 경로 정규화: images/로 시작하면 ../images/로 변환
+    let normalizedPath = fullPath;
+    if (normalizedPath.startsWith('images/')) {
+      normalizedPath = '../' + normalizedPath;
+    } else if (!normalizedPath.startsWith('../images/')) {
+      // ../images/로 시작하지 않으면 그대로 유지 (다른 형식일 수 있음)
+    }
+    
+    // importedImages에서 base64 찾기 (정규화된 경로와 원본 경로 모두 시도)
+    let base64 = importedImages[normalizedPath] || importedImages[fullPath];
+    
     if (base64) {
       // base64로 표시하되 data-original-src에 원본 경로 저장
-      return `<img ${before}src="${base64}" data-original-src="${fullPath}"${after}>`;
+      return `<img ${before}src="${base64}" data-original-src="${normalizedPath}"${after}>`;
     } else {
       // base64가 없으면 경로만 유지하고 data-original-src 속성 추가
-      return `<img ${before}src="${fullPath}" data-original-src="${fullPath}"${after}>`;
+      return `<img ${before}src="${normalizedPath}" data-original-src="${normalizedPath}"${after}>`;
     }
   });
 };
