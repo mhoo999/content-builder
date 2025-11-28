@@ -37,6 +37,10 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
   const [showMathModal, setShowMathModal] = useState(false);
   const [mathFormula, setMathFormula] = useState('');
   const [mathDisplay, setMathDisplay] = useState(false);
+  
+  // LaTeX 예시 (백슬래시 이스케이프)
+  const mathExampleInline = 'x^2 + y^2 = r^2';
+  const mathExampleBlock = '\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}';
 
   const editor = useEditor({
     extensions: [
@@ -442,8 +446,8 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
               <div className="math-examples">
                 <small>
                   <strong>예시:</strong><br />
-                  인라인: <code>x^2 + y^2 = r^2</code><br />
-                  블록: <code>\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}</code>
+                  인라인: <code>{mathExampleInline}</code><br />
+                  블록: <code>{mathExampleBlock}</code>
                 </small>
               </div>
             </div>
