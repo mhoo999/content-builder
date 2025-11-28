@@ -305,8 +305,8 @@ export const parseProfessorInfo = (dataJson) => {
   
   const parsedCareer = careerContent.map(careerStr => {
     if (typeof careerStr === 'string') {
-      // <b>연도</b><br />내용 형식 파싱
-      const boldMatch = careerStr.match(/<b>(.*?)<\/b><br \/>(.*)/);
+      // <b>연도</b><br />내용 또는 <b>연도</b><br>내용 형식 파싱
+      const boldMatch = careerStr.match(/<b>(.*?)<\/b><br\s*\/?>(.*)/);
       if (boldMatch) {
         const period = boldMatch[1].trim();
         const dates = parsePeriodToDates(period);
