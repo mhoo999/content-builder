@@ -505,36 +505,41 @@ function App() {
       lessonData.sort((a, b) => a.lessonNumber - b.lessonNumber)
 
       // 교수 정보 추출 (첫 번째 차시에서)
-      const professorInfo = lessonData.length > 0 ? parseProfessorInfo(lessonData[0].dataJson) : createProfessorData()
+      let professorInfo = lessonData.length > 0 ? parseProfessorInfo(lessonData[0].dataJson) : createProfessorData()
+      
+      // 교수 사진도 base64로 변환 (이미지가 있는 경우)
+      if (professorInfo.photo && imageStore[professorInfo.photo]) {
+        professorInfo.photo = imageStore[professorInfo.photo]
+      }
 
-      // Builder 형식으로 변환 + 상대경로 이미지 마킹
+      // Builder 형식으로 변환 + 상대경로 이미지 마킹 및 base64 변환
       const lessons = lessonData.map((item, index) => {
         const builderLesson = convertDataJsonToBuilderFormat(item.dataJson, item.lessonNumber)
         builderLesson.lessonTitle = lessonTitles[item.lessonNumber] || `${item.lessonNumber}차시`
 
-        // 이미지가 포함된 필드들에 data-original-src 속성 추가 (경로 표시용)
+        // 이미지가 포함된 필드들에 data-original-src 속성 추가 및 base64 변환
         // 용어 내용
         if (builderLesson.terms) {
           builderLesson.terms = builderLesson.terms.map((term) => ({
             ...term,
-            content: markRelativeImages(term.content),
+            content: markRelativeImages(term.content, imageStore),
           }))
         }
         // 교수님 의견
         if (builderLesson.professorThink) {
-          builderLesson.professorThink = markRelativeImages(builderLesson.professorThink)
+          builderLesson.professorThink = markRelativeImages(builderLesson.professorThink, imageStore)
         }
         // 연습문제 (문항, 해설)
         if (builderLesson.exercises) {
           builderLesson.exercises = builderLesson.exercises.map((ex) => ({
             ...ex,
-            question: markRelativeImages(ex.question),
-            commentary: markRelativeImages(ex.commentary),
+            question: markRelativeImages(ex.question, imageStore),
+            commentary: markRelativeImages(ex.commentary, imageStore),
           }))
         }
         // 학습정리
         if (builderLesson.summary) {
-          builderLesson.summary = builderLesson.summary.map((s) => markRelativeImages(s))
+          builderLesson.summary = builderLesson.summary.map((s) => markRelativeImages(s, imageStore))
         }
 
         return builderLesson

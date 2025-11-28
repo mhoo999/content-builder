@@ -302,22 +302,9 @@ def create_term_page(terms, images_dir=None, course_code=None, image_counter=Non
 
 def create_objectives_page(contents, objectives):
     """학습목표 페이지 생성"""
-    # 학습내용과 학습목표에 자동 넘버링 추가 (원본에 넘버링이 없으면 추가)
-    def add_numbering_if_needed(items):
-        result = []
-        for i, item in enumerate(items):
-            if not item:
-                continue
-            # 원본에 넘버링이 이미 있으면 그대로 사용
-            if re.match(r'^\d+\.\s+', item):
-                result.append(item)
-            else:
-                # 넘버링이 없으면 추가
-                result.append(f"{i+1}. {item}")
-        return result
-    
-    numbered_contents = add_numbering_if_needed(contents)
-    numbered_objectives = add_numbering_if_needed(objectives)
+    # 학습내용과 학습목표에 자동 넘버링 추가
+    numbered_contents = [f"{i+1}. {c}" for i, c in enumerate(contents) if c]
+    numbered_objectives = [f"{i+1}. {o}" for i, o in enumerate(objectives) if o]
     
     return {
         "path": "/objectives",
