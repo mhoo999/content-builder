@@ -130,11 +130,10 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   const learningContentsRaw = objectivesPage?.data?.[0]?.contents || ['', '', ''];
   const learningObjectivesRaw = objectivesPage?.data?.[1]?.contents || ['', '', ''];
   
-  // HTML 태그 제거 및 넘버링 제거 헬퍼 함수
+  // HTML 엔티티 디코딩 및 넘버링 제거 헬퍼 함수 (HTML 태그는 유지)
   const cleanText = (text) => {
     if (typeof text !== 'string') return text;
-    // HTML 태그 제거 (특히 <div class='practice'> 같은 불필요한 태그)
-    let cleaned = text.replace(/<[^>]+>/g, '');
+    let cleaned = text;
     // HTML 엔티티 디코딩
     cleaned = cleaned
       .replace(/&lt;/g, '<')
@@ -143,11 +142,12 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'");
     // 넘버링 제거 (예: "1. 내용" -> "내용")
+    // HTML 태그가 포함된 경우에도 넘버링만 제거
     cleaned = cleaned.replace(/^\d+\.\s*/, '').trim();
     return cleaned;
   };
   
-  // 넘버링 제거 및 HTML 태그 제거
+  // 넘버링 제거 (HTML 태그는 유지하여 에디터로 표시)
   const learningContents = learningContentsRaw.map(cleanText);
   const learningObjectives = learningObjectivesRaw.map(cleanText);
 

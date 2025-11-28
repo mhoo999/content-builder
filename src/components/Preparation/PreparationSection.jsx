@@ -81,40 +81,8 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
 
   // HTML 태그 포함 여부 확인
   const isHtmlContent = (text) => {
-    if (!text || typeof text !== 'string') return false
+    if (!text || typeof text !== "string") return false
     return /<[^>]+>/.test(text)
-  }
-
-  // 에디터로 전환 (빈 HTML로 초기화)
-  const convertToEditor = (type, index) => {
-    if (type === 'content') {
-      const newContents = [...lessonData.learningContents]
-      // 이미 HTML이 아니면 빈 HTML로, HTML이면 그대로 유지
-      newContents[index] = isHtmlContent(newContents[index]) ? newContents[index] : '<p></p>'
-      onUpdate({ ...lessonData, learningContents: newContents })
-    } else if (type === 'objective') {
-      const newObjectives = [...lessonData.learningObjectives]
-      newObjectives[index] = isHtmlContent(newObjectives[index]) ? newObjectives[index] : '<p></p>'
-      onUpdate({ ...lessonData, learningObjectives: newObjectives })
-    }
-  }
-
-  // 텍스트로 전환 (HTML 태그 제거)
-  const convertToText = (type, index) => {
-    if (type === 'content') {
-      const newContents = [...lessonData.learningContents]
-      const html = newContents[index] || ''
-      // HTML 태그 제거
-      const text = html.replace(/<[^>]+>/g, '').trim()
-      newContents[index] = text
-      onUpdate({ ...lessonData, learningContents: newContents })
-    } else if (type === 'objective') {
-      const newObjectives = [...lessonData.learningObjectives]
-      const html = newObjectives[index] || ''
-      const text = html.replace(/<[^>]+>/g, '').trim()
-      newObjectives[index] = text
-      onUpdate({ ...lessonData, learningObjectives: newObjectives })
-    }
   }
 
   // terms가 없거나 비어있을 때 기본 3개 제공
@@ -254,15 +222,26 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
         <div className="learning-group">
           <div className="list-header">
             <label className="group-label">학습내용</label>
-            <button
-              className="btn-add-small"
-              onClick={() => {
-                const newContents = [...lessonData.learningContents, ""]
-                onUpdate({ ...lessonData, learningContents: newContents })
-              }}
-            >
-              + 추가
-            </button>
+            <div className="header-buttons">
+              <button
+                className="btn-add-small"
+                onClick={() => {
+                  const newContents = [...lessonData.learningContents, ""]
+                  onUpdate({ ...lessonData, learningContents: newContents })
+                }}
+              >
+                + 추가
+              </button>
+              <button
+                className="btn-add-small"
+                onClick={() => {
+                  const newContents = [...lessonData.learningContents, "<p></p>"]
+                  onUpdate({ ...lessonData, learningContents: newContents })
+                }}
+              >
+                + 에디터 추가
+              </button>
+            </div>
           </div>
           {lessonData.learningContents.map((content, index) => {
             const isHtml = isHtmlContent(content)
@@ -270,37 +249,17 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
               <div key={index} className="dynamic-item-vertical">
                 <div className="item-header">
                   <label>학습내용 {index + 1}</label>
-                  <div className="item-controls">
-                    {!isHtml && (
-                      <button
-                        className="btn-add-small"
-                        onClick={() => convertToEditor('content', index)}
-                        title="에디터로 전환"
-                      >
-                        📝 에디터 추가
-                      </button>
-                    )}
-                    {isHtml && (
-                      <button
-                        className="btn-add-small"
-                        onClick={() => convertToText('content', index)}
-                        title="텍스트로 전환"
-                      >
-                        📄 텍스트로
-                      </button>
-                    )}
-                    {lessonData.learningContents.length > 1 && (
-                      <button
-                        className="btn-remove-small"
-                        onClick={() => {
-                          const newContents = lessonData.learningContents.filter((_, i) => i !== index)
-                          onUpdate({ ...lessonData, learningContents: newContents })
-                        }}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
+                  {lessonData.learningContents.length > 1 && (
+                    <button
+                      className="btn-remove-small"
+                      onClick={() => {
+                        const newContents = lessonData.learningContents.filter((_, i) => i !== index)
+                        onUpdate({ ...lessonData, learningContents: newContents })
+                      }}
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
                 {isHtml ? (
                   <RichTextEditor
@@ -324,15 +283,26 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
         <div className="learning-group">
           <div className="list-header">
             <label className="group-label">학습목표</label>
-            <button
-              className="btn-add-small"
-              onClick={() => {
-                const newObjectives = [...lessonData.learningObjectives, ""]
-                onUpdate({ ...lessonData, learningObjectives: newObjectives })
-              }}
-            >
-              + 추가
-            </button>
+            <div className="header-buttons">
+              <button
+                className="btn-add-small"
+                onClick={() => {
+                  const newObjectives = [...lessonData.learningObjectives, ""]
+                  onUpdate({ ...lessonData, learningObjectives: newObjectives })
+                }}
+              >
+                + 추가
+              </button>
+              <button
+                className="btn-add-small"
+                onClick={() => {
+                  const newObjectives = [...lessonData.learningObjectives, "<p></p>"]
+                  onUpdate({ ...lessonData, learningObjectives: newObjectives })
+                }}
+              >
+                + 에디터 추가
+              </button>
+            </div>
           </div>
           {lessonData.learningObjectives.map((objective, index) => {
             const isHtml = isHtmlContent(objective)
@@ -340,37 +310,17 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
               <div key={index} className="dynamic-item-vertical">
                 <div className="item-header">
                   <label>학습목표 {index + 1}</label>
-                  <div className="item-controls">
-                    {!isHtml && (
-                      <button
-                        className="btn-add-small"
-                        onClick={() => convertToEditor('objective', index)}
-                        title="에디터로 전환"
-                      >
-                        📝 에디터 추가
-                      </button>
-                    )}
-                    {isHtml && (
-                      <button
-                        className="btn-add-small"
-                        onClick={() => convertToText('objective', index)}
-                        title="텍스트로 전환"
-                      >
-                        📄 텍스트로
-                      </button>
-                    )}
-                    {lessonData.learningObjectives.length > 1 && (
-                      <button
-                        className="btn-remove-small"
-                        onClick={() => {
-                          const newObjectives = lessonData.learningObjectives.filter((_, i) => i !== index)
-                          onUpdate({ ...lessonData, learningObjectives: newObjectives })
-                        }}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
+                  {lessonData.learningObjectives.length > 1 && (
+                    <button
+                      className="btn-remove-small"
+                      onClick={() => {
+                        const newObjectives = lessonData.learningObjectives.filter((_, i) => i !== index)
+                        onUpdate({ ...lessonData, learningObjectives: newObjectives })
+                      }}
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
                 {isHtml ? (
                   <RichTextEditor
