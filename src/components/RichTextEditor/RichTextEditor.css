@@ -225,30 +225,22 @@
   list-style-type: disc;
 }
 
+.notion-editor-content ul.check-bullet > li {
+  list-style-type: none;
+  position: relative;
+  padding-left: 1.2em;
+}
+
+.notion-editor-content ul.check-bullet > li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #2383e2;
+  font-weight: bold;
+}
+
 .notion-editor-content ol > li {
   list-style-type: decimal;
-}
-
-/* 체크리스트 */
-.notion-editor-content .task-list {
-  list-style: none;
-  padding-left: 0;
-}
-
-.notion-editor-content .task-item {
-  display: flex;
-  align-items: flex-start;
-  margin: 0.25em 0;
-}
-
-.notion-editor-content .task-item input[type="checkbox"] {
-  margin-right: 0.5em;
-  margin-top: 0.2em;
-  cursor: pointer;
-}
-
-.notion-editor-content .task-item > div {
-  flex: 1;
 }
 
 /* 인용 */

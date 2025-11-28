@@ -1,13 +1,12 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { BulletList } from '@tiptap/extension-bullet-list';
 import { Image } from '@tiptap/extension-image';
 import { Placeholder } from '@tiptap/extension-placeholder';
 import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
-import { TaskList } from '@tiptap/extension-task-list';
-import { TaskItem } from '@tiptap/extension-task-item';
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { Math } from './MathExtension';
 import katex from 'katex';
@@ -27,6 +26,25 @@ const CustomImage = Image.extend({
             return {};
           }
           return { 'data-original-src': attributes['data-original-src'] };
+        },
+      },
+    };
+  },
+});
+
+// 커스텀 BulletList extension - class 속성 지원 (체크 표시용)
+const CustomBulletList = BulletList.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      class: {
+        default: null,
+        parseHTML: element => element.getAttribute('class'),
+        renderHTML: attributes => {
+          if (!attributes.class) {
+            return {};
+          }
+          return { class: attributes.class };
         },
       },
     };
@@ -56,12 +74,14 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
         codeBlock: false, // 제거
         blockquote: false, // 제거
         orderedList: false, // 제거
+        bulletList: false, // 커스텀 BulletList 사용
         horizontalRule: false, // 제거
         hardBreak: false, // 제거
         history: true, // 유지 (실행 취소/다시 실행)
         dropcursor: true, // 유지 (드래그 앤 드롭)
         gapcursor: true, // 유지 (커서)
       }),
+      CustomBulletList,
       CustomImage.configure({
         inline: false,
         allowBase64: true,
@@ -79,14 +99,6 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
       TableRow,
       TableHeader,
       TableCell,
-      TaskList.configure({
-        HTMLAttributes: {
-          class: 'task-list',
-        },
-      }),
-      TaskItem.configure({
-        nested: true,
-      }),
       Math,
     ],
     content: value || '',
@@ -303,15 +315,74 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
             type="button"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             className={editor.isActive('bulletList') ? 'is-active' : ''}
-            title="글머리 기호 목록 (- + space)"
+            title="블릿 목록 (- + space)"
           >
             •
           </button>
           <button
             type="button"
-            onClick={() => editor.chain().focus().toggleTaskList().run()}
-            className={editor.isActive('taskList') ? 'is-active' : ''}
-            title="체크리스트"
+            onClick={() => {
+              // 체크 표시 블릿 목록 생성/토글
+              if (editor.isActive('bulletList')) {
+                // 현재 블릿 목록이 체크 표시인지 확인하고 토글
+                const { $from } = editor.state.selection;
+                let listPos = null;
+                let listNode = null;
+                
+                // 블릿 목록 노드 찾기
+                for (let depth = $from.depth; depth > 0; depth--) {
+                  const node = $from.node(depth);
+                  if (node.type.name === 'bulletList') {
+                    listNode = node;
+                    listPos = $from.before(depth);
+                    break;
+                  }
+                }
+                
+                if (listNode && listPos !== null) {
+                  const isCheckBullet = listNode.attrs?.class === 'check-bullet';
+                  
+                  if (isCheckBullet) {
+                    // 체크 표시 제거 (일반 블릿으로)
+                    editor.chain().focus().command(({ tr }) => {
+                      const node = tr.doc.nodeAt(listPos);
+                      if (node) {
+                        tr.setNodeMarkup(listPos, null, { ...node.attrs, class: null });
+                      }
+                      return true;
+                    }).run();
+                  } else {
+                    // 체크 표시 추가
+                    editor.chain().focus().command(({ tr }) => {
+                      const node = tr.doc.nodeAt(listPos);
+                      if (node) {
+                        tr.setNodeMarkup(listPos, null, { ...node.attrs, class: 'check-bullet' });
+                      }
+                      return true;
+                    }).run();
+                  }
+                }
+              } else {
+                // 체크 표시 블릿 목록 생성
+                editor.chain().focus().toggleBulletList().run();
+                setTimeout(() => {
+                  editor.chain().focus().command(({ tr, state }) => {
+                    const { $from } = state.selection;
+                    for (let depth = $from.depth; depth > 0; depth--) {
+                      const node = $from.node(depth);
+                      if (node.type.name === 'bulletList') {
+                        const pos = $from.before(depth);
+                        tr.setNodeMarkup(pos, null, { ...node.attrs, class: 'check-bullet' });
+                        break;
+                      }
+                    }
+                    return true;
+                  }).run();
+                }, 10);
+              }
+            }}
+            className={editor.isActive('bulletList') ? 'is-active' : ''}
+            title="체크 표시 블릿 (✓)"
           >
             ✓
           </button>
