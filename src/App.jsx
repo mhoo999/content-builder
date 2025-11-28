@@ -699,14 +699,52 @@ function App() {
                         />
                         <span className="week-label-inline">차시</span>
                       </div>
-                      <input
-                        type="text"
-                        className="title-input-inline"
-                        placeholder="제목 입력"
-                        value={lesson.lessonTitle}
-                        onChange={(e) => updateLessonTitle(index, e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
+                      <div className="title-row">
+                        <label className="practice-checkbox-inline">
+                          <input
+                            type="checkbox"
+                            checked={lesson.hasPractice || false}
+                            onChange={(e) => {
+                              e.stopPropagation()
+                              const hasPractice = e.target.checked
+                              const lectureVideoUrl = lesson.lectureVideoUrl || ""
+                              const lectureSubtitle = lesson.lectureSubtitle || ""
+                              
+                              // 학습내용에 실습 항목 추가/제거
+                              const learningContents = [...(lesson.learningContents || [])]
+                              const practiceContent = "<div class='practice'><ul><li></li></ul></div>"
+                              
+                              const practiceIndex = learningContents.findIndex(
+                                (content) => typeof content === "string" && content.includes("class='practice'"),
+                              )
+                              
+                              if (hasPractice && practiceIndex === -1) {
+                                learningContents.push(practiceContent)
+                              } else if (!hasPractice && practiceIndex !== -1) {
+                                learningContents.splice(practiceIndex, 1)
+                              }
+                              
+                              updateLesson(index, {
+                                ...lesson,
+                                hasPractice: hasPractice,
+                                practiceVideoUrl: hasPractice && lectureVideoUrl ? lectureVideoUrl.replace(".mp4", "_P.mp4") : "",
+                                practiceSubtitle: hasPractice && lectureSubtitle ? lectureSubtitle.replace(".vtt", "_P.vtt") : "",
+                                learningContents: learningContents,
+                              })
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span>실습</span>
+                        </label>
+                        <input
+                          type="text"
+                          className="title-input-inline"
+                          placeholder="제목 입력"
+                          value={lesson.lessonTitle}
+                          onChange={(e) => updateLessonTitle(index, e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
                     </div>
                     <button
                       className="btn-delete"

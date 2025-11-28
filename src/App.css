@@ -681,6 +681,50 @@ button:disabled {
   flex-shrink: 0;
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.practice-checkbox-inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.practice-checkbox-inline:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.practice-checkbox-inline input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+}
+
+.practice-checkbox-inline span {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.lesson-tab.active .practice-checkbox-inline {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.lesson-tab.active .practice-checkbox-inline:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .title-input-inline {
   flex: 1;
   padding: 4px 8px;

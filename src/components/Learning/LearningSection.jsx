@@ -108,10 +108,10 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
     // 학습내용에 실습 항목 추가/제거
     const learningContents = [...(lessonData.learningContents || [])]
     const practiceContent = "<div class='practice'><ul><li></li></ul></div>"
-    
+
     // practice 항목 찾기 (class='practice'를 포함하는 항목)
-    const practiceIndex = learningContents.findIndex(content => 
-      typeof content === 'string' && content.includes("class='practice'")
+    const practiceIndex = learningContents.findIndex(
+      (content) => typeof content === "string" && content.includes("class='practice'"),
     )
 
     if (hasPractice && practiceIndex === -1) {
@@ -176,12 +176,6 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
             value={lessonData.lectureSubtitle || autoLectureSubtitle}
             onChange={(e) => handleLectureChange("lectureSubtitle", e.target.value)}
           />
-        </div>
-        <div className="checkbox-group" style={{ marginTop: "16px" }}>
-          <label>
-            <input type="checkbox" checked={lessonData.hasPractice || false} onChange={handlePracticeToggle} />
-            <span>실습있음</span>
-          </label>
         </div>
         <div className="timestamp-group">
           <div className="list-header">

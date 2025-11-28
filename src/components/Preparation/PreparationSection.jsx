@@ -234,9 +234,9 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
           </div>
           {lessonData.learningContents.map((content, index) => {
             const isHtml = isHtmlContent(content)
-            const isPractice = typeof content === 'string' && content.includes("class='practice'")
+            const isPractice = typeof content === "string" && content.includes("class='practice'")
             const displayLabel = isPractice ? "실습" : `학습내용 ${index + 1}`
-            
+
             return (
               <div key={index} className={isHtml ? "dynamic-item-vertical" : "dynamic-item"}>
                 {isHtml && (
