@@ -48,6 +48,7 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
         heading: {
           levels: [1, 2, 3],
         },
+        underline: false, // Underline extension을 별도로 추가하므로 비활성화
       }),
       Underline,
       CustomImage.configure({

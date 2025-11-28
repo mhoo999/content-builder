@@ -48,15 +48,14 @@ export const Math = Node.create({
         displayMode: display,
       });
       
-      return [
-        'span',
-        mergeAttributes(HTMLAttributes, {
-          class: display ? 'math-block' : 'math-inline',
-          'data-formula': formula,
-          'data-display': display ? '' : null,
-        }),
-        ['span', { innerHTML: html }],
-      ];
+      const attrs = mergeAttributes(HTMLAttributes, {
+        class: display ? 'math-block' : 'math-inline',
+        'data-formula': formula,
+        'data-display': display ? '' : null,
+      });
+      
+      // HTML 문자열을 직접 삽입하기 위해 dangerouslySetInnerHTML과 유사한 방식 사용
+      return ['span', attrs, 0];
     } catch (error) {
       return [
         'span',
@@ -64,6 +63,39 @@ export const Math = Node.create({
         `수식 오류: ${formula}`,
       ];
     }
+  },
+
+  addNodeView() {
+    return ({ node, HTMLAttributes, getPos, editor }) => {
+      const { formula, display } = node.attrs;
+      const dom = document.createElement('span');
+      
+      if (!formula) {
+        dom.className = 'math-empty';
+        dom.textContent = '수식';
+        return { dom };
+      }
+
+      try {
+        const html = katex.renderToString(formula, {
+          throwOnError: false,
+          displayMode: display,
+        });
+        
+        dom.className = display ? 'math-block' : 'math-inline';
+        dom.setAttribute('data-formula', formula);
+        if (display) {
+          dom.setAttribute('data-display', '');
+        }
+        dom.innerHTML = html;
+        
+        return { dom };
+      } catch (error) {
+        dom.className = 'math-error';
+        dom.textContent = `수식 오류: ${formula}`;
+        return { dom };
+      }
+    };
   },
 
   addCommands() {
