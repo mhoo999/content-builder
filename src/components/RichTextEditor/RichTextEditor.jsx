@@ -198,15 +198,21 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
     };
 
     // 에디터 업데이트 시 수식 렌더링
-    const unsubscribe = editor.on('update', () => {
+    const handleUpdate = () => {
       setTimeout(renderMath, 0);
-    });
+    };
+    
+    editor.on('update', handleUpdate);
+    editor.on('selectionUpdate', handleUpdate);
 
     // 초기 렌더링
     setTimeout(renderMath, 100);
 
     return () => {
-      unsubscribe();
+      if (editor && !editor.isDestroyed) {
+        editor.off('update', handleUpdate);
+        editor.off('selectionUpdate', handleUpdate);
+      }
     };
   }, [editor]);
 
