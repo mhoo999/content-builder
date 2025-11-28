@@ -213,7 +213,17 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
 
   // 학습정리 파싱
   const theoremPage = findPageByComponent(pages, 'theorem');
-  const summary = theoremPage?.data?.theorem || ['', '', ''];
+  const summaryRaw = theoremPage?.data?.theorem || ['', '', ''];
+  // HTML 엔티티 디코딩 (RichTextEditor용이므로 HTML 태그는 유지)
+  const summary = summaryRaw.map(item => {
+    if (typeof item !== 'string') return item;
+    return item
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+  });
 
   // 차시명 추출 (subjects.json에서 가져오는 것이 정확하지만, 여기서는 기본값)
   const weekNumber = dataJson.index || Math.ceil(lessonNumber / 2);
