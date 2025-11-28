@@ -175,3 +175,41 @@
   border-color: var(--error);
   color: white;
 }
+
+/* 세로 레이아웃 아이템 (에디터용) */
+.dynamic-item-vertical {
+  margin-bottom: 16px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+
+.dynamic-item-vertical:last-child {
+  margin-bottom: 0;
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.item-header label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.item-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dynamic-item-vertical input {
+  width: 100%;
+  padding: 12px 16px;
+  margin: 0;
+}
