@@ -246,21 +246,23 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
           {lessonData.learningContents.map((content, index) => {
             const isHtml = isHtmlContent(content)
             return (
-              <div key={index} className="dynamic-item-vertical">
-                <div className="item-header">
-                  <label>학습내용 {index + 1}</label>
-                  {lessonData.learningContents.length > 1 && (
-                    <button
-                      className="btn-remove-small"
-                      onClick={() => {
-                        const newContents = lessonData.learningContents.filter((_, i) => i !== index)
-                        onUpdate({ ...lessonData, learningContents: newContents })
-                      }}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
+              <div key={index} className={isHtml ? "dynamic-item-vertical" : "dynamic-item"}>
+                {isHtml && (
+                  <div className="item-header">
+                    <label>학습내용 {index + 1}</label>
+                    {lessonData.learningContents.length > 1 && (
+                      <button
+                        className="btn-remove-small"
+                        onClick={() => {
+                          const newContents = lessonData.learningContents.filter((_, i) => i !== index)
+                          onUpdate({ ...lessonData, learningContents: newContents })
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                )}
                 {isHtml ? (
                   <RichTextEditor
                     value={content}
@@ -268,12 +270,25 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
                     placeholder={`학습내용 ${index + 1}`}
                   />
                 ) : (
-                  <input
-                    type="text"
-                    placeholder={`학습내용 ${index + 1}`}
-                    value={content}
-                    onChange={(e) => handleLearningContentChange(index, e.target.value)}
-                  />
+                  <>
+                    <input
+                      type="text"
+                      placeholder={`학습내용 ${index + 1}`}
+                      value={content}
+                      onChange={(e) => handleLearningContentChange(index, e.target.value)}
+                    />
+                    {lessonData.learningContents.length > 1 && (
+                      <button
+                        className="btn-remove-small"
+                        onClick={() => {
+                          const newContents = lessonData.learningContents.filter((_, i) => i !== index)
+                          onUpdate({ ...lessonData, learningContents: newContents })
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )
@@ -307,21 +322,23 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
           {lessonData.learningObjectives.map((objective, index) => {
             const isHtml = isHtmlContent(objective)
             return (
-              <div key={index} className="dynamic-item-vertical">
-                <div className="item-header">
-                  <label>학습목표 {index + 1}</label>
-                  {lessonData.learningObjectives.length > 1 && (
-                    <button
-                      className="btn-remove-small"
-                      onClick={() => {
-                        const newObjectives = lessonData.learningObjectives.filter((_, i) => i !== index)
-                        onUpdate({ ...lessonData, learningObjectives: newObjectives })
-                      }}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
+              <div key={index} className={isHtml ? "dynamic-item-vertical" : "dynamic-item"}>
+                {isHtml && (
+                  <div className="item-header">
+                    <label>학습목표 {index + 1}</label>
+                    {lessonData.learningObjectives.length > 1 && (
+                      <button
+                        className="btn-remove-small"
+                        onClick={() => {
+                          const newObjectives = lessonData.learningObjectives.filter((_, i) => i !== index)
+                          onUpdate({ ...lessonData, learningObjectives: newObjectives })
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                )}
                 {isHtml ? (
                   <RichTextEditor
                     value={objective}
@@ -329,12 +346,25 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
                     placeholder={`학습목표 ${index + 1}`}
                   />
                 ) : (
-                  <input
-                    type="text"
-                    placeholder={`학습목표 ${index + 1}`}
-                    value={objective}
-                    onChange={(e) => handleLearningObjectiveChange(index, e.target.value)}
-                  />
+                  <>
+                    <input
+                      type="text"
+                      placeholder={`학습목표 ${index + 1}`}
+                      value={objective}
+                      onChange={(e) => handleLearningObjectiveChange(index, e.target.value)}
+                    />
+                    {lessonData.learningObjectives.length > 1 && (
+                      <button
+                        className="btn-remove-small"
+                        onClick={() => {
+                          const newObjectives = lessonData.learningObjectives.filter((_, i) => i !== index)
+                          onUpdate({ ...lessonData, learningObjectives: newObjectives })
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )
