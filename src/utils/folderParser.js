@@ -91,7 +91,15 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   const terms = termPage?.data?.map(term => {
     // title의 <br /> 또는 <br> 태그를 줄바꿈(\n)으로 변환
     let title = term.title || '';
-    title = title.replace(/<br\s*\/?>/gi, '\n').trim();
+    // HTML 엔티티 디코딩 (&lt; → <, &gt; → >, &amp; → &, &quot; → ", &#39; → ')
+    title = title
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/<br\s*\/?>/gi, '\n')
+      .trim();
     
     // content 처리: 배열인 경우 불릿(•) 제거 후 배열로 유지
     let content = [];
@@ -122,20 +130,26 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   const learningContentsRaw = objectivesPage?.data?.[0]?.contents || ['', '', ''];
   const learningObjectivesRaw = objectivesPage?.data?.[1]?.contents || ['', '', ''];
   
-  // 넘버링 제거 (예: "1. 내용" -> "내용")
-  const learningContents = learningContentsRaw.map(item => {
-    if (typeof item === 'string') {
-      return item.replace(/^\d+\.\s*/, '').trim();
-    }
-    return item;
-  });
+  // HTML 태그 제거 및 넘버링 제거 헬퍼 함수
+  const cleanText = (text) => {
+    if (typeof text !== 'string') return text;
+    // HTML 태그 제거 (특히 <div class='practice'> 같은 불필요한 태그)
+    let cleaned = text.replace(/<[^>]+>/g, '');
+    // HTML 엔티티 디코딩
+    cleaned = cleaned
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+    // 넘버링 제거 (예: "1. 내용" -> "내용")
+    cleaned = cleaned.replace(/^\d+\.\s*/, '').trim();
+    return cleaned;
+  };
   
-  const learningObjectives = learningObjectivesRaw.map(item => {
-    if (typeof item === 'string') {
-      return item.replace(/^\d+\.\s*/, '').trim();
-    }
-    return item;
-  });
+  // 넘버링 제거 및 HTML 태그 제거
+  const learningContents = learningContentsRaw.map(cleanText);
+  const learningObjectives = learningObjectivesRaw.map(cleanText);
 
   // 생각묻기 & 점검하기 파싱
   const opinionPage = findPageByComponent(pages, 'opinion');
