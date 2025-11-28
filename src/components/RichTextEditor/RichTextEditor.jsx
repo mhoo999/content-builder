@@ -313,8 +313,53 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
         <div className="toolbar-group">
           <button
             type="button"
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={editor.isActive('bulletList') ? 'is-active' : ''}
+            onClick={() => {
+              // 일반 블릿 목록 생성/토글
+              const { $from } = editor.state.selection;
+              let listPos = null;
+              let listNode = null;
+              
+              // 블릿 목록 노드 찾기
+              for (let depth = $from.depth; depth > 0; depth--) {
+                const node = $from.node(depth);
+                if (node.type.name === 'bulletList') {
+                  listNode = node;
+                  listPos = $from.before(depth);
+                  break;
+                }
+              }
+              
+              if (listNode && listPos !== null) {
+                // 이미 블릿 목록이 있으면 체크 표시 제거하고 일반 블릿으로
+                const isCheckBullet = listNode.attrs?.class === 'check-bullet';
+                if (isCheckBullet) {
+                  editor.chain().focus().command(({ tr }) => {
+                    const node = tr.doc.nodeAt(listPos);
+                    if (node) {
+                      tr.setNodeMarkup(listPos, null, { ...node.attrs, class: null });
+                    }
+                    return true;
+                  }).run();
+                } else {
+                  // 이미 일반 블릿이면 토글 (제거)
+                  editor.chain().focus().toggleBulletList().run();
+                }
+              } else {
+                // 블릿 목록 생성
+                editor.chain().focus().toggleBulletList().run();
+              }
+            }}
+            className={(() => {
+              if (!editor.isActive('bulletList')) return '';
+              const { $from } = editor.state.selection;
+              for (let depth = $from.depth; depth > 0; depth--) {
+                const node = $from.node(depth);
+                if (node.type.name === 'bulletList') {
+                  return node.attrs?.class === 'check-bullet' ? '' : 'is-active';
+                }
+              }
+              return editor.isActive('bulletList') ? 'is-active' : '';
+            })()}
             title="블릿 목록 (- + space)"
           >
             •
@@ -323,44 +368,42 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
             type="button"
             onClick={() => {
               // 체크 표시 블릿 목록 생성/토글
-              if (editor.isActive('bulletList')) {
-                // 현재 블릿 목록이 체크 표시인지 확인하고 토글
-                const { $from } = editor.state.selection;
-                let listPos = null;
-                let listNode = null;
-                
-                // 블릿 목록 노드 찾기
-                for (let depth = $from.depth; depth > 0; depth--) {
-                  const node = $from.node(depth);
-                  if (node.type.name === 'bulletList') {
-                    listNode = node;
-                    listPos = $from.before(depth);
-                    break;
-                  }
+              const { $from } = editor.state.selection;
+              let listPos = null;
+              let listNode = null;
+              
+              // 블릿 목록 노드 찾기
+              for (let depth = $from.depth; depth > 0; depth--) {
+                const node = $from.node(depth);
+                if (node.type.name === 'bulletList') {
+                  listNode = node;
+                  listPos = $from.before(depth);
+                  break;
                 }
+              }
+              
+              if (listNode && listPos !== null) {
+                // 이미 블릿 목록이 있으면 체크 표시 토글
+                const isCheckBullet = listNode.attrs?.class === 'check-bullet';
                 
-                if (listNode && listPos !== null) {
-                  const isCheckBullet = listNode.attrs?.class === 'check-bullet';
-                  
-                  if (isCheckBullet) {
-                    // 체크 표시 제거 (일반 블릿으로)
-                    editor.chain().focus().command(({ tr }) => {
-                      const node = tr.doc.nodeAt(listPos);
-                      if (node) {
-                        tr.setNodeMarkup(listPos, null, { ...node.attrs, class: null });
-                      }
-                      return true;
-                    }).run();
-                  } else {
-                    // 체크 표시 추가
-                    editor.chain().focus().command(({ tr }) => {
-                      const node = tr.doc.nodeAt(listPos);
-                      if (node) {
-                        tr.setNodeMarkup(listPos, null, { ...node.attrs, class: 'check-bullet' });
-                      }
-                      return true;
-                    }).run();
-                  }
+                if (isCheckBullet) {
+                  // 체크 표시 제거 (일반 블릿으로)
+                  editor.chain().focus().command(({ tr }) => {
+                    const node = tr.doc.nodeAt(listPos);
+                    if (node) {
+                      tr.setNodeMarkup(listPos, null, { ...node.attrs, class: null });
+                    }
+                    return true;
+                  }).run();
+                } else {
+                  // 체크 표시 추가
+                  editor.chain().focus().command(({ tr }) => {
+                    const node = tr.doc.nodeAt(listPos);
+                    if (node) {
+                      tr.setNodeMarkup(listPos, null, { ...node.attrs, class: 'check-bullet' });
+                    }
+                    return true;
+                  }).run();
                 }
               } else {
                 // 체크 표시 블릿 목록 생성
@@ -381,7 +424,17 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
                 }, 10);
               }
             }}
-            className={editor.isActive('bulletList') ? 'is-active' : ''}
+            className={(() => {
+              if (!editor.isActive('bulletList')) return '';
+              const { $from } = editor.state.selection;
+              for (let depth = $from.depth; depth > 0; depth--) {
+                const node = $from.node(depth);
+                if (node.type.name === 'bulletList') {
+                  return node.attrs?.class === 'check-bullet' ? 'is-active' : '';
+                }
+              }
+              return '';
+            })()}
             title="체크 표시 블릿 (✓)"
           >
             ✓

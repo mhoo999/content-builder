@@ -225,16 +225,21 @@
   list-style-type: disc;
 }
 
+.notion-editor-content ul.check-bullet {
+  padding-left: 1.5em;
+}
+
 .notion-editor-content ul.check-bullet > li {
   list-style-type: none;
   position: relative;
-  padding-left: 1.2em;
+  padding-left: 0;
+  margin-left: 0;
 }
 
 .notion-editor-content ul.check-bullet > li::before {
   content: '✓';
   position: absolute;
-  left: 0;
+  left: -1.2em;
   color: #2383e2;
   font-weight: bold;
 }
