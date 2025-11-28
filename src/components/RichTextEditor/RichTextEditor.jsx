@@ -7,6 +7,7 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
+import { mergeAttributes } from '@tiptap/core';
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { Math } from './MathExtension';
 import katex from 'katex';
@@ -45,6 +46,44 @@ const CustomBulletList = BulletList.extend({
             return {};
           }
           return { class: attributes.class };
+        },
+      },
+    };
+  },
+});
+
+// 커스텀 TableCell extension - text-align 속성 지원
+const CustomTableCell = TableCell.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      style: {
+        default: null,
+        parseHTML: element => element.getAttribute('style'),
+        renderHTML: attributes => {
+          if (!attributes.style) {
+            return {};
+          }
+          return { style: attributes.style };
+        },
+      },
+    };
+  },
+});
+
+// 커스텀 TableHeader extension - text-align 속성 지원
+const CustomTableHeader = TableHeader.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      style: {
+        default: null,
+        parseHTML: element => element.getAttribute('style'),
+        renderHTML: attributes => {
+          if (!attributes.style) {
+            return {};
+          }
+          return { style: attributes.style };
         },
       },
     };
@@ -97,8 +136,8 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
         resizable: true,
       }),
       TableRow,
-      TableHeader,
-      TableCell,
+      CustomTableHeader,
+      CustomTableCell,
       Math,
     ],
     content: value || '',
@@ -469,46 +508,53 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
                 editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: false }).run();
                 // 첫 번째 열의 모든 셀을 헤더로 변환
                 setTimeout(() => {
-                  const { $from } = editor.state.selection;
-                  let tablePos = null;
-                  
-                  // 테이블 노드 찾기
-                  for (let depth = $from.depth; depth > 0; depth--) {
-                    const node = $from.node(depth);
-                    if (node.type.name === 'table') {
-                      tablePos = $from.before(depth);
-                      break;
+                  editor.chain().focus().command(({ tr, state }) => {
+                    const { $from } = state.selection;
+                    let tablePos = null;
+                    
+                    // 테이블 노드 찾기
+                    for (let depth = $from.depth; depth > 0; depth--) {
+                      const node = $from.node(depth);
+                      if (node.type.name === 'table') {
+                        tablePos = $from.before(depth);
+                        break;
+                      }
                     }
-                  }
-                  
-                  if (tablePos !== null) {
-                    editor.chain().focus().command(({ tr, state }) => {
-                      const tableNode = tr.doc.nodeAt(tablePos);
-                      if (!tableNode) return false;
-                      
-                      let currentPos = tablePos + 1;
-                      
-                      // 테이블의 각 행을 순회
-                      tableNode.forEach((rowNode, rowOffset, rowPos) => {
-                        if (rowNode.type.name === 'tableRow') {
-                          // 첫 번째 셀 찾기
-                          rowNode.forEach((cellNode, cellOffset, cellPosInRow) => {
-                            if (cellOffset === 0 && cellNode.type.name === 'tableCell') {
-                              // 첫 번째 셀을 헤더로 변환
-                              const absolutePos = tablePos + 1 + rowPos + cellPosInRow;
-                              const headerType = state.schema.nodes.tableHeader;
-                              if (headerType) {
-                                tr.setNodeMarkup(absolutePos, headerType, cellNode.attrs);
-                              }
+                    
+                    if (tablePos === null) return false;
+                    
+                    const tableNode = tr.doc.nodeAt(tablePos);
+                    if (!tableNode) return false;
+                    
+                    // 테이블의 각 행을 순회하며 첫 번째 열의 셀을 헤더로 변환
+                    let pos = tablePos + 1;
+                    tableNode.forEach((rowNode) => {
+                      if (rowNode.type.name === 'tableRow') {
+                        const rowStart = pos;
+                        pos += 1; // row 시작
+                        
+                        // 첫 번째 셀 찾기
+                        rowNode.forEach((cellNode, cellOffset) => {
+                          if (cellOffset === 0 && cellNode.type.name === 'tableCell') {
+                            // 첫 번째 셀을 헤더로 변환
+                            const cellPos = rowStart + 1;
+                            const headerType = state.schema.nodes.tableHeader;
+                            if (headerType) {
+                              tr.setNodeMarkup(cellPos, headerType, cellNode.attrs);
                             }
-                          });
-                        }
-                      });
-                      
-                      return true;
-                    }).run();
-                  }
-                }, 50);
+                          }
+                          pos += cellNode.nodeSize;
+                        });
+                        
+                        pos = rowStart + rowNode.nodeSize;
+                      } else {
+                        pos += rowNode.nodeSize;
+                      }
+                    });
+                    
+                    return true;
+                  }).run();
+                }, 100);
               }}
               title="세로형 표 삽입 (첫 번째 열이 제목)"
             >
@@ -570,6 +616,51 @@ function RichTextEditor({ value, onChange, placeholder = '내용을 입력하세
                 title="행 삭제"
               >
                 행 ×
+              </button>
+              <span className="toolbar-divider" />
+              <button
+                type="button"
+                onClick={() => {
+                  // 현재 셀에 좌측 정렬 적용
+                  editor.chain().focus().command(({ tr, state }) => {
+                    const { $from } = state.selection;
+                    for (let depth = $from.depth; depth > 0; depth--) {
+                      const node = $from.node(depth);
+                      if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
+                        const pos = $from.before(depth);
+                        const attrs = { ...node.attrs, style: 'text-align: left;' };
+                        tr.setNodeMarkup(pos, null, attrs);
+                        return true;
+                      }
+                    }
+                    return false;
+                  }).run();
+                }}
+                title="좌측 정렬"
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // 현재 셀에 중앙 정렬 적용
+                  editor.chain().focus().command(({ tr, state }) => {
+                    const { $from } = state.selection;
+                    for (let depth = $from.depth; depth > 0; depth--) {
+                      const node = $from.node(depth);
+                      if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
+                        const pos = $from.before(depth);
+                        const attrs = { ...node.attrs, style: 'text-align: center;' };
+                        tr.setNodeMarkup(pos, null, attrs);
+                        return true;
+                      }
+                    }
+                    return false;
+                  }).run();
+                }}
+                title="중앙 정렬"
+              >
+                ↔
               </button>
               <button
                 type="button"

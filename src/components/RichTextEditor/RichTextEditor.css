@@ -351,6 +351,17 @@
   min-width: 100px;
 }
 
+/* 셀 정렬 스타일 (인라인 스타일이 우선) */
+.notion-editor-content th[style*="text-align: center"],
+.notion-editor-content td[style*="text-align: center"] {
+  text-align: center !important;
+}
+
+.notion-editor-content th[style*="text-align: left"],
+.notion-editor-content td[style*="text-align: left"] {
+  text-align: left !important;
+}
+
 .notion-editor-content th {
   background: #ff831e;
   color: #ffffff;
