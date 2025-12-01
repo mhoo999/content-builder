@@ -351,6 +351,17 @@
   min-width: 100px;
 }
 
+/* 셀의 텍스트 색상 상속 */
+.notion-editor-content th[style*="color"],
+.notion-editor-content td[style*="color"] {
+  color: inherit;
+}
+
+.notion-editor-content th[style*="color"] *,
+.notion-editor-content td[style*="color"] * {
+  color: inherit;
+}
+
 /* 셀 정렬 스타일 (인라인 스타일이 우선) */
 .notion-editor-content th[style*="text-align: center"],
 .notion-editor-content td[style*="text-align: center"] {
@@ -366,6 +377,17 @@
   background: #ff831e;
   color: #ffffff;
   font-weight: 600;
+}
+
+/* 셀의 인라인 스타일 텍스트 색상 우선 적용 */
+.notion-editor-content th[style*="color"],
+.notion-editor-content td[style*="color"] {
+  color: var(--cell-text-color, inherit) !important;
+}
+
+.notion-editor-content th[style*="color"] *,
+.notion-editor-content td[style*="color"] * {
+  color: inherit !important;
 }
 
 .notion-editor-content tr:hover td {
