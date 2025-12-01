@@ -191,40 +191,21 @@ export async function convertMathToImage(formula, displayMode = false) {
  */
 export async function convertTableToImage(tableHtml) {
   try {
-    // 임시 DOM 요소 생성
+    // html2canvas를 사용하여 실제 렌더링된 표를 그대로 캡처
+    const { default: html2canvas } = await import('html2canvas')
+    
+    // 임시 DOM 요소 생성 (에디터와 동일한 클래스 적용)
     const container = document.createElement('div')
+    container.className = 'notion-editor-content' // 에디터의 클래스 적용
     container.style.position = 'absolute'
     container.style.left = '-9999px'
     container.style.top = '-9999px'
     container.style.background = 'white'
     container.style.padding = '20px'
-    container.style.width = 'auto' // 자동 너비 (원본 크기 유지)
-    container.style.maxWidth = '1200px' // 최대 너비 제한
+    container.style.width = 'auto'
+    container.style.maxWidth = '1200px'
     container.innerHTML = tableHtml
     document.body.appendChild(container)
-
-    // CSS 스타일 적용
-    const style = document.createElement('style')
-    style.textContent = `
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-      }
-      th {
-        background-color: #ff831e;
-        color: white;
-        padding: 8px;
-        text-align: left;
-        border: 1px solid #ddd;
-      }
-      td {
-        border: 1px solid #ddd;
-        padding: 8px;
-      }
-    `
-    container.appendChild(style)
 
     // 표 요소 찾기
     const table = container.querySelector('table')
@@ -232,8 +213,32 @@ export async function convertTableToImage(tableHtml) {
       document.body.removeChild(container)
       return null
     }
-
-    // 표를 Canvas에 직접 그리기 (CORS 문제 방지)
+    
+    // 렌더링 대기
+    await new Promise(resolve => setTimeout(resolve, 200))
+    
+    // html2canvas로 실제 렌더링된 표를 그대로 캡처
+    const canvas = await html2canvas(table, {
+      backgroundColor: null, // 투명 배경
+      scale: 1.0,
+      useCORS: true,
+      logging: false,
+      width: table.offsetWidth,
+      height: table.offsetHeight
+    })
+    
+    // 흰색 배경 투명 처리
+    removeWhiteBackground(canvas, 250)
+    
+    const base64 = canvas.toDataURL('image/png')
+    console.log(`표 이미지 변환 완료 (html2canvas, 실제 렌더링 캡처): ${canvas.width}x${canvas.height}`)
+    document.body.removeChild(container)
+    
+    return base64
+  } catch (html2canvasError) {
+    console.warn('html2canvas 사용 실패, 대체 방법 시도:', html2canvasError)
+    
+    // html2canvas가 실패한 경우, 기존 방식으로 fallback
     try {
       // 렌더링 대기
       await new Promise(resolve => setTimeout(resolve, 100))
