@@ -83,6 +83,10 @@ npm run dev
 
 브라우저에서 http://localhost:5173/ 접속
 
+### 종료
+
+터미널에서 **Ctrl+C** (Windows/macOS/Linux 공통)
+
 ## 사용 방법
 
 ### 새 콘텐츠 작성
