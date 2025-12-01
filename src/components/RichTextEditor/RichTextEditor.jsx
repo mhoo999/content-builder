@@ -415,16 +415,42 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
       }
     }
 
-    // 에디터 업데이트 시 수식 렌더링
+    // 번호가 포함된 줄 스타일링 (예: 1), 2), 3) 등)
+    const styleNumberedItems = () => {
+      if (!editor.view || editor.isDestroyed) return
+      try {
+        const paragraphs = editor.view.dom.querySelectorAll("p")
+        paragraphs.forEach((p) => {
+          const text = p.textContent || ""
+          // 숫자) 패턴 감지 (예: 1), 2), 10) 등)
+          const numberedPattern = /^\d+\)/
+          if (numberedPattern.test(text.trim())) {
+            p.classList.add("numbered-item")
+          } else {
+            p.classList.remove("numbered-item")
+          }
+        })
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // 에디터 업데이트 시 수식 렌더링 및 번호 스타일링
     const handleUpdate = () => {
-      setTimeout(renderMath, 0)
+      setTimeout(() => {
+        renderMath()
+        styleNumberedItems()
+      }, 0)
     }
 
     editor.on("update", handleUpdate)
     editor.on("selectionUpdate", handleUpdate)
 
     // 초기 렌더링
-    setTimeout(renderMath, 100)
+    setTimeout(() => {
+      renderMath()
+      styleNumberedItems()
+    }, 100)
 
     return () => {
       if (editor && !editor.isDestroyed) {

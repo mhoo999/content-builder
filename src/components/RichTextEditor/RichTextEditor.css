@@ -230,6 +230,13 @@
   margin: 0.5em 0;
 }
 
+/* 번호가 포함된 줄 (예: 1), 2), 3) 등) 스타일링 */
+.notion-editor-content p.numbered-item {
+  color: #000000;
+  margin: 0.8em 0;
+  font-weight: 500;
+}
+
 /* 목록 */
 .notion-editor-content ul,
 .notion-editor-content ol {
