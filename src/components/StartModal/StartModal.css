@@ -158,6 +158,44 @@
   color: #333;
 }
 
+/* 강의 범위 입력 */
+.lesson-range-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.range-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.range-input {
+  width: 80px;
+  padding: 10px 14px;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  color: #007bff;
+}
+
+.range-input:focus {
+  outline: none;
+  border-color: #0056b3;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.range-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+
 .preview {
   padding: 16px;
   background: #f8f9fa;

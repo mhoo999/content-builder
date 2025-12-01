@@ -320,7 +320,7 @@ function App() {
     const newLessons = lessonStructure.map((structure, index) => {
       const newLesson = createBuilderLessonData()
       newLesson.weekNumber = structure.weekNumber
-      newLesson.lessonNumber = index + 1
+      newLesson.lessonNumber = structure.lessonNumber || (index + 1)
       newLesson.lessonTitle = structure.title
 
       // 차시 번호를 2자리 문자열로 변환 (01, 02, ...)

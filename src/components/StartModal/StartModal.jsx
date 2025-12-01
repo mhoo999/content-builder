@@ -2,17 +2,22 @@ import { useState } from 'react';
 import './StartModal.css';
 
 function StartModal({ onClose, onCreate }) {
-  const [lessonCount, setLessonCount] = useState(26);
+  const [startLesson, setStartLesson] = useState(1);
+  const [endLesson, setEndLesson] = useState(26);
   const [courseCode, setCourseCode] = useState('');
   const [courseName, setCourseName] = useState('');
   const [year, setYear] = useState(new Date().getFullYear().toString());
 
+  // 강의 개수 계산
+  const lessonCount = endLesson - startLesson + 1;
+
   // 필수 입력 검증
   const isFormValid = () => {
-    return courseCode.trim() !== '' && 
-           courseName.trim() !== '' && 
+    return courseCode.trim() !== '' &&
+           courseName.trim() !== '' &&
            year.trim() !== '' &&
-           lessonCount >= 1 && 
+           startLesson >= 1 &&
+           endLesson >= startLesson &&
            lessonCount <= 100;
   };
 
@@ -22,14 +27,16 @@ function StartModal({ onClose, onCreate }) {
       return;
     }
 
-    // 강의 개수만큼 생성 (2개 강의당 1주차, 8주는 중간고사로 건너뜀)
+    // 시작~끝 강의 번호만큼 생성 (2개 강의당 1주차, 8주는 중간고사로 건너뜀)
     const lessons = Array.from({ length: lessonCount }, (_, index) => {
-      let weekNumber = Math.ceil((index + 1) / 2);
+      const lessonNumber = startLesson + index;
+      let weekNumber = Math.ceil(lessonNumber / 2);
       // 7주 이후는 8주를 건너뛰고 9주부터 시작
       if (weekNumber >= 8) {
         weekNumber += 1;
       }
       return {
+        lessonNumber,
         weekNumber,
         title: ''
       };
@@ -85,25 +92,38 @@ function StartModal({ onClose, onCreate }) {
           <div className="divider"></div>
 
           <p className="modal-description">
-            몇 개의 강의를 만들까요?<br />
+            몇 강부터 몇 강까지 만들까요?<br />
             <small>2개 강의당 1주차로 자동 생성됩니다. (8주는 중간고사로 건너뜀)</small>
           </p>
 
-          <div className="count-input-wrapper">
-            <input
-              type="number"
-              className="count-input"
-              value={lessonCount}
-              onChange={(e) => setLessonCount(parseInt(e.target.value) || 0)}
-              min="1"
-              max="100"
-            />
-            <span className="count-label">개 강의</span>
+          <div className="lesson-range-wrapper">
+            <div className="range-input-group">
+              <input
+                type="number"
+                className="range-input"
+                value={startLesson}
+                onChange={(e) => setStartLesson(parseInt(e.target.value) || 1)}
+                min="1"
+                max="100"
+              />
+              <span className="range-label">강부터</span>
+            </div>
+            <div className="range-input-group">
+              <input
+                type="number"
+                className="range-input"
+                value={endLesson}
+                onChange={(e) => setEndLesson(parseInt(e.target.value) || 1)}
+                min={startLesson}
+                max="100"
+              />
+              <span className="range-label">강까지</span>
+            </div>
           </div>
 
           <div className="preview">
             <small className="preview-text">
-              📊 생성 예정: {lessonCount}개 강의 / {Math.ceil(lessonCount / 2)}개 주차
+              📊 생성 예정: {lessonCount}개 강의 ({startLesson}강~{endLesson}강)
             </small>
           </div>
         </div>
