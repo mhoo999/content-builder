@@ -232,12 +232,13 @@ def extract_and_save_images(html_content, images_dir, course_code, image_counter
     return result
 
 
-def create_intro_page(professor, processed_photo=None):
+def create_intro_page(professor, processed_photo=None, lesson_title=None):
     """인트로 페이지 생성
     
     Args:
         professor: 교수 정보 딕셔너리
         processed_photo: 이미 처리된 교수 사진 경로 (None이면 professor.photo 사용)
+        lesson_title: 차시 타이틀 (선택사항)
     """
     photo = processed_photo if processed_photo is not None else professor.get("photo", "")
     
@@ -264,28 +265,34 @@ def create_intro_page(professor, processed_photo=None):
                 # 기존 형식 호환 (문자열인 경우 그대로 사용)
                 career_content.append(career_item)
     
+    intro_data = {
+        "professor": {
+            "name": professor["name"],
+            "photo": photo,
+            "profile": [
+                {
+                    "title": "학　력",
+                    "content": professor.get("education", [])
+                },
+                {
+                    "title": "경　력",
+                    "content": career_content
+                }
+            ]
+        }
+    }
+    
+    # 차시 타이틀이 있으면 추가
+    if lesson_title:
+        intro_data["lessonTitle"] = lesson_title
+    
     return {
         "path": "",
         "section": 0,
         "title": "인트로",
         "component": "intro",
         "media": intro_media,
-        "data": {
-            "professor": {
-                "name": professor["name"],
-                "photo": photo,
-                "profile": [
-                    {
-                        "title": "학　력",
-                        "content": professor.get("education", [])
-                    },
-                    {
-                        "title": "경　력",
-                        "content": career_content
-                    }
-                ]
-            }
-        }
+        "data": intro_data
     }
 
 
@@ -946,8 +953,9 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         # 페이지 생성
         pages = []
 
-        # 1. 인트로 (처리된 교수 사진 경로 사용)
-        pages.append(create_intro_page(professor, processed_professor_photo))
+        # 1. 인트로 (처리된 교수 사진 경로 사용, 차시 타이틀 포함)
+        lesson_title = lesson.get("lessonTitle", "")
+        pages.append(create_intro_page(professor, processed_professor_photo, lesson_title))
 
         # 2. 오리엔테이션 (1주1차시만, 자동 활성화)
         if lesson["hasOrientation"]:
