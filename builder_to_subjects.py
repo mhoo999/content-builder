@@ -590,12 +590,16 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
                     question = extract_and_save_images(question, images_dir, course_code, image_counter)
                 if commentary:
                     commentary = extract_and_save_images(commentary, images_dir, course_code, image_counter)
-                # 선택지도 이미지 처리
+                # 선택지도 이미지 처리 및 줄바꿈 처리
                 if ex.get("type") == "multiple":
                     processed_options = []
                     for opt in options:
                         if opt:
-                            processed_options.append(extract_and_save_images(opt, images_dir, course_code, image_counter))
+                            # 이미지 추출 및 저장
+                            processed_opt = extract_and_save_images(opt, images_dir, course_code, image_counter)
+                            # 줄바꿈 문자를 <br />로 변환
+                            processed_opt = processed_opt.replace('\n', '<br />')
+                            processed_options.append(processed_opt)
                         else:
                             processed_options.append(opt)
                     options = processed_options
@@ -631,12 +635,16 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
                     question = extract_and_save_images(question, images_dir, course_code, image_counter)
                     if commentary:
                         commentary = extract_and_save_images(commentary, images_dir, course_code, image_counter)
-                    # 선택지도 이미지 처리
+                    # 선택지도 이미지 처리 및 줄바꿈 처리
                     if ex.get("type") == "multiple":
                         processed_options = []
                         for opt in options:
                             if opt:
-                                processed_options.append(extract_and_save_images(opt, images_dir, course_code, image_counter))
+                                # 이미지 추출 및 저장
+                                processed_opt = extract_and_save_images(opt, images_dir, course_code, image_counter)
+                                # 줄바꿈 문자를 <br />로 변환
+                                processed_opt = processed_opt.replace('\n', '<br />')
+                                processed_options.append(processed_opt)
                             else:
                                 processed_options.append(opt)
                         options = processed_options
