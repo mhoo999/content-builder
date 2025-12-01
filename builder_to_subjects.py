@@ -691,9 +691,14 @@ def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter
         ]
     
     # 모든 항목의 첫 번째 <p> 태그에 class='main-title' 추가
+    # H1 태그를 <p class='main-title'><strong>로 변환
     processed_summary = []
     for s in summary:
         if s and isinstance(s, str):
+            # H1 태그를 <p class='main-title'><strong>내용</strong></p>로 변환
+            # <h1>내용</h1> → <p class='main-title'><strong>내용</strong></p>
+            s = re.sub(r'<h1[^>]*>(.*?)</h1>', r"<p class='main-title'><strong>\1</strong></p>", s, flags=re.DOTALL)
+            
             # 이미 class='main-title'이 있으면 그대로 유지
             if "<p class='main-title'>" in s or '<p class="main-title">' in s or "<p class=\"main-title\">" in s:
                 processed_summary.append(s)
