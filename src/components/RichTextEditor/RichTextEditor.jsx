@@ -110,8 +110,115 @@ const CustomTableHeader = TableHeader.extend({
   },
 })
 
+/**
+ * 구글 Docs 표를 Tiptap 표 형식으로 정규화
+ */
+function normalizeGoogleDocsTable(html) {
+  try {
+    // 임시 DOM 요소 생성
+    const tempDiv = document.createElement("div")
+    tempDiv.innerHTML = html
+
+    // tableWrapper에서 표 추출
+    const tableWrapper = tempDiv.querySelector(".tableWrapper")
+    if (!tableWrapper) {
+      // tableWrapper가 없으면 일반 표 찾기
+      const table = tempDiv.querySelector("table")
+      if (table) {
+        return normalizeTable(table)
+      }
+      return null
+    }
+
+    const table = tableWrapper.querySelector("table")
+    if (!table) return null
+
+    return normalizeTable(table)
+  } catch (error) {
+    console.error("표 정규화 실패:", error)
+    return null
+  }
+}
+
+/**
+ * 표를 Tiptap 형식으로 정규화
+ */
+function normalizeTable(table) {
+  try {
+    // 새 표 생성
+    const normalizedTable = document.createElement("table")
+    
+    // tbody 처리
+    const tbody = table.querySelector("tbody") || table
+    const rows = tbody.querySelectorAll("tr")
+
+    let isFirstRow = true
+    rows.forEach((row, rowIndex) => {
+      const normalizedRow = document.createElement("tr")
+      const cells = row.querySelectorAll("td, th")
+
+      cells.forEach((cell, cellIndex) => {
+        // colspan과 rowspan 유지
+        const colspan = cell.getAttribute("colspan") || "1"
+        const rowspan = cell.getAttribute("rowspan") || "1"
+        
+        // 셀 타입 결정 (th인지 td인지)
+        // 1. 이미 th 태그인 경우
+        // 2. 첫 번째 행이고 배경색이 있는 경우 (구글 Docs 헤더 스타일)
+        // 3. 첫 번째 열이고 배경색이 있는 경우 (세로형 표)
+        const isHeader = 
+          cell.tagName === "TH" || 
+          cell.classList.contains("header") ||
+          (isFirstRow && rowIndex === 0 && (cell.style.backgroundColor || cell.style.fontWeight === "bold")) ||
+          (cellIndex === 0 && (cell.style.backgroundColor || cell.style.fontWeight === "bold"))
+        
+        const newCell = document.createElement(isHeader ? "th" : "td")
+
+        if (colspan !== "1") newCell.setAttribute("colspan", colspan)
+        if (rowspan !== "1") newCell.setAttribute("rowspan", rowspan)
+
+        // 텍스트 정렬 스타일 유지 (left, center, right)
+        const textAlign = cell.style.textAlign || ""
+        if (textAlign && ["left", "center", "right"].includes(textAlign)) {
+          newCell.style.textAlign = textAlign
+        }
+
+        // 배경색 유지 (헤더 색상이 아닌 경우만)
+        const bgColor = cell.style.backgroundColor || ""
+        if (bgColor && bgColor !== "rgb(255, 255, 255)" && bgColor !== "#ffffff") {
+          newCell.style.backgroundColor = bgColor
+        }
+
+        // 셀 내용 추출 (p 태그나 직접 텍스트)
+        const content = cell.innerHTML.trim()
+        // p 태그가 있으면 그대로 유지, 없으면 p 태그로 감싸기
+        if (content && !content.startsWith("<p")) {
+          newCell.innerHTML = `<p>${content}</p>`
+        } else if (content) {
+          newCell.innerHTML = content
+        } else {
+          newCell.innerHTML = "<p></p>"
+        }
+
+        normalizedRow.appendChild(newCell)
+      })
+
+        normalizedTable.appendChild(normalizedRow)
+      })
+      
+      isFirstRow = false
+    })
+
+    return normalizedTable.outerHTML
+  } catch (error) {
+    console.error("표 정규화 실패:", error)
+    return null
+  }
+}
+
 function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세요..." }) {
   const fileInputRef = useRef(null)
+  const editorRef = useRef(null)
   const [showMathModal, setShowMathModal] = useState(false)
   const [mathFormula, setMathFormula] = useState("")
   const [mathDisplay, setMathDisplay] = useState(false)
@@ -191,10 +298,30 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
             }
           }
         }
+        
+        // 구글 Docs 표 정규화 처리
+        const html = event.clipboardData?.getData("text/html")
+        if (html && (html.includes("tableWrapper") || html.includes("<table"))) {
+          event.preventDefault()
+          const normalizedHtml = normalizeGoogleDocsTable(html)
+          if (normalizedHtml && editorRef.current) {
+            // 에디터에 표 삽입
+            editorRef.current.chain().focus().insertContent(normalizedHtml).run()
+            return true
+          }
+        }
+        
         return false
       },
     },
   })
+
+  // editor ref 업데이트
+  useEffect(() => {
+    if (editor) {
+      editorRef.current = editor
+    }
+  }, [editor])
 
   const handleImageFile = useCallback(
     (file) => {
