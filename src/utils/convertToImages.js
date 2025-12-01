@@ -344,33 +344,92 @@ export async function convertTableToImage(tableHtml) {
         let currentX = padding
         
         cells.forEach((cell, cellIndex) => {
-          // 셀 배경
-          // 세로형 표: 첫 번째 열(cellIndex === 0)이 헤더
-          // 가로형 표: 첫 번째 행(rowIndex === 0)이 헤더
-          const isHeader = isVerticalTable 
-            ? (cellIndex === 0)  // 세로형: 첫 번째 열이 모두 헤더
-            : (rowIndex === 0)   // 가로형: 첫 번째 행이 모두 헤더
+          // 셀의 인라인 스타일 확인
+          const cellStyle = cell.getAttribute('style') || ''
+          const computedStyle = window.getComputedStyle(cell)
           
-          if (isHeader) {
-            ctx.fillStyle = headerColor
+          // 배경색 확인 (인라인 스타일 우선, 없으면 computedStyle, 없으면 표 타입 감지 로직 사용)
+          let bgColor = 'white'
+          const bgColorMatch = cellStyle.match(/background-color:\s*([^;]+)/i)
+          if (bgColorMatch) {
+            bgColor = bgColorMatch[1].trim()
           } else {
-            ctx.fillStyle = 'white'
+            // 인라인 스타일이 없으면 computedStyle 확인
+            const computedBgColor = computedStyle.backgroundColor
+            if (computedBgColor && computedBgColor !== 'rgba(0, 0, 0, 0)' && computedBgColor !== 'transparent') {
+              // RGB를 hex로 변환
+              const rgbMatch = computedBgColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
+              if (rgbMatch) {
+                const r = parseInt(rgbMatch[1]).toString(16).padStart(2, '0')
+                const g = parseInt(rgbMatch[2]).toString(16).padStart(2, '0')
+                const b = parseInt(rgbMatch[3]).toString(16).padStart(2, '0')
+                bgColor = `#${r}${g}${b}`
+              } else {
+                bgColor = computedBgColor
+              }
+            } else {
+              // 인라인 스타일과 computedStyle이 없으면 표 타입 감지 로직 사용
+              const isHeader = isVerticalTable 
+                ? (cellIndex === 0)  // 세로형: 첫 번째 열이 모두 헤더
+                : (rowIndex === 0)   // 가로형: 첫 번째 행이 모두 헤더
+              bgColor = isHeader ? headerColor : 'white'
+            }
           }
+          
+          // 배경색 정규화 (#ff831e 형식으로)
+          if (bgColor.toLowerCase() === '#ff831e' || bgColor.toLowerCase() === 'rgb(255, 131, 30)' || bgColor === headerColor) {
+            bgColor = headerColor
+          }
+          
+          ctx.fillStyle = bgColor
           ctx.fillRect(currentX, currentY, cellWidth, rowHeight)
           
-          // 셀 테두리 (1.2배 확대)
+          // 셀 테두리
           ctx.strokeStyle = borderColor
           ctx.lineWidth = Math.ceil(1 * scale)
           ctx.strokeRect(currentX, currentY, cellWidth, rowHeight)
           
+          // 텍스트 색상 확인 (인라인 스타일 우선, 없으면 computedStyle, 없으면 배경색에 따라 결정)
+          let textColorValue = textColor
+          const textColorMatch = cellStyle.match(/color:\s*([^;]+)/i)
+          if (textColorMatch) {
+            textColorValue = textColorMatch[1].trim()
+          } else {
+            // 인라인 스타일이 없으면 computedStyle 확인
+            const computedTextColor = computedStyle.color
+            if (computedTextColor && computedTextColor !== 'rgb(0, 0, 0)' && computedTextColor !== '#000000') {
+              // RGB를 hex로 변환
+              const rgbMatch = computedTextColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
+              if (rgbMatch) {
+                const r = parseInt(rgbMatch[1]).toString(16).padStart(2, '0')
+                const g = parseInt(rgbMatch[2]).toString(16).padStart(2, '0')
+                const b = parseInt(rgbMatch[3]).toString(16).padStart(2, '0')
+                textColorValue = `#${r}${g}${b}`
+              } else {
+                textColorValue = computedTextColor
+              }
+            } else {
+              // 인라인 스타일과 computedStyle이 없으면 배경색에 따라 결정
+              if (bgColor === headerColor || bgColor === '#ff831e') {
+                textColorValue = headerTextColor
+              } else {
+                textColorValue = textColor
+              }
+            }
+          }
+          
+          // 텍스트 색상 정규화 (#ffffff 형식으로)
+          if (textColorValue.toLowerCase() === '#ffffff' || textColorValue.toLowerCase() === 'rgb(255, 255, 255)' || textColorValue === headerTextColor) {
+            textColorValue = headerTextColor
+          }
+          
           // 텍스트
           const text = (cell.textContent || cell.innerText || '').trim()
-          ctx.fillStyle = isHeader ? headerTextColor : textColor
+          ctx.fillStyle = textColorValue
           ctx.font = `${fontSize}px Arial`
           ctx.textBaseline = 'top'
           
           // 텍스트 정렬 확인
-          const computedStyle = window.getComputedStyle(cell)
           const textAlign = computedStyle.textAlign || 'left'
           if (textAlign === 'center') {
             ctx.textAlign = 'center'
