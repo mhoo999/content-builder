@@ -203,9 +203,7 @@ function normalizeTable(table) {
         normalizedRow.appendChild(newCell)
       })
 
-        normalizedTable.appendChild(normalizedRow)
-      })
-      
+      normalizedTable.appendChild(normalizedRow)
       isFirstRow = false
     })
 
