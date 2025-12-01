@@ -461,11 +461,14 @@ function App() {
       // subjects.json 찾기
       const subjectsJsonFile = files.find((f) => f.webkitRelativePath.endsWith("subjects.json"))
       let lessonTitles = {}
+      let weekTitles = {}
 
       if (subjectsJsonFile) {
         const subjectsText = await subjectsJsonFile.text()
         const subjectsData = JSON.parse(subjectsText)
-        lessonTitles = parseSubjectsJson(subjectsData)
+        const parsed = parseSubjectsJson(subjectsData)
+        lessonTitles = parsed.lessonTitles
+        weekTitles = parsed.weekTitles
       }
 
       // 이미지 파일들 찾기 (base64 변환하지 않음, 원본과 동일하게 상대경로만 유지)
@@ -541,6 +544,7 @@ function App() {
       const lessons = lessonData.map((item, index) => {
         const builderLesson = convertDataJsonToBuilderFormat(item.dataJson, item.lessonNumber)
         builderLesson.lessonTitle = lessonTitles[item.lessonNumber] || `${item.lessonNumber}차시`
+        builderLesson.weekTitle = weekTitles[builderLesson.weekNumber] || ""
 
         // 이미지가 포함된 필드들에 data-original-src 속성 추가 및 임시 base64 변환
         // 용어 내용

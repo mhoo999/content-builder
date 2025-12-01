@@ -297,12 +297,28 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
  */
 export const parseSubjectsJson = (subjectsJson) => {
   const lessonTitles = {}
+  const weekTitles = {} // 주차별 타이틀
   let lessonCounter = 1
+  let weekCounter = 1
 
   // subjects 배열 파싱
   const subjects = subjectsJson.subjects || []
 
   subjects.forEach((subject) => {
+    // 주차 타이틀 추출: "<span>1주</span> 컴퓨터통신, 인터넷, 웹" -> "컴퓨터통신, 인터넷, 웹"
+    let weekTitle = subject.title || ""
+    if (typeof weekTitle === "string") {
+      // <span>...</span> 태그 제거
+      weekTitle = weekTitle.replace(/<span[^>]*>.*?<\/span>\s*/g, "").trim()
+      // 다른 HTML 태그도 제거
+      weekTitle = weekTitle.replace(/<[^>]+>/g, "").trim()
+    }
+
+    // 주차 타이틀 저장
+    if (weekTitle) {
+      weekTitles[weekCounter] = weekTitle
+    }
+
     const lists = subject.lists || []
 
     lists.forEach((listItem) => {
@@ -322,9 +338,11 @@ export const parseSubjectsJson = (subjectsJson) => {
         lessonCounter++
       }
     })
+
+    weekCounter++
   })
 
-  return lessonTitles
+  return { lessonTitles, weekTitles }
 }
 
 /**

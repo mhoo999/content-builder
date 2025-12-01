@@ -770,16 +770,16 @@ def create_subjects_json(course_data):
         if week_num not in weeks:
             weeks[week_num] = {
                 "weekNumber": week_num,
-                "weekTitle": "",  # 주차 제목 (첫 번째 차시 제목 사용)
+                "weekTitle": lesson.get("weekTitle", ""),  # 주차 타이틀 (데이터에서 가져오기)
                 "lessons": []
             }
         weeks[week_num]["lessons"].append({
             "number": lesson["lessonNumber"],
             "title": lesson["lessonTitle"]
         })
-        # 주차 제목이 비어있으면 첫 번째 차시 제목 사용
-        if not weeks[week_num]["weekTitle"] and lesson.get("lessonTitle"):
-            weeks[week_num]["weekTitle"] = lesson["lessonTitle"]
+        # 주차 타이틀이 비어있으면 업데이트 (같은 주차의 차시들은 weekTitle 공유)
+        if not weeks[week_num]["weekTitle"] and lesson.get("weekTitle"):
+            weeks[week_num]["weekTitle"] = lesson.get("weekTitle", "")
 
     # subjects.json 형식으로 변환
     subjects = []
