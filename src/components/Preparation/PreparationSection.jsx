@@ -316,7 +316,7 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
                   lessonData.learningContents?.find(
                     (content) => typeof content === "string" && content.includes("class='practice'"),
                   ) ||
-                  "<div class='practice'><ul><li></li></ul></div>"
+                  "<ul class='practice'><li></li></ul>"
                 }
                 onChange={(value) => {
                   onUpdate({

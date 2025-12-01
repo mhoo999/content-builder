@@ -39,7 +39,7 @@ def clean_html_for_export(html_content):
         return html_content
 
     # data-original-src가 있으면 src를 data-original-src로 교체하고 data-original-src 제거
-    # <img src="base64..." data-original-src="../images/file.png"> 
+    # <img src="base64..." data-original-src="../images/file.png">
     # → <img src="../images/file.png">
     def replace_with_original_src(match):
         full_tag = match.group(0)
@@ -52,7 +52,7 @@ def clean_html_for_export(html_content):
             full_tag = re.sub(r'\s*data-original-src=["\'][^"\']*["\']', '', full_tag)
             return full_tag
         return full_tag
-    
+
     html_content = re.sub(r'<img[^>]*data-original-src=["\'][^"\']+["\'][^>]*>', replace_with_original_src, html_content)
 
     # class="notion-image" 제거 및 alt='' 추가, 태그 형식 정리
@@ -69,6 +69,34 @@ def clean_html_for_export(html_content):
 
     html_content = re.sub(r'<img[^>]*class=["\']notion-image["\'][^>]*>', fix_img_tag, html_content)
 
+    # 실습 항목 변환: <ul class='practice'><li><p>...</p></li></ul>
+    # → <div class='practice'><ul><li>...</li></ul></div>
+    def convert_practice_list(match):
+        ul_tag = match.group(0)
+        # <li><p>내용</p></li> → <li>내용</li> (p 태그 제거)
+        # li 태그들을 찾아서 p 태그 제거
+        def remove_p_from_li(li_match):
+            li_content = li_match.group(1)
+            # <p>내용</p> 형식이면 p 태그 제거
+            li_content = re.sub(r'^\s*<p>(.*?)</p>\s*$', r'\1', li_content, flags=re.DOTALL)
+            return f'<li>{li_content}</li>'
+
+        ul_content = re.sub(r'<li[^>]*>(.*?)</li>', remove_p_from_li, ul_tag, flags=re.DOTALL)
+
+        # <ul class='practice'>...</ul> → <div class='practice'><ul>...</ul></div>
+        ul_content = re.sub(r"<ul[^>]*class=['\"]practice['\"][^>]*>", "<div class='practice'><ul>", ul_content)
+        ul_content = ul_content.replace('</ul>', '</ul></div>', 1)
+
+        return ul_content
+
+    # class='practice' 또는 class="practice"가 있는 ul 태그를 찾아서 변환
+    html_content = re.sub(
+        r"<ul[^>]*class=['\"]practice['\"][^>]*>.*?</ul>",
+        convert_practice_list,
+        html_content,
+        flags=re.DOTALL
+    )
+
     # 체크 불릿 리스트를 <p>✓ 텍스트</p> 형태로 변환
     # <ul class="check-bullet"><li>항목1</li><li>항목2</li></ul>
     # → <p>✓ 항목1</p><p>✓ 항목2</p>
@@ -77,34 +105,31 @@ def clean_html_for_export(html_content):
         # li 태그들을 찾아서 변환
         li_pattern = r'<li[^>]*>(.*?)</li>'
         li_matches = re.findall(li_pattern, ul_tag, re.DOTALL)
-        
+
         if not li_matches:
             return ul_tag
-        
+
         # 각 li를 <p>✓ 내용</p> 형태로 변환
         p_tags = []
         for li_content in li_matches:
             # li 내용에서 앞뒤 공백 제거
             content = li_content.strip()
-            
+
+            # <p>내용</p> 형식이면 p 태그 내부 텍스트만 추출
+            content = re.sub(r'^\s*<p>(.*?)</p>\s*$', r'\1', content, flags=re.DOTALL)
+
             # 이미 ✓가 있으면 중복 방지
             if content.startswith('✓'):
                 # 이미 ✓가 있으면 그대로 사용
-                # 하지만 <p> 태그가 없으면 추가
-                if not content.startswith('<p>'):
-                    content = f'<p>{content}</p>'
-            elif content.startswith('<p>'):
-                # 이미 <p> 태그가 있으면 첫 번째 <p> 태그 뒤에 ✓ 추가
-                # <p>내용</p> → <p>✓ 내용</p>
-                content = re.sub(r'<p>', '<p>✓ ', content, count=1)
+                content = f'<p>{content}</p>'
             else:
-                # <p> 태그가 없으면 <p>✓ 내용</p> 형태로 감싸기
+                # <p>✓ 내용</p> 형태로 감싸기
                 content = f'<p>✓ {content}</p>'
-            
+
             p_tags.append(content)
-        
+
         return ''.join(p_tags)
-    
+
     # class="check-bullet"이 있는 ul 태그를 찾아서 변환
     html_content = re.sub(
         r'<ul[^>]*class=["\']check-bullet["\'][^>]*>.*?</ul>',
@@ -386,8 +411,8 @@ def is_practice_content_empty(content):
     """실습 항목 내용이 비어있는지 확인"""
     if not content or not isinstance(content, str):
         return True
-    # practice 항목인지 확인
-    if "class='practice'" not in content:
+    # practice 항목인지 확인 (<ul class='practice'> 또는 <div class='practice'>)
+    if "class='practice'" not in content and 'class="practice"' not in content:
         return False
     # HTML 태그 제거 후 텍스트만 추출
     import re

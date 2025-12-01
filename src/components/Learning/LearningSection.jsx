@@ -115,7 +115,7 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
     // 실습 내용 초기화 (기존 practiceContent가 없으면 기본값 설정)
     const practiceContent =
       hasPractice && !lessonData.practiceContent
-        ? "<div class='practice'><ul><li></li></ul></div>"
+        ? "<ul class='practice'><li></li></ul>"
         : lessonData.practiceContent || ""
 
     onUpdate({
