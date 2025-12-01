@@ -288,7 +288,7 @@ export async function convertTableToImage(tableHtml) {
           const cellText = (cell.textContent || cell.innerText || '').trim()
           
           // 셀의 실제 너비 확인
-          const cellWidth = cellRect.width || baseCellWidth
+          const cellWidth = cellRect.width || 100 // 기본값 사용
           const maxTextWidth = cellWidth - baseCellPadding * 2
           
           // 텍스트를 여러 줄로 나누어 높이 계산
@@ -622,7 +622,7 @@ export async function convertTableToImage(tableHtml) {
       return base64
     } catch (e) {
       console.warn('표 이미지 변환 실패 (fallback):', e)
-      if (container.parentNode) {
+      if (container && container.parentNode) {
         document.body.removeChild(container)
       }
       return null
