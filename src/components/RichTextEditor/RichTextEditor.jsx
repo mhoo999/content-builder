@@ -890,7 +890,7 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
               <button
                 type="button"
                 onClick={() => {
-                  // 세로형: 첫 번째 col의 모든 셀에 배경색 #ff831e, 텍스트 색상 #ffffff 적용
+                  // 세로형: 첫 번째 row의 컬러를 원복하고, 첫 번째 col의 모든 셀에 배경색 #ff831e, 텍스트 색상 #ffffff 적용
                   editor
                     .chain()
                     .focus()
@@ -911,19 +911,33 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
                       const tableNode = tr.doc.nodeAt(tablePos)
                       if (!tableNode) return false
 
-                      // 첫 번째 열(colIndex === 0)의 모든 셀에 색상 적용
+                      // 첫 번째 row의 컬러를 원복하고, 첫 번째 col의 모든 셀에 헤더 스타일 적용
                       let pos = tablePos + 1
+                      let firstRowFound = false
                       let hasCells = false
                       tableNode.forEach((rowNode) => {
                         if (rowNode.type.name === "tableRow") {
                           let cellPos = pos + 1
                           let colIndex = 0
+                          const isFirstRow = !firstRowFound
+                          if (isFirstRow) firstRowFound = true
+                          
                           rowNode.forEach((cellNode) => {
                             if (cellNode.type.name === "tableCell" || cellNode.type.name === "tableHeader") {
+                              const currentStyle = cellNode.attrs.style || ""
+                              
+                              if (isFirstRow) {
+                                // 첫 번째 row의 모든 셀: 컬러 원복 (background-color와 color 제거)
+                                let cleanedStyle = currentStyle.replace(/background-color:\s*[^;]+;?/gi, "").trim()
+                                cleanedStyle = cleanedStyle.replace(/color:\s*[^;]+;?/gi, "").trim()
+                                const newStyle = cleanedStyle || null
+                                const attrs = { ...cellNode.attrs, style: newStyle }
+                                tr.setNodeMarkup(cellPos, null, attrs)
+                              }
+                              
                               if (colIndex === 0) {
+                                // 첫 번째 col의 모든 셀: 헤더 스타일 적용
                                 hasCells = true
-                                const currentStyle = cellNode.attrs.style || ""
-                                // 기존 background-color와 color 제거
                                 let cleanedStyle = currentStyle.replace(/background-color:\s*[^;]+;?/gi, "").trim()
                                 cleanedStyle = cleanedStyle.replace(/color:\s*[^;]+;?/gi, "").trim()
                                 const newStyle = cleanedStyle 
@@ -932,6 +946,7 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
                                 const attrs = { ...cellNode.attrs, style: newStyle }
                                 tr.setNodeMarkup(cellPos, null, attrs)
                               }
+                              
                               colIndex++
                             }
                             cellPos += cellNode.nodeSize
@@ -946,7 +961,7 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
                     })
                     .run()
                 }}
-                title="세로형: 첫 번째 열에 헤더 스타일 적용"
+                title="세로형: 첫 번째 행 컬러 원복 후 첫 번째 열에 헤더 스타일 적용"
               >
                 🎨 세로형
               </button>
