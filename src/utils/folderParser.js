@@ -153,10 +153,6 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   let learningContents = learningContentsRaw.map(cleanText)
   const learningObjectives = learningObjectivesRaw.map(cleanText)
 
-  console.log("=== 학습내용 디버깅 ===")
-  console.log("learningContentsRaw:", learningContentsRaw)
-  console.log("learningContents (after cleanText):", learningContents)
-
   // 생각묻기 & 점검하기 파싱
   const opinionPage = findPageByComponent(pages, "opinion")
   const checkPage = findPageByComponent(pages, "check")
@@ -180,23 +176,10 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   let practiceContent = ""
   // 학습내용에서 실습 항목 찾기 (기존 데이터에서 import)
   // class='practice' 또는 class="practice" 모두 감지
-  console.log("=== 실습 항목 찾기 ===")
-  console.log("hasPractice:", hasPractice)
-  learningContents.forEach((content, index) => {
-    console.log(`learningContents[${index}]:`, content?.substring(0, 200))
-    console.log(`  - includes("class='practice'"):`, content?.includes("class='practice'"))
-    console.log(`  - includes('class="practice"'):`, content?.includes('class="practice"'))
-  })
-
   const practiceContentInLearning = learningContents.find(
     (content) =>
       typeof content === "string" && (content.includes("class='practice'") || content.includes('class="practice"')),
   )
-
-  console.log("practiceContentInLearning found:", !!practiceContentInLearning)
-  if (practiceContentInLearning) {
-    console.log("practiceContentInLearning:", practiceContentInLearning.substring(0, 200))
-  }
 
   if (practiceContentInLearning) {
     // 학습내용에서 실습 항목을 찾았으면 practiceContent로 설정
@@ -206,32 +189,25 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
       practiceContent = practiceContentInLearning
         .replace(/<div class=['"]practice['"]>\s*<ul>/gi, "<ul class='practice'>")
         .replace(/<\/ul>\s*<\/div>/gi, "</ul>")
-      console.log("변환 후 (div->ul):", practiceContent.substring(0, 200))
     } else if (practiceContentInLearning.includes('<div class="practice">')) {
       practiceContent = practiceContentInLearning
         .replace(/<div class=['"]practice['"]>\s*<ul>/gi, "<ul class='practice'>")
         .replace(/<\/ul>\s*<\/div>/gi, "</ul>")
-      console.log("변환 후 (div->ul):", practiceContent.substring(0, 200))
     } else {
       // 이미 <ul class='practice'> 형식이면 그대로 사용
       practiceContent = practiceContentInLearning
-      console.log("그대로 사용 (ul):", practiceContent.substring(0, 200))
     }
   } else if (hasPractice) {
     // 실습 페이지는 있지만 학습내용에 실습 항목이 없으면 기본값 설정
     practiceContent = "<ul class='practice'><li></li></ul>"
-    console.log("기본값 설정")
   }
 
   // 학습내용에서 실습 항목 제거 (기존 데이터 마이그레이션)
   // class='practice' 또는 class="practice" 모두 제거
-  const beforeFilterLength = learningContents.length
   learningContents = learningContents.filter(
     (content) =>
       !(typeof content === "string" && (content.includes("class='practice'") || content.includes('class="practice"'))),
   )
-  console.log(`학습내용 필터링: ${beforeFilterLength}개 → ${learningContents.length}개`)
-  console.log("=== 실습 항목 찾기 끝 ===\n")
 
   // 연습문제 파싱
   const exercisePage = findPageByComponent(pages, "exercise")
