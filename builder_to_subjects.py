@@ -628,6 +628,10 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
                         if opt:
                             # 이미지 추출 및 저장
                             processed_opt = extract_and_save_images(opt, images_dir, course_code, image_counter)
+                            # <p> 태그를 <br />로 변환 (TipTap 에디터에서 오는 경우)
+                            # <p>내용1</p><p>내용2</p> → 내용1<br />내용2
+                            processed_opt = re.sub(r'</p>\s*<p>', '<br />', processed_opt)
+                            processed_opt = re.sub(r'</?p>', '', processed_opt)
                             # 줄바꿈 문자를 <br />로 변환
                             processed_opt = processed_opt.replace('\n', '<br />')
                             processed_options.append(processed_opt)
@@ -673,6 +677,10 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
                             if opt:
                                 # 이미지 추출 및 저장
                                 processed_opt = extract_and_save_images(opt, images_dir, course_code, image_counter)
+                                # <p> 태그를 <br />로 변환 (TipTap 에디터에서 오는 경우)
+                                # <p>내용1</p><p>내용2</p> → 내용1<br />내용2
+                                processed_opt = re.sub(r'</p>\s*<p>', '<br />', processed_opt)
+                                processed_opt = re.sub(r'</?p>', '', processed_opt)
                                 # 줄바꿈 문자를 <br />로 변환
                                 processed_opt = processed_opt.replace('\n', '<br />')
                                 processed_options.append(processed_opt)
@@ -1119,6 +1127,7 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
             "subject": course_name,
             "index": lesson["weekNumber"],
             "section": lesson["lessonNumber"],
+            "lessonTitle": lesson.get("lessonTitle", ""),
             "instruction": instruction_url,
             "guide": guide_url,
             "sections": ["인트로", "준비하기", "학습하기", "정리하기"],
