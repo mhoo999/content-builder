@@ -769,7 +769,7 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
               <button
                 type="button"
                 onClick={() => {
-                  // 현재 셀에 좌측 정렬 적용
+                  // 현재 셀에 좌측 정렬 적용 (기존 스타일 유지)
                   editor
                     .chain()
                     .focus()
@@ -779,7 +779,13 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
                         const node = $from.node(depth)
                         if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
                           const pos = $from.before(depth)
-                          const attrs = { ...node.attrs, style: "text-align: left;" }
+                          const currentStyle = node.attrs.style || ""
+                          // 기존 text-align 제거하고 새로 추가
+                          const cleanedStyle = currentStyle.replace(/text-align:\s*[^;]+;?/gi, "").trim()
+                          const newStyle = cleanedStyle 
+                            ? `${cleanedStyle}; text-align: left;`
+                            : `text-align: left;`
+                          const attrs = { ...node.attrs, style: newStyle }
                           tr.setNodeMarkup(pos, null, attrs)
                           return true
                         }
@@ -795,7 +801,7 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
               <button
                 type="button"
                 onClick={() => {
-                  // 현재 셀에 중앙 정렬 적용
+                  // 현재 셀에 중앙 정렬 적용 (기존 스타일 유지)
                   editor
                     .chain()
                     .focus()
@@ -805,7 +811,13 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
                         const node = $from.node(depth)
                         if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
                           const pos = $from.before(depth)
-                          const attrs = { ...node.attrs, style: "text-align: center;" }
+                          const currentStyle = node.attrs.style || ""
+                          // 기존 text-align 제거하고 새로 추가
+                          const cleanedStyle = currentStyle.replace(/text-align:\s*[^;]+;?/gi, "").trim()
+                          const newStyle = cleanedStyle 
+                            ? `${cleanedStyle}; text-align: center;`
+                            : `text-align: center;`
+                          const attrs = { ...node.attrs, style: newStyle }
                           tr.setNodeMarkup(pos, null, attrs)
                           return true
                         }
@@ -881,7 +893,181 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
                 }}
                 title="배경색 제거"
               >
-                🚫 색상 제거
+                🚫 배경색 제거
+              </button>
+              <span className="toolbar-divider" />
+              <button
+                type="button"
+                onClick={() => {
+                  // 현재 셀에 텍스트 색상 적용
+                  const color = prompt("텍스트 색상을 입력하세요 (예: #000000, #ffffff, black, white):", "#000000")
+                  if (color) {
+                    editor
+                      .chain()
+                      .focus()
+                      .command(({ tr, state }) => {
+                        const { $from } = state.selection
+                        for (let depth = $from.depth; depth > 0; depth--) {
+                          const node = $from.node(depth)
+                          if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+                            const pos = $from.before(depth)
+                            const currentStyle = node.attrs.style || ""
+                            // 기존 color 제거
+                            const cleanedStyle = currentStyle.replace(/color:\s*[^;]+;?/gi, "").trim()
+                            const newStyle = cleanedStyle 
+                              ? `${cleanedStyle}; color: ${color};`
+                              : `color: ${color};`
+                            const attrs = { ...node.attrs, style: newStyle }
+                            tr.setNodeMarkup(pos, null, attrs)
+                            return true
+                          }
+                        }
+                        return false
+                      })
+                      .run()
+                  }
+                }}
+                title="텍스트 색상 변경"
+              >
+                🎨 텍스트 색상
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // 현재 행의 모든 셀에 배경색 적용
+                  const color = prompt("행 배경색을 입력하세요 (예: #ff831e, red, rgb(255, 131, 30)):", "#ff831e")
+                  if (color) {
+                    editor
+                      .chain()
+                      .focus()
+                      .command(({ tr, state }) => {
+                        const { $from } = state.selection
+                        let tablePos = null
+                        let rowPos = null
+
+                        // 테이블과 행 위치 찾기
+                        for (let depth = $from.depth; depth > 0; depth--) {
+                          const node = $from.node(depth)
+                          if (node.type.name === "table") {
+                            tablePos = $from.before(depth)
+                          }
+                          if (node.type.name === "tableRow") {
+                            rowPos = $from.before(depth)
+                            break
+                          }
+                        }
+
+                        if (tablePos === null || rowPos === null) return false
+
+                        const rowNode = tr.doc.nodeAt(rowPos)
+                        if (!rowNode || rowNode.type.name !== "tableRow") return false
+
+                        // 현재 행의 모든 셀에 색상 적용
+                        let cellPos = rowPos + 1
+                        rowNode.forEach((cellNode) => {
+                          if (cellNode.type.name === "tableCell" || cellNode.type.name === "tableHeader") {
+                            const currentStyle = cellNode.attrs.style || ""
+                            const cleanedStyle = currentStyle.replace(/background-color:\s*[^;]+;?/gi, "").trim()
+                            const newStyle = cleanedStyle 
+                              ? `${cleanedStyle}; background-color: ${color};`
+                              : `background-color: ${color};`
+                            const attrs = { ...cellNode.attrs, style: newStyle }
+                            tr.setNodeMarkup(cellPos, null, attrs)
+                          }
+                          cellPos += cellNode.nodeSize
+                        })
+
+                        return true
+                      })
+                      .run()
+                  }
+                }}
+                title="행 전체 배경색 변경"
+              >
+                🎨 행 색상
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // 현재 열의 모든 셀에 배경색 적용
+                  const color = prompt("열 배경색을 입력하세요 (예: #ff831e, red, rgb(255, 131, 30)):", "#ff831e")
+                  if (color) {
+                    editor
+                      .chain()
+                      .focus()
+                      .command(({ tr, state }) => {
+                        const { $from } = state.selection
+                        let tablePos = null
+                        let rowPos = null
+                        let colIndex = -1
+
+                        // 테이블과 행 위치 찾기
+                        for (let depth = $from.depth; depth > 0; depth--) {
+                          const node = $from.node(depth)
+                          if (node.type.name === "table") {
+                            tablePos = $from.before(depth)
+                          }
+                          if (node.type.name === "tableRow") {
+                            rowPos = $from.before(depth)
+                          }
+                          if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+                            // 현재 셀이 속한 열의 인덱스 찾기
+                            const rowNode = $from.node(depth - 1)
+                            if (rowNode && rowNode.type.name === "tableRow") {
+                              let cellIdx = 0
+                              let cellOffset = 0
+                              rowNode.forEach((cellNode) => {
+                                if ($from.before(depth) === rowPos + 1 + cellOffset) {
+                                  colIndex = cellIdx
+                                }
+                                cellIdx++
+                                cellOffset += cellNode.nodeSize
+                              })
+                            }
+                            break
+                          }
+                        }
+
+                        if (tablePos === null || colIndex === -1) return false
+
+                        const tableNode = tr.doc.nodeAt(tablePos)
+                        if (!tableNode) return false
+
+                        // 해당 열의 모든 셀 찾아서 색상 적용
+                        let pos = tablePos + 1
+                        tableNode.forEach((rowNode) => {
+                          if (rowNode.type.name === "tableRow") {
+                            let cellPos = pos + 1
+                            let currentColIndex = 0
+                            rowNode.forEach((cellNode) => {
+                              if (cellNode.type.name === "tableCell" || cellNode.type.name === "tableHeader") {
+                                if (currentColIndex === colIndex) {
+                                  const currentStyle = cellNode.attrs.style || ""
+                                  const cleanedStyle = currentStyle.replace(/background-color:\s*[^;]+;?/gi, "").trim()
+                                  const newStyle = cleanedStyle 
+                                    ? `${cleanedStyle}; background-color: ${color};`
+                                    : `background-color: ${color};`
+                                  const attrs = { ...cellNode.attrs, style: newStyle }
+                                  tr.setNodeMarkup(cellPos, null, attrs)
+                                }
+                                currentColIndex++
+                              }
+                              cellPos += cellNode.nodeSize
+                            })
+                            pos += rowNode.nodeSize
+                          } else {
+                            pos += rowNode.nodeSize
+                          }
+                        })
+
+                        return true
+                      })
+                      .run()
+                  }
+                }}
+                title="열 전체 배경색 변경"
+              >
+                🎨 열 색상
               </button>
               <button
                 type="button"
