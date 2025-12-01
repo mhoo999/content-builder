@@ -713,8 +713,24 @@ def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter
     }
 
 
-def create_next_page():
-    """다음안내 페이지 생성"""
+def create_next_page(next_lesson=None):
+    """다음안내 페이지 생성
+    
+    Args:
+        next_lesson: 다음 차시 정보 딕셔너리 (lessonNumber, lessonTitle 등)
+    """
+    next_data = []
+    
+    # 다음 차시 정보가 있으면 추가
+    if next_lesson:
+        lesson_num = next_lesson.get("lessonNumber", "")
+        lesson_title = next_lesson.get("lessonTitle", "")
+        if lesson_num and lesson_title:
+            next_data.append({
+                "number": lesson_num,
+                "title": lesson_title
+            })
+    
     return {
         "path": "/next",
         "section": 3,
@@ -724,7 +740,7 @@ def create_next_page():
         "component": "next",
         "media": "../../../resources/media/common_out.mp3",
         "photo": "../images/professor.png",
-        "data": []
+        "data": next_data
     }
 
 
@@ -945,7 +961,8 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
             processed_professor_photo = professor_photo
 
     # 각 차시별 data.json 생성
-    for lesson in course_data["lessons"]:
+    lessons_list = course_data["lessons"]
+    for idx, lesson in enumerate(lessons_list):
         lesson_num = f"{lesson['lessonNumber']:02d}"
         lesson_dir = course_dir / lesson_num / "assets" / "data"
         lesson_dir.mkdir(parents=True, exist_ok=True)
@@ -1019,8 +1036,11 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         # 9. 학습정리
         pages.append(create_theorem_page(lesson, images_dir, course_code, image_counter))
 
-        # 10. 다음안내
-        pages.append(create_next_page())
+        # 10. 다음안내 (다음 차시 정보 포함)
+        next_lesson = None
+        if idx + 1 < len(lessons_list):
+            next_lesson = lessons_list[idx + 1]
+        pages.append(create_next_page(next_lesson))
 
         # index.html 생성 (차시 폴더 바로 아래에 생성: 01/index.html)
         index_html = get_index_html_template()
