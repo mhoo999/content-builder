@@ -903,7 +903,9 @@ def save_imported_images(imported_images, images_dir):
         try:
             # ../images/filename.ext 에서 filename.ext 추출 (크로스 플랫폼 호환)
             # Windows와 Unix 모두 '/' 또는 '\' 구분자 처리
-            filename = os.path.basename(rel_path.replace('\\', '/'))
+            # Path 객체 사용하여 더 안전하게 처리
+            normalized_path = rel_path.replace('\\', '/')
+            filename = os.path.basename(normalized_path)
             if not filename:
                 continue
 
