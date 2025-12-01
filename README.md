@@ -245,6 +245,55 @@ Export된 JSON 구조:
 }
 ```
 
+## 문제 해결
+
+### 서버가 종료되지 않거나 포트가 이미 사용 중일 때
+
+터미널을 실수로 닫았거나 서버가 제대로 종료되지 않은 경우, 포트 5173이 계속 점유될 수 있습니다.
+
+**해결 방법:**
+
+#### Windows (PowerShell 또는 CMD)
+
+```powershell
+# 방법 1: kill-port 사용 (권장)
+npx kill-port 5173
+
+# 방법 2: 직접 프로세스 종료
+netstat -ano | findstr :5173
+# PID 확인 후
+taskkill /PID <PID번호> /F
+```
+
+#### macOS / Linux
+
+```bash
+# 방법 1: kill-port 사용 (권장)
+npx kill-port 5173
+
+# 방법 2: 직접 프로세스 종료
+lsof -ti:5173 | xargs kill -9
+
+# 또는
+lsof -i :5173  # PID 확인
+kill -9 <PID번호>
+```
+
+### "Permission denied" 오류 (macOS/Linux)
+
+start.sh 파일에 실행 권한이 없는 경우:
+
+```bash
+chmod +x start.sh stop.sh start.mac.sh stop.mac.sh
+```
+
+### Python 관련 오류
+
+- **Windows**: `python --version`으로 Python 3 설치 확인
+- **macOS/Linux**: `python3 --version`으로 Python 3 설치 확인
+
+Python이 설치되어 있지 않다면 https://www.python.org/ 에서 다운로드
+
 ## 라이센스
 
 MIT
