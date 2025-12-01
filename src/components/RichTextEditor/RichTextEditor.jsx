@@ -830,6 +830,58 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
               >
                 ↔
               </button>
+              <span className="toolbar-divider" />
+              <button
+                type="button"
+                onClick={() => {
+                  // 현재 셀에 헤더 스타일 토글 (배경색 #ff831e, 텍스트 색상 #ffffff)
+                  editor
+                    .chain()
+                    .focus()
+                    .command(({ tr, state }) => {
+                      const { $from } = state.selection
+                      for (let depth = $from.depth; depth > 0; depth--) {
+                        const node = $from.node(depth)
+                        if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+                          const pos = $from.before(depth)
+                          const currentStyle = node.attrs.style || ""
+                          // 헤더 스타일 확인 (배경색 #ff831e와 텍스트 색상 #ffffff가 모두 있는지)
+                          const hasBgColor = /background-color:\s*#ff831e/i.test(currentStyle)
+                          const hasTextColor = /color:\s*#ffffff/i.test(currentStyle)
+                          const hasHeaderStyle = hasBgColor && hasTextColor
+                          
+                          if (hasHeaderStyle) {
+                            // 헤더 스타일 제거 (원복)
+                            let cleanedStyle = currentStyle.replace(/background-color:\s*#ff831e;?/gi, "").trim()
+                            cleanedStyle = cleanedStyle.replace(/color:\s*#ffffff;?/gi, "").trim()
+                            // 세미콜론 정리
+                            cleanedStyle = cleanedStyle.replace(/;\s*;/g, ";").replace(/^;|;$/g, "").trim()
+                            const newStyle = cleanedStyle || null
+                            const attrs = { ...node.attrs, style: newStyle }
+                            tr.setNodeMarkup(pos, null, attrs)
+                          } else {
+                            // 헤더 스타일 적용
+                            let cleanedStyle = currentStyle.replace(/background-color:\s*[^;]+;?/gi, "").trim()
+                            cleanedStyle = cleanedStyle.replace(/color:\s*[^;]+;?/gi, "").trim()
+                            // 세미콜론 정리
+                            cleanedStyle = cleanedStyle.replace(/;\s*;/g, ";").replace(/^;|;$/g, "").trim()
+                            const newStyle = cleanedStyle 
+                              ? `${cleanedStyle}; background-color: #ff831e; color: #ffffff;`
+                              : `background-color: #ff831e; color: #ffffff;`
+                            const attrs = { ...node.attrs, style: newStyle }
+                            tr.setNodeMarkup(pos, null, attrs)
+                          }
+                          return true
+                        }
+                      }
+                      return false
+                    })
+                    .run()
+                }}
+                title="셀 헤더 스타일 토글"
+              >
+                🎨 셀
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -965,6 +1017,7 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
               >
                 🎨 세로형
               </button>
+              <span className="toolbar-divider" />
               <button
                 type="button"
                 onClick={() => editor.chain().focus().deleteTable().run()}
