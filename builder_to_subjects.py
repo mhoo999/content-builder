@@ -282,11 +282,11 @@ def create_intro_page(professor, processed_photo=None, lesson_title=None):
         }
     }
     
-    # 차시 타이틀이 있으면 추가
+    # 차시 타이틀이 있으면 추가 (data 내부와 최상위 레벨 모두에 추가)
     if lesson_title:
         intro_data["lessonTitle"] = lesson_title
     
-    return {
+    result = {
         "path": "",
         "section": 0,
         "title": "인트로",
@@ -294,6 +294,12 @@ def create_intro_page(professor, processed_photo=None, lesson_title=None):
         "media": intro_media,
         "data": intro_data
     }
+    
+    # 차시 타이틀을 최상위 레벨에도 추가 (원본 형식과 동일하게)
+    if lesson_title:
+        result["lessonTitle"] = lesson_title
+    
+    return result
 
 
 def create_orientation_page(orientation, course_code=None, year=None):

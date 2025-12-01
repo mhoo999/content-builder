@@ -60,14 +60,20 @@ const CustomBulletList = BulletList.extend({
   },
 })
 
-// 커스텀 TableCell extension - text-align 속성 지원
+// 커스텀 TableCell extension - text-align 및 background-color 속성 지원
 const CustomTableCell = TableCell.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
       style: {
         default: null,
-        parseHTML: (element) => element.getAttribute("style"),
+        parseHTML: (element) => {
+          const style = element.getAttribute("style") || ""
+          // background-color를 style에서 추출하여 별도 속성으로도 저장
+          const bgColorMatch = element.getAttribute("style")?.match(/background-color:\s*([^;]+)/i)
+          const bgColor = bgColorMatch ? bgColorMatch[1].trim() : null
+          return style || (bgColor ? `background-color: ${bgColor};` : null)
+        },
         renderHTML: (attributes) => {
           if (!attributes.style) {
             return {}
@@ -79,14 +85,20 @@ const CustomTableCell = TableCell.extend({
   },
 })
 
-// 커스텀 TableHeader extension - text-align 속성 지원
+// 커스텀 TableHeader extension - text-align 및 background-color 속성 지원
 const CustomTableHeader = TableHeader.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
       style: {
         default: null,
-        parseHTML: (element) => element.getAttribute("style"),
+        parseHTML: (element) => {
+          const style = element.getAttribute("style") || ""
+          // background-color를 style에서 추출하여 별도 속성으로도 저장
+          const bgColorMatch = element.getAttribute("style")?.match(/background-color:\s*([^;]+)/i)
+          const bgColor = bgColorMatch ? bgColorMatch[1].trim() : null
+          return style || (bgColor ? `background-color: ${bgColor};` : null)
+        },
         renderHTML: (attributes) => {
           if (!attributes.style) {
             return {}
@@ -680,6 +692,71 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
                 title="중앙 정렬"
               >
                 ↔
+              </button>
+              <span className="toolbar-divider" />
+              <button
+                type="button"
+                onClick={() => {
+                  // 현재 셀에 배경색 적용 (색상 선택 다이얼로그)
+                  const color = prompt("배경색을 입력하세요 (예: #ff831e, red, rgb(255, 131, 30)):", "#ff831e")
+                  if (color) {
+                    editor
+                      .chain()
+                      .focus()
+                      .command(({ tr, state }) => {
+                        const { $from } = state.selection
+                        for (let depth = $from.depth; depth > 0; depth--) {
+                          const node = $from.node(depth)
+                          if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+                            const pos = $from.before(depth)
+                            const currentStyle = node.attrs.style || ""
+                            // 기존 background-color 제거
+                            const cleanedStyle = currentStyle.replace(/background-color:\s*[^;]+;?/gi, "").trim()
+                            const newStyle = cleanedStyle 
+                              ? `${cleanedStyle}; background-color: ${color};`
+                              : `background-color: ${color};`
+                            const attrs = { ...node.attrs, style: newStyle }
+                            tr.setNodeMarkup(pos, null, attrs)
+                            return true
+                          }
+                        }
+                        return false
+                      })
+                      .run()
+                  }
+                }}
+                title="셀 배경색 변경"
+              >
+                🎨 색상
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // 현재 셀의 배경색 제거
+                  editor
+                    .chain()
+                    .focus()
+                    .command(({ tr, state }) => {
+                      const { $from } = state.selection
+                      for (let depth = $from.depth; depth > 0; depth--) {
+                        const node = $from.node(depth)
+                        if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+                          const pos = $from.before(depth)
+                          const currentStyle = node.attrs.style || ""
+                          // background-color 제거
+                          const cleanedStyle = currentStyle.replace(/background-color:\s*[^;]+;?/gi, "").trim()
+                          const attrs = { ...node.attrs, style: cleanedStyle || null }
+                          tr.setNodeMarkup(pos, null, attrs)
+                          return true
+                        }
+                      }
+                      return false
+                    })
+                    .run()
+                }}
+                title="배경색 제거"
+              >
+                🚫 색상 제거
               </button>
               <button
                 type="button"

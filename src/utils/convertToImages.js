@@ -198,7 +198,8 @@ export async function convertTableToImage(tableHtml) {
     container.style.top = '-9999px'
     container.style.background = 'white'
     container.style.padding = '20px'
-    container.style.width = '800px' // 고정 너비
+    container.style.width = 'auto' // 자동 너비 (원본 크기 유지)
+    container.style.maxWidth = '1200px' // 최대 너비 제한
     container.innerHTML = tableHtml
     document.body.appendChild(container)
 
@@ -237,13 +238,18 @@ export async function convertTableToImage(tableHtml) {
       // 렌더링 대기
       await new Promise(resolve => setTimeout(resolve, 100))
       
+      // 표의 실제 크기 측정 (렌더링된 크기)
       const rect = table.getBoundingClientRect()
       // 표 이미지는 1.0배로 유지
       const scale = 1.0
       const basePadding = 20
       const padding = Math.ceil(basePadding * scale)
+      // 표의 실제 너비 사용 (최소 600px 보장)
       const baseWidth = Math.max(rect.width || 600, 600)
       const width = Math.ceil(baseWidth * scale) + padding * 2
+      
+      // 표의 실제 높이도 측정하여 사용 (내용이 잘리지 않도록)
+      const baseHeight = Math.max(rect.height || 400, 400)
       
       const rows = table.querySelectorAll('tr')
       const baseCellPadding = 8
@@ -258,15 +264,22 @@ export async function convertTableToImage(tableHtml) {
       const lineHeight = fontSize * 1.4
       
       // 각 행의 높이 계산 (원본 크기로 계산 후 scale 적용)
+      // 텍스트가 잘리지 않도록 실제 렌더링 높이를 측정
       const baseRowHeights = []
       const baseLineHeight = baseFontSize * 1.4
       rows.forEach(row => {
         const cells = row.querySelectorAll('th, td')
         let maxHeight = baseLineHeight + baseCellPadding * 2
         cells.forEach(cell => {
+          // 실제 렌더링된 높이 측정 (텍스트가 잘리지 않도록)
+          const cellRect = cell.getBoundingClientRect()
           const cellText = (cell.textContent || cell.innerText || '').trim()
+          // 줄바꿈 문자로 나눈 줄 수 계산
           const lines = cellText.split('\n').filter(l => l.trim()).length || 1
-          const cellHeight = Math.max(baseLineHeight * lines + baseCellPadding * 2, baseLineHeight + baseCellPadding * 2)
+          // 실제 높이와 계산된 높이 중 큰 값 사용
+          const calculatedHeight = baseLineHeight * lines + baseCellPadding * 2
+          const actualHeight = cellRect.height || calculatedHeight
+          const cellHeight = Math.max(calculatedHeight, actualHeight, baseLineHeight + baseCellPadding * 2)
           maxHeight = Math.max(maxHeight, cellHeight)
         })
         baseRowHeights.push(maxHeight)
@@ -376,19 +389,39 @@ export async function convertTableToImage(tableHtml) {
           
           lines.forEach(line => {
             if (line.trim()) {
-              // 텍스트가 너무 길면 자르기
+              // 텍스트가 너무 길면 줄바꿈 처리 (자르지 않음)
               const maxWidth = cellWidth - cellPadding * 2
-              let displayText = line
               const metrics = ctx.measureText(line)
+              
               if (metrics.width > maxWidth) {
-                let truncated = line
-                while (ctx.measureText(truncated + '...').width > maxWidth && truncated.length > 0) {
-                  truncated = truncated.slice(0, -1)
+                // 텍스트를 여러 줄로 나누기
+                const words = line.split(' ')
+                let currentLine = ''
+                
+                words.forEach(word => {
+                  const testLine = currentLine ? `${currentLine} ${word}` : word
+                  const testMetrics = ctx.measureText(testLine)
+                  
+                  if (testMetrics.width > maxWidth && currentLine) {
+                    // 현재 줄 출력하고 새 줄 시작
+                    ctx.fillText(currentLine, textX, textY)
+                    textY += lineHeight
+                    currentLine = word
+                  } else {
+                    currentLine = testLine
+                  }
+                })
+                
+                // 마지막 줄 출력
+                if (currentLine) {
+                  ctx.fillText(currentLine, textX, textY)
+                  textY += lineHeight
                 }
-                displayText = truncated + '...'
+              } else {
+                // 한 줄에 들어가면 그대로 출력
+                ctx.fillText(line, textX, textY)
+                textY += lineHeight
               }
-              ctx.fillText(displayText, textX, textY)
-              textY += lineHeight
             }
           })
           
