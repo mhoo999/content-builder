@@ -28,26 +28,36 @@ IT 학위 콘텐츠 제작을 위한 비주얼 빌더 도구
 
 ### Windows (윈도우)
 
-1. **`start.bat`** 더블클릭
+1. **`start.bat`** 또는 **`start.windows.bat`** 더블클릭
    - Python, Node.js 자동 설치 확인
    - 필요한 패키지 자동 설치
    - 브라우저 자동 오픈
+   
+   > **⚠️ 관리자 권한 필요**: Python이 설치되어 있지 않은 경우, 
+   > Python 자동 설치를 위해 **관리자 권한으로 실행**이 필요합니다.
+   > - 파일을 우클릭하고 "관리자 권한으로 실행" 선택
+   > - 또는 명령 프롬프트를 관리자 권한으로 열고 실행
 
-2. **종료 시**: `stop.bat` 더블클릭
+2. **종료 시**: `stop.bat` 또는 `stop.windows.bat` 더블클릭
 
 ### macOS (맥)
 
-1. **`start.sh`** 더블클릭 (또는 터미널에서 `./start.sh`)
+1. **`start.sh`** 또는 **`start.mac.sh`** 실행
+   ```bash
+   ./start.sh
+   # 또는
+   ./start.mac.sh
+   ```
    - Python3, Node.js 설치 확인
    - 필요한 패키지 자동 설치
    - 브라우저 자동 오픈
 
-2. **종료 시**: `./stop.sh` 실행 (또는 터미널에서 Ctrl+C)
+2. **종료 시**: `./stop.sh` 또는 `./stop.mac.sh` 실행 (또는 터미널에서 Ctrl+C)
 
 > **주의**: 맥에서 "권한이 없습니다" 오류 발생 시,
 > 터미널에서 다음 명령어 실행:
 > ```bash
-> chmod +x start.sh stop.sh
+> chmod +x start.sh stop.sh start.mac.sh stop.mac.sh
 > ```
 
 ---
