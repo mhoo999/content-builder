@@ -233,6 +233,7 @@ export const createNextPage = () => ({
 export const createBuilderLessonData = () => ({
   // 기본 정보
   weekNumber: 1,
+  weekTitle: "", // 주차 타이틀 (예: "컴퓨터통신, 인터넷, 웹")
   lessonNumber: 1,
   lessonTitle: "",
 

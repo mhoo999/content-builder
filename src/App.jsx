@@ -299,6 +299,22 @@ function App() {
     updateLesson(index, { ...lesson, lessonTitle: title })
   }
 
+  // 주차 타이틀 업데이트 (같은 주차의 모든 차시에 동기화)
+  const updateWeekTitle = (index, weekTitle) => {
+    const currentLesson = courseData.lessons[index]
+    const weekNumber = currentLesson.weekNumber
+
+    // 같은 주차의 모든 차시 업데이트
+    setCourseData((prev) => ({
+      ...prev,
+      lessons: prev.lessons.map((lesson) =>
+        lesson.weekNumber === weekNumber
+          ? { ...lesson, weekTitle: weekTitle }
+          : lesson
+      ),
+    }))
+  }
+
   // 모달에서 차시 생성
   const createLessonsFromModal = (lessonStructure, courseCode, courseName, year) => {
     const newLessons = lessonStructure.map((structure, index) => {
@@ -691,39 +707,9 @@ function App() {
                     onClick={() => setCurrentLessonIndex(index)}
                   >
                     <div className="lesson-info">
-                      <div className="lesson-info-row">
-                        <input
-                          type="text"
-                          className="lesson-num-input-inline"
-                          value={lesson.lessonNumber}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, "")
-                            updateLessonNumber(index, value || "1")
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <span className="week-label-inline">강</span>
-                        <input
-                          type="text"
-                          className="week-input-inline"
-                          value={lesson.weekNumber}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, "")
-                            updateLessonWeek(index, value || "1")
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <span className="week-label-inline">주차</span>
-                        <input
-                          type="text"
-                          className="lesson-order-input-inline"
-                          value={getLessonOrderInWeek(index)}
-                          readOnly
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <span className="week-label-inline">차시</span>
-                      </div>
-                      <div className="title-row">
+                      {/* 1줄: 1강 [✓실습] */}
+                      <div className="lesson-number-row">
+                        <span className="lesson-number">{lesson.lessonNumber}강</span>
                         <label className="practice-checkbox-inline">
                           <input
                             type="checkbox"
@@ -762,10 +748,28 @@ function App() {
                           />
                           <span>실습</span>
                         </label>
+                      </div>
+
+                      {/* 2줄: 1주 주차타이틀 */}
+                      <div className="week-title-row">
+                        <span className="week-label">{lesson.weekNumber}주</span>
                         <input
                           type="text"
-                          className="title-input-inline"
-                          placeholder="제목 입력"
+                          className="week-title-input"
+                          placeholder="주차 타이틀 입력"
+                          value={lesson.weekTitle || ""}
+                          onChange={(e) => updateWeekTitle(index, e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+
+                      {/* 3줄: 1차 차시제목 */}
+                      <div className="lesson-title-row">
+                        <span className="lesson-order-label">{getLessonOrderInWeek(index)}차</span>
+                        <input
+                          type="text"
+                          className="lesson-title-input"
+                          placeholder="차시 제목 입력"
                           value={lesson.lessonTitle}
                           onChange={(e) => updateLessonTitle(index, e.target.value)}
                           onClick={(e) => e.stopPropagation()}

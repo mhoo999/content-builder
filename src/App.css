@@ -716,105 +716,109 @@ button:disabled {
 .lesson-info {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
 }
 
-.lesson-info-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: nowrap;
-}
-
-/* 인라인 편집 input 스타일 */
-.week-input-inline {
-  width: 28px;
-  padding: 3px 2px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  text-align: center;
-  color: var(--text-primary);
-  transition: all 0.2s;
-}
-
-.lesson-num-input-inline {
-  width: 28px;
-  padding: 3px 2px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  text-align: center;
-  color: var(--text-primary);
-  transition: all 0.2s;
-}
-
-.lesson-order-input-inline {
-  width: 24px;
-  padding: 3px 2px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  text-align: center;
-  color: var(--text-primary);
-  transition: all 0.2s;
-}
-
-.lesson-order-input-inline:hover {
-  background: rgba(255, 255, 255, 0.5);
-  border-color: var(--border);
-}
-
-.lesson-order-input-inline:focus {
-  outline: none;
-  background: white;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.1);
-}
-
-.lesson-num-input-inline:hover {
-  background: rgba(255, 255, 255, 0.5);
-  border-color: var(--border);
-}
-
-.lesson-num-input-inline:focus {
-  outline: none;
-  background: white;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.1);
-}
-
-.week-input-inline:hover {
-  background: rgba(255, 255, 255, 0.5);
-  border-color: var(--border);
-}
-
-.week-input-inline:focus {
-  outline: none;
-  background: white;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.1);
-}
-
-.week-label-inline {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin: 0;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.title-row {
+/* 1줄: 1강 [✓실습] */
+.lesson-number-row {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.lesson-number {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* 2줄: 1주 주차타이틀 */
+.week-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.week-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 28px;
+}
+
+.week-title-input {
+  flex: 1;
+  padding: 3px 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.week-title-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.week-title-input:hover {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: var(--border);
+}
+
+.week-title-input:focus {
+  outline: none;
+  background: white;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.1);
+}
+
+/* 3줄: 1차 차시제목 */
+.lesson-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lesson-order-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 28px;
+}
+
+.lesson-title-input {
+  flex: 1;
+  padding: 3px 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.lesson-title-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.lesson-title-input:hover {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: var(--border);
+}
+
+.lesson-title-input:focus {
+  outline: none;
+  background: white;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.1);
 }
 
 .practice-checkbox-inline {
@@ -855,58 +859,29 @@ button:disabled {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.title-input-inline {
-  flex: 1;
-  padding: 4px 8px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  transition: all 0.2s;
-}
-
-.title-input-inline::placeholder {
-  color: var(--text-tertiary);
-}
-
-.title-input-inline:hover {
-  background: rgba(255, 255, 255, 0.5);
-  border-color: var(--border);
-}
-
-.title-input-inline:focus {
-  outline: none;
-  background: white;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.1);
-}
-
-/* active 상태의 인라인 편집 스타일 */
-.lesson-tab.active .week-input-inline,
-.lesson-tab.active .lesson-num-input-inline,
-.lesson-tab.active .lesson-order-input-inline,
-.lesson-tab.active .title-input-inline {
+/* active 상태의 스타일 */
+.lesson-tab.active .lesson-number {
   color: white;
 }
 
-.lesson-tab.active .week-label-inline {
+.lesson-tab.active .week-label,
+.lesson-tab.active .lesson-order-label {
   color: rgba(255, 255, 255, 0.8);
 }
 
-.lesson-tab.active .week-input-inline:hover,
-.lesson-tab.active .lesson-num-input-inline:hover,
-.lesson-tab.active .lesson-order-input-inline:hover,
-.lesson-tab.active .title-input-inline:hover {
+.lesson-tab.active .week-title-input,
+.lesson-tab.active .lesson-title-input {
+  color: white;
+}
+
+.lesson-tab.active .week-title-input:hover,
+.lesson-tab.active .lesson-title-input:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-.lesson-tab.active .week-input-inline:focus,
-.lesson-tab.active .lesson-num-input-inline:focus,
-.lesson-tab.active .lesson-order-input-inline:focus,
-.lesson-tab.active .title-input-inline:focus {
+.lesson-tab.active .week-title-input:focus,
+.lesson-tab.active .lesson-title-input:focus {
   background: white;
   color: var(--text-primary);
   border-color: white;
