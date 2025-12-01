@@ -619,8 +619,14 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
             if images_dir and course_code and image_counter:
                 if question:
                     question = extract_and_save_images(question, images_dir, course_code, image_counter)
+                    # 문항의 <p> 태그 제거 (단일 단락인 경우)
+                    if question.startswith('<p>') and question.endswith('</p>') and question.count('<p>') == 1:
+                        question = re.sub(r'</?p>', '', question)
                 if commentary:
                     commentary = extract_and_save_images(commentary, images_dir, course_code, image_counter)
+                    # 해설의 <p> 태그 제거 (단일 단락인 경우)
+                    if commentary.startswith('<p>') and commentary.endswith('</p>') and commentary.count('<p>') == 1:
+                        commentary = re.sub(r'</?p>', '', commentary)
                 # 선택지도 이미지 처리 및 줄바꿈 처리
                 if ex.get("type") == "multiple":
                     processed_options = []
@@ -668,8 +674,14 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
                 # 문항, 해설, 선택지의 이미지 추출 및 저장
                 if images_dir and course_code and image_counter:
                     question = extract_and_save_images(question, images_dir, course_code, image_counter)
+                    # 문항의 <p> 태그 제거 (단일 단락인 경우)
+                    if question.startswith('<p>') and question.endswith('</p>') and question.count('<p>') == 1:
+                        question = re.sub(r'</?p>', '', question)
                     if commentary:
                         commentary = extract_and_save_images(commentary, images_dir, course_code, image_counter)
+                        # 해설의 <p> 태그 제거 (단일 단락인 경우)
+                        if commentary.startswith('<p>') and commentary.endswith('</p>') and commentary.count('<p>') == 1:
+                            commentary = re.sub(r'</?p>', '', commentary)
                     # 선택지도 이미지 처리 및 줄바꿈 처리
                     if ex.get("type") == "multiple":
                         processed_options = []
