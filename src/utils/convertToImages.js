@@ -239,6 +239,13 @@ export async function convertTableToImage(tableHtml) {
     console.warn('html2canvas 사용 실패, 대체 방법 시도:', html2canvasError)
     
     // html2canvas가 실패한 경우, 기존 방식으로 fallback
+    if (!container || !table) {
+      if (container && container.parentNode) {
+        document.body.removeChild(container)
+      }
+      return null
+    }
+    
     try {
       // 렌더링 대기
       await new Promise(resolve => setTimeout(resolve, 100))
@@ -620,19 +627,13 @@ export async function convertTableToImage(tableHtml) {
       document.body.removeChild(container)
 
       return base64
-    } catch (e) {
-      console.warn('표 이미지 변환 실패 (fallback):', e)
+    } catch (fallbackError) {
+      console.warn('표 이미지 변환 실패 (fallback):', fallbackError)
       if (container && container.parentNode) {
         document.body.removeChild(container)
       }
       return null
     }
-  } catch (error) {
-    console.error('표 이미지 변환 실패:', error)
-    if (container && container.parentNode) {
-      document.body.removeChild(container)
-    }
-    return null
   }
 }
 
