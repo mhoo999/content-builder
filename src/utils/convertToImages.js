@@ -267,21 +267,65 @@ export async function convertTableToImage(tableHtml) {
       // 텍스트가 잘리지 않도록 실제 렌더링 높이를 측정
       const baseRowHeights = []
       const baseLineHeight = baseFontSize * 1.4
+      
+      // 임시 canvas로 텍스트 너비/높이 측정
+      const measureCanvas = document.createElement('canvas')
+      const measureCtx = measureCanvas.getContext('2d')
+      measureCtx.font = `${baseFontSize}px Arial`
+      
       rows.forEach(row => {
         const cells = row.querySelectorAll('th, td')
         let maxHeight = baseLineHeight + baseCellPadding * 2
+        
         cells.forEach(cell => {
           // 실제 렌더링된 높이 측정 (텍스트가 잘리지 않도록)
           const cellRect = cell.getBoundingClientRect()
           const cellText = (cell.textContent || cell.innerText || '').trim()
-          // 줄바꿈 문자로 나눈 줄 수 계산
-          const lines = cellText.split('\n').filter(l => l.trim()).length || 1
+          
+          // 셀의 실제 너비 확인
+          const cellWidth = cellRect.width || baseCellWidth
+          const maxTextWidth = cellWidth - baseCellPadding * 2
+          
+          // 텍스트를 여러 줄로 나누어 높이 계산
+          const lines = cellText.split('\n').filter(l => l.trim())
+          let totalLines = lines.length || 1
+          
+          // 각 줄이 셀 너비를 초과하는지 확인하고 줄바꿈 처리
+          if (lines.length > 0) {
+            let actualLines = 0
+            lines.forEach(line => {
+              if (line.trim()) {
+                const metrics = measureCtx.measureText(line)
+                if (metrics.width > maxTextWidth) {
+                  // 줄바꿈 필요: 단어 단위로 나누기
+                  const words = line.split(' ')
+                  let currentLine = ''
+                  words.forEach(word => {
+                    const testLine = currentLine ? `${currentLine} ${word}` : word
+                    const testMetrics = measureCtx.measureText(testLine)
+                    if (testMetrics.width > maxTextWidth && currentLine) {
+                      actualLines++
+                      currentLine = word
+                    } else {
+                      currentLine = testLine
+                    }
+                  })
+                  if (currentLine) actualLines++
+                } else {
+                  actualLines++
+                }
+              }
+            })
+            totalLines = Math.max(totalLines, actualLines)
+          }
+          
           // 실제 높이와 계산된 높이 중 큰 값 사용
-          const calculatedHeight = baseLineHeight * lines + baseCellPadding * 2
+          const calculatedHeight = baseLineHeight * totalLines + baseCellPadding * 2
           const actualHeight = cellRect.height || calculatedHeight
           const cellHeight = Math.max(calculatedHeight, actualHeight, baseLineHeight + baseCellPadding * 2)
           maxHeight = Math.max(maxHeight, cellHeight)
         })
+        
         baseRowHeights.push(maxHeight)
       })
       
@@ -315,24 +359,84 @@ export async function convertTableToImage(tableHtml) {
       console.log(`표 셀 크기: 원본 셀 너비 ${baseCellWidth}, 확대 셀 너비 ${cellWidth}`)
       
       // 표 타입 감지: 세로형(첫 번째 열이 모두 헤더) vs 가로형(첫 번째 행이 모두 헤더)
+      // 인라인 스타일 기반으로도 확인
       let isVerticalTable = false
+      let isHorizontalTable = false
+      
       if (rows.length > 0) {
-        const firstRowCells = rows[0].querySelectorAll('th, td')
-        if (firstRowCells.length > 0) {
-          // 첫 번째 열의 모든 셀이 th인지 확인
-          let firstColAllTh = true
-          for (let i = 0; i < rows.length; i++) {
-            const rowCells = rows[i].querySelectorAll('th, td')
-            if (rowCells.length > 0 && rowCells[0].tagName !== 'TH') {
-              firstColAllTh = false
+        // 첫 번째 열의 모든 셀에 헤더 색상이 있는지 확인 (세로형)
+        let firstColAllHeader = true
+        for (let i = 0; i < rows.length; i++) {
+          const rowCells = rows[i].querySelectorAll('th, td')
+          if (rowCells.length > 0) {
+            const firstCell = rowCells[0]
+            const firstCellStyle = firstCell.getAttribute('style') || ''
+            const firstCellComputed = window.getComputedStyle(firstCell)
+            const firstCellBg = firstCellComputed.backgroundColor
+            
+            // 인라인 스타일이나 computedStyle에서 헤더 색상 확인
+            const hasHeaderBg = firstCellStyle.includes('background-color: #ff831e') || 
+                                firstCellStyle.includes('background-color:#ff831e') ||
+                                (firstCellBg && (
+                                  firstCellBg.includes('rgb(255, 131, 30)') || 
+                                  firstCellBg === 'rgb(255, 131, 30)'
+                                ))
+            
+            if (!hasHeaderBg && firstCell.tagName !== 'TH') {
+              firstColAllHeader = false
               break
             }
           }
-          // 첫 번째 행의 첫 번째 셀이 th이고, 첫 번째 행의 나머지 셀이 td이면 가로형
-          // 첫 번째 열의 모든 셀이 th이면 세로형
-          if (firstColAllTh && firstRowCells.length > 1 && firstRowCells[1].tagName === 'TD') {
-            isVerticalTable = true
+        }
+        
+        // 첫 번째 행의 모든 셀에 헤더 색상이 있는지 확인 (가로형)
+        const firstRowCells = rows[0].querySelectorAll('th, td')
+        let firstRowAllHeader = true
+        if (firstRowCells.length > 0) {
+          for (let i = 0; i < firstRowCells.length; i++) {
+            const cell = firstRowCells[i]
+            const cellStyle = cell.getAttribute('style') || ''
+            const cellComputed = window.getComputedStyle(cell)
+            const cellBg = cellComputed.backgroundColor
+            
+            // 인라인 스타일이나 computedStyle에서 헤더 색상 확인
+            const hasHeaderBg = cellStyle.includes('background-color: #ff831e') || 
+                                cellStyle.includes('background-color:#ff831e') ||
+                                (cellBg && (
+                                  cellBg.includes('rgb(255, 131, 30)') || 
+                                  cellBg === 'rgb(255, 131, 30)'
+                                ))
+            
+            if (!hasHeaderBg && cell.tagName !== 'TH') {
+              firstRowAllHeader = false
+              break
+            }
           }
+        }
+        
+        // th 태그 기반 확인 (기존 로직)
+        let firstColAllTh = true
+        for (let i = 0; i < rows.length; i++) {
+          const rowCells = rows[i].querySelectorAll('th, td')
+          if (rowCells.length > 0 && rowCells[0].tagName !== 'TH') {
+            firstColAllTh = false
+            break
+          }
+        }
+        
+        // 세로형 판단: 첫 번째 열의 모든 셀이 헤더 색상을 가지고 있거나 th 태그인 경우
+        if (firstColAllHeader || (firstColAllTh && firstRowCells.length > 1 && firstRowCells[1].tagName === 'TD')) {
+          isVerticalTable = true
+        }
+        
+        // 가로형 판단: 첫 번째 행의 모든 셀이 헤더 색상을 가지고 있거나 th 태그인 경우
+        if (firstRowAllHeader || (firstRowCells.length > 0 && firstRowCells[0].tagName === 'TH' && firstRowCells.length > 1 && firstRowCells[1].tagName === 'TD')) {
+          isHorizontalTable = true
+        }
+        
+        // 둘 다 true인 경우, 세로형 우선 (첫 번째 열이 모두 헤더인 경우가 더 명확)
+        if (isVerticalTable && isHorizontalTable) {
+          isHorizontalTable = false
         }
       }
       
@@ -350,13 +454,15 @@ export async function convertTableToImage(tableHtml) {
           
           // 배경색 확인 (인라인 스타일 우선, 없으면 computedStyle, 없으면 표 타입 감지 로직 사용)
           let bgColor = 'white'
+          
+          // 인라인 스타일에서 배경색 확인 (다양한 형식 지원)
           const bgColorMatch = cellStyle.match(/background-color:\s*([^;]+)/i)
           if (bgColorMatch) {
             bgColor = bgColorMatch[1].trim()
           } else {
             // 인라인 스타일이 없으면 computedStyle 확인
             const computedBgColor = computedStyle.backgroundColor
-            if (computedBgColor && computedBgColor !== 'rgba(0, 0, 0, 0)' && computedBgColor !== 'transparent') {
+            if (computedBgColor && computedBgColor !== 'rgba(0, 0, 0, 0)' && computedBgColor !== 'transparent' && computedBgColor !== 'rgb(0, 0, 0)') {
               // RGB를 hex로 변환
               const rgbMatch = computedBgColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
               if (rgbMatch) {
@@ -377,7 +483,13 @@ export async function convertTableToImage(tableHtml) {
           }
           
           // 배경색 정규화 (#ff831e 형식으로)
-          if (bgColor.toLowerCase() === '#ff831e' || bgColor.toLowerCase() === 'rgb(255, 131, 30)' || bgColor === headerColor) {
+          // 다양한 형식 지원: #ff831e, #FF831E, rgb(255, 131, 30), rgba(255, 131, 30, 1) 등
+          const normalizedBgColor = bgColor.toLowerCase().trim()
+          if (normalizedBgColor === '#ff831e' || 
+              normalizedBgColor === 'rgb(255, 131, 30)' || 
+              normalizedBgColor === 'rgba(255, 131, 30, 1)' ||
+              normalizedBgColor === 'rgba(255, 131, 30, 1.0)' ||
+              bgColor === headerColor) {
             bgColor = headerColor
           }
           
@@ -437,17 +549,18 @@ export async function convertTableToImage(tableHtml) {
             ctx.textAlign = 'left'
           }
           
-          // 텍스트 그리기 (여러 줄 지원)
+          // 텍스트 그리기 (여러 줄 지원, 셀 높이 내에서만)
           const lines = text.split('\n').filter(l => l.trim())
           const textX = textAlign === 'center' ? currentX + cellWidth / 2 : currentX + cellPadding
           let textY = currentY + cellPadding
+          const maxTextY = currentY + rowHeight - cellPadding // 셀 높이를 초과하지 않도록
           
           if (lines.length === 0) {
             lines.push('')
           }
           
           lines.forEach(line => {
-            if (line.trim()) {
+            if (line.trim() && textY < maxTextY) {
               // 텍스트가 너무 길면 줄바꿈 처리 (자르지 않음)
               const maxWidth = cellWidth - cellPadding * 2
               const metrics = ctx.measureText(line)
@@ -462,24 +575,28 @@ export async function convertTableToImage(tableHtml) {
                   const testMetrics = ctx.measureText(testLine)
                   
                   if (testMetrics.width > maxWidth && currentLine) {
-                    // 현재 줄 출력하고 새 줄 시작
-                    ctx.fillText(currentLine, textX, textY)
-                    textY += lineHeight
+                    // 현재 줄 출력하고 새 줄 시작 (셀 높이 체크)
+                    if (textY < maxTextY) {
+                      ctx.fillText(currentLine, textX, textY)
+                      textY += lineHeight
+                    }
                     currentLine = word
                   } else {
                     currentLine = testLine
                   }
                 })
                 
-                // 마지막 줄 출력
-                if (currentLine) {
+                // 마지막 줄 출력 (셀 높이 체크)
+                if (currentLine && textY < maxTextY) {
                   ctx.fillText(currentLine, textX, textY)
                   textY += lineHeight
                 }
               } else {
-                // 한 줄에 들어가면 그대로 출력
-                ctx.fillText(line, textX, textY)
-                textY += lineHeight
+                // 한 줄에 들어가면 그대로 출력 (셀 높이 체크)
+                if (textY < maxTextY) {
+                  ctx.fillText(line, textX, textY)
+                  textY += lineHeight
+                }
               }
             }
           })
