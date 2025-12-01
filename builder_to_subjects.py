@@ -698,6 +698,7 @@ def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter
     
     # 모든 항목의 첫 번째 <p> 태그에 class='main-title' 추가
     # H1 태그를 <p class='main-title'><strong>로 변환
+    # 첫 번째 <li> 태그가 아닌 H1이나 첫 번째 <p> 태그만 볼드처리
     processed_summary = []
     for s in summary:
         if s and isinstance(s, str):
@@ -710,9 +711,16 @@ def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter
                 processed_summary.append(s)
             else:
                 # 첫 번째 <p> 태그를 찾아서 class='main-title' 추가
-                # <p> 또는 <p 속성> 형태를 찾아서 <p class='main-title'>로 변경
-                # <p> 태그 뒤에 공백이나 >가 오는 경우 처리
-                s = re.sub(r'<p(\s[^>]*)?>', r"<p class='main-title'\1>", s, count=1)
+                # 단, <ul> 또는 <li> 안에 있는 <p> 태그는 제외 (첫 번째 불렛이 볼드처리되지 않도록)
+                # <p> 태그가 <ul> 또는 <li> 태그 앞에 있는 경우만 처리
+                if not re.search(r'<ul[^>]*>.*?<p', s, re.DOTALL) and not re.search(r'<li[^>]*>.*?<p', s, re.DOTALL):
+                    # <p> 또는 <p 속성> 형태를 찾아서 <p class='main-title'>로 변경
+                    # <p> 태그 뒤에 공백이나 >가 오는 경우 처리
+                    s = re.sub(r'<p(\s[^>]*)?>', r"<p class='main-title'\1>", s, count=1)
+                else:
+                    # <ul> 또는 <li> 앞에 <p> 태그가 있는 경우만 처리
+                    # <ul> 또는 <li> 태그 앞의 첫 번째 <p> 태그에만 class='main-title' 추가
+                    s = re.sub(r'(<p(\s[^>]*)?>)(?![^<]*<(?:ul|li))', r"<p class='main-title'\2>", s, count=1)
                 processed_summary.append(s)
         else:
             processed_summary.append(s)
