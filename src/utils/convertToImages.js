@@ -2,6 +2,33 @@ import katex from 'katex'
 import 'katex/dist/katex.min.css'
 
 /**
+ * Canvas의 흰색 배경을 투명하게 처리
+ * @param {HTMLCanvasElement} canvas
+ * @param {number} threshold - 흰색 판정 임계값 (0-255, 기본 250)
+ * @returns {HTMLCanvasElement} 투명 배경이 적용된 새 canvas
+ */
+function removeWhiteBackground(canvas, threshold = 250) {
+  const ctx = canvas.getContext('2d')
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const data = imageData.data
+
+  // 각 픽셀 순회 (RGBA 4바이트씩)
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i]
+    const g = data[i + 1]
+    const b = data[i + 2]
+
+    // 거의 흰색인 경우 투명하게 처리
+    if (r >= threshold && g >= threshold && b >= threshold) {
+      data[i + 3] = 0 // 알파값 0 (투명)
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0)
+  return canvas
+}
+
+/**
  * 수식을 이미지로 변환 (base64)
  */
 export async function convertMathToImage(formula, displayMode = false) {
@@ -61,11 +88,14 @@ export async function convertMathToImage(formula, displayMode = false) {
       })
       
       console.log(`수식 원본 캡처: ${canvas.width}x${canvas.height}, 요소 크기: ${rect.width}x${rect.height}`)
-      
+
       // 1.0배로 유지 (축소하지 않음)
+      // 흰색 배경 투명 처리
+      removeWhiteBackground(canvas, 250)
+
       // Base64로 변환
       const base64 = canvas.toDataURL('image/png')
-      console.log(`수식 이미지 변환 성공 (html2canvas, 1.0배): ${formula.substring(0, 30)}... -> 크기: ${canvas.width}x${canvas.height}`)
+      console.log(`수식 이미지 변환 성공 (html2canvas, 1.0배, 투명 배경): ${formula.substring(0, 30)}... -> 크기: ${canvas.width}x${canvas.height}`)
       
       document.body.removeChild(container)
       return base64
@@ -109,11 +139,11 @@ export async function convertMathToImage(formula, displayMode = false) {
       canvas.width = width
       canvas.height = height
       const ctx = canvas.getContext('2d')
-      
-      // 배경
+
+      // 배경 (흰색으로 그리되, 나중에 투명 처리)
       ctx.fillStyle = 'white'
       ctx.fillRect(0, 0, width, height)
-      
+
       try {
         ctx.drawImage(img, 0, 0, width, height)
         console.log(`Canvas에 수식 이미지 그리기 성공: ${width}x${height}`)
@@ -124,11 +154,14 @@ export async function convertMathToImage(formula, displayMode = false) {
         return null
       }
 
+      // 흰색 배경 투명 처리
+      removeWhiteBackground(canvas, 250)
+
       // Base64로 변환
       let base64
       try {
         base64 = canvas.toDataURL('image/png')
-        console.log(`수식 이미지 변환 성공: ${formula.substring(0, 30)}... -> base64 길이: ${base64.length}`)
+        console.log(`수식 이미지 변환 성공 (투명 배경): ${formula.substring(0, 30)}... -> base64 길이: ${base64.length}`)
       } catch (e) {
         console.error('Canvas toDataURL 실패 (CORS 문제)', e)
         URL.revokeObjectURL(url)
@@ -364,10 +397,14 @@ export async function convertTableToImage(tableHtml) {
         
         currentY += rowHeight
       })
-      
+
+      // 흰색 배경 투명 처리
+      removeWhiteBackground(canvas, 250)
+
       const base64 = canvas.toDataURL('image/png')
+      console.log(`표 이미지 변환 완료 (투명 배경): ${canvas.width}x${canvas.height}`)
       document.body.removeChild(container)
-      
+
       return base64
     } catch (e) {
       console.warn('표 이미지 변환 실패:', e)
