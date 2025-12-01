@@ -190,29 +190,29 @@ export async function convertMathToImage(formula, displayMode = false) {
  * Canvas를 직접 사용하여 표를 그리기
  */
 export async function convertTableToImage(tableHtml) {
+  // 임시 DOM 요소 생성 (에디터와 동일한 클래스 적용)
+  const container = document.createElement('div')
+  container.className = 'notion-editor-content' // 에디터의 클래스 적용
+  container.style.position = 'absolute'
+  container.style.left = '-9999px'
+  container.style.top = '-9999px'
+  container.style.background = 'white'
+  container.style.padding = '20px'
+  container.style.width = 'auto'
+  container.style.maxWidth = '1200px'
+  container.innerHTML = tableHtml
+  document.body.appendChild(container)
+
+  // 표 요소 찾기
+  const table = container.querySelector('table')
+  if (!table) {
+    document.body.removeChild(container)
+    return null
+  }
+
   try {
     // html2canvas를 사용하여 실제 렌더링된 표를 그대로 캡처
     const { default: html2canvas } = await import('html2canvas')
-    
-    // 임시 DOM 요소 생성 (에디터와 동일한 클래스 적용)
-    const container = document.createElement('div')
-    container.className = 'notion-editor-content' // 에디터의 클래스 적용
-    container.style.position = 'absolute'
-    container.style.left = '-9999px'
-    container.style.top = '-9999px'
-    container.style.background = 'white'
-    container.style.padding = '20px'
-    container.style.width = 'auto'
-    container.style.maxWidth = '1200px'
-    container.innerHTML = tableHtml
-    document.body.appendChild(container)
-
-    // 표 요소 찾기
-    const table = container.querySelector('table')
-    if (!table) {
-      document.body.removeChild(container)
-      return null
-    }
     
     // 렌더링 대기
     await new Promise(resolve => setTimeout(resolve, 200))
@@ -621,12 +621,17 @@ export async function convertTableToImage(tableHtml) {
 
       return base64
     } catch (e) {
-      console.warn('표 이미지 변환 실패:', e)
-      document.body.removeChild(container)
+      console.warn('표 이미지 변환 실패 (fallback):', e)
+      if (container.parentNode) {
+        document.body.removeChild(container)
+      }
       return null
     }
   } catch (error) {
     console.error('표 이미지 변환 실패:', error)
+    if (container && container.parentNode) {
+      document.body.removeChild(container)
+    }
     return null
   }
 }
