@@ -175,21 +175,38 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   // 실습 내용 추출 (학습내용에서 실습 항목 찾기)
   let practiceContent = ""
   // 학습내용에서 실습 항목 찾기 (기존 데이터에서 import)
+  // class='practice' 또는 class="practice" 모두 감지
   const practiceContentInLearning = learningContents.find(
-    (content) => typeof content === "string" && content.includes("class='practice'"),
+    (content) =>
+      typeof content === "string" && (content.includes("class='practice'") || content.includes('class="practice"')),
   )
 
   if (practiceContentInLearning) {
     // 학습내용에서 실습 항목을 찾았으면 practiceContent로 설정
-    practiceContent = practiceContentInLearning
+    // <div class='practice'> 형식을 <ul class='practice'> 형식으로 변환 (에디터 호환)
+    if (practiceContentInLearning.includes("<div class='practice'>")) {
+      // <div class='practice'><ul>...</ul></div> → <ul class='practice'>...</ul>
+      practiceContent = practiceContentInLearning
+        .replace(/<div class=['"]practice['"]>\s*<ul>/gi, "<ul class='practice'>")
+        .replace(/<\/ul>\s*<\/div>/gi, "</ul>")
+    } else if (practiceContentInLearning.includes('<div class="practice">')) {
+      practiceContent = practiceContentInLearning
+        .replace(/<div class=['"]practice['"]>\s*<ul>/gi, "<ul class='practice'>")
+        .replace(/<\/ul>\s*<\/div>/gi, "</ul>")
+    } else {
+      // 이미 <ul class='practice'> 형식이면 그대로 사용
+      practiceContent = practiceContentInLearning
+    }
   } else if (hasPractice) {
     // 실습 페이지는 있지만 학습내용에 실습 항목이 없으면 기본값 설정
-    practiceContent = "<div class='practice'><ul><li></li></ul></div>"
+    practiceContent = "<ul class='practice'><li></li></ul>"
   }
 
   // 학습내용에서 실습 항목 제거 (기존 데이터 마이그레이션)
+  // class='practice' 또는 class="practice" 모두 제거
   learningContents = learningContents.filter(
-    (content) => !(typeof content === "string" && content.includes("class='practice'")),
+    (content) =>
+      !(typeof content === "string" && (content.includes("class='practice'") || content.includes('class="practice"'))),
   )
 
   // 연습문제 파싱
