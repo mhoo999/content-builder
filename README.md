@@ -22,70 +22,239 @@ IT 학위 콘텐츠 제작을 위한 비주얼 빌더 도구
   - 연습문제 (OX/4지선다, 동적 추가/삭제)
   - 학습정리 (동적 추가/삭제)
 
-## 🚀 빠른 시작 (비개발자용)
+---
 
-프로그램 폴더를 다운로드한 후, 아래 파일을 더블클릭하면 자동으로 실행됩니다.
+## 📦 설치 및 실행 가이드
 
-### Windows (윈도우)
+### 1단계: Node.js 설치
 
-1. **`start.bat`** 또는 **`start.windows.bat`** 더블클릭
-   - Python, Node.js 자동 설치 확인
-   - 필요한 패키지 자동 설치
-   - 브라우저 자동 오픈
-   
-   > **⚠️ 관리자 권한 필요**: Python이 설치되어 있지 않은 경우, 
-   > Python 자동 설치를 위해 **관리자 권한으로 실행**이 필요합니다.
-   > - 파일을 우클릭하고 "관리자 권한으로 실행" 선택
-   > - 또는 명령 프롬프트를 관리자 권한으로 열고 실행
+Content Builder를 실행하려면 Node.js가 필요합니다.
 
-2. **종료 시**: `stop.bat` 또는 `stop.windows.bat` 더블클릭
+#### Windows (윈도우)
 
-### macOS (맥)
+1. **Node.js 다운로드**
+   - https://nodejs.org/ 접속
+   - **LTS** (Long Term Support) 버전 다운로드 (권장)
+   - 다운로드한 `.msi` 파일 실행
 
-1. **`start.sh`** 또는 **`start.mac.sh`** 실행
-   ```bash
-   ./start.sh
-   # 또는
-   ./start.mac.sh
+2. **설치 과정**
+   - "Next" 클릭하여 진행
+   - "Add to PATH" 옵션이 **체크되어 있는지 확인** (기본값)
+   - 설치 완료까지 진행
+
+3. **설치 확인**
+   - `Windows 키 + R` → `cmd` 입력 → Enter
+   - 명령 프롬프트에서 다음 명령어 입력:
+   ```cmd
+   node --version
+   npm --version
    ```
-   - Python3, Node.js 설치 확인
-   - 필요한 패키지 자동 설치
-   - 브라우저 자동 오픈
+   - 버전 번호가 표시되면 설치 성공!
 
-2. **종료 시**: `./stop.sh` 또는 `./stop.mac.sh` 실행 (또는 터미널에서 Ctrl+C)
+4. **환경변수 확인 (자동 설정됨)**
+   - 설치 시 자동으로 PATH에 등록됨
+   - 만약 `node`가 인식되지 않으면:
+     - `Windows 키` → "환경 변수" 검색
+     - "시스템 환경 변수 편집" 클릭
+     - "환경 변수" 버튼 클릭
+     - "시스템 변수" 섹션에서 `Path` 선택 → "편집"
+     - 다음 경로가 있는지 확인:
+       - `C:\Program Files\nodejs\`
+     - 없으면 "새로 만들기"로 추가
+     - 확인 후 명령 프롬프트 재시작
 
-> **주의**: 맥에서 "권한이 없습니다" 오류 발생 시,
-> 터미널에서 다음 명령어 실행:
-> ```bash
-> chmod +x start.sh stop.sh start.mac.sh stop.mac.sh
-> ```
+#### macOS (맥)
+
+1. **Node.js 다운로드**
+   - https://nodejs.org/ 접속
+   - **LTS** 버전 다운로드 (권장)
+   - 다운로드한 `.pkg` 파일 실행
+
+2. **설치 과정**
+   - 안내에 따라 설치 진행
+   - 관리자 암호 입력
+
+3. **설치 확인**
+   - `Spotlight` (⌘ + Space) → "터미널" 입력
+   - 터미널에서 다음 명령어 입력:
+   ```bash
+   node --version
+   npm --version
+   ```
+   - 버전 번호가 표시되면 설치 성공!
+
+#### Linux (우분투/데비안)
+
+```bash
+# NodeSource 저장소 추가
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+
+# Node.js 설치
+sudo apt-get install -y nodejs
+
+# 설치 확인
+node --version
+npm --version
+```
 
 ---
 
-## 📦 수동 설치 및 실행 (개발자용)
+### 2단계: Python 설치 (Export 기능 사용 시 필요)
 
-### 사전 요구사항
+#### Windows (윈도우)
 
-- **Python 3** (Windows만 필요, macOS는 기본 설치)
-- **Node.js** (https://nodejs.org/)
+1. **Python 다운로드**
+   - https://www.python.org/downloads/ 접속
+   - 최신 **Python 3.x** 버전 다운로드
+   - 다운로드한 설치 파일 실행
 
-### 설치
+2. **설치 과정 (중요!)**
+   - ⚠️ **"Add Python to PATH" 체크박스를 반드시 체크!**
+   - "Install Now" 클릭
+   - 설치 완료
+
+3. **설치 확인**
+   - 명령 프롬프트에서:
+   ```cmd
+   python --version
+   ```
+   - 버전 번호가 표시되면 설치 성공!
+
+4. **환경변수 수동 설정 (설치 시 체크 안 한 경우)**
+   - `Windows 키` → "환경 변수" 검색
+   - "시스템 환경 변수 편집" 클릭
+   - "환경 변수" 버튼 클릭
+   - "시스템 변수" 섹션에서 `Path` 선택 → "편집"
+   - 다음 경로 추가 (Python 설치 경로에 따라 다를 수 있음):
+     - `C:\Users\사용자명\AppData\Local\Programs\Python\Python3xx\`
+     - `C:\Users\사용자명\AppData\Local\Programs\Python\Python3xx\Scripts\`
+   - 확인 후 명령 프롬프트 재시작
+
+#### macOS (맥)
+
+Python 3는 macOS에 기본 설치되어 있습니다.
 
 ```bash
-npm install
+# 확인
+python3 --version
 ```
 
-### 실행
+최신 버전이 필요한 경우:
+```bash
+# Homebrew 설치 (없는 경우)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Python 3 설치
+brew install python3
+```
+
+#### Linux (우분투/데비안)
 
 ```bash
-npm run dev
+# Python 3 설치
+sudo apt-get update
+sudo apt-get install -y python3 python3-pip
+
+# 설치 확인
+python3 --version
 ```
 
-브라우저에서 http://localhost:5173/ 접속
+---
 
-### 종료
+### 3단계: Content Builder 설치
 
-터미널에서 **Ctrl+C** (Windows/macOS/Linux 공통)
+1. **프로젝트 폴더로 이동**
+
+   Windows:
+   ```cmd
+   cd C:\경로\content-builder
+   ```
+
+   macOS/Linux:
+   ```bash
+   cd /경로/content-builder
+   ```
+
+2. **필요한 패키지 설치**
+
+   ```bash
+   npm install
+   ```
+
+   - 이 명령어는 프로젝트에 필요한 모든 라이브러리를 자동으로 다운로드합니다
+   - 인터넷 연결이 필요합니다
+   - 1-2분 정도 소요됩니다
+
+---
+
+### 4단계: 실행
+
+1. **개발 서버 시작**
+
+   ```bash
+   npm run dev
+   ```
+
+   - 이 명령어로 개발 서버가 시작됩니다
+   - 다음과 같은 메시지가 표시됩니다:
+     ```
+     VITE v5.x.x  ready in xxx ms
+
+     ➜  Local:   http://localhost:5173/
+     ```
+
+2. **브라우저에서 접속**
+
+   - 자동으로 브라우저가 열리지 않는 경우
+   - 브라우저를 열고 주소창에 입력: `http://localhost:5173/`
+
+3. **서버 종료**
+
+   - 터미널에서 **Ctrl+C** (Windows/macOS/Linux 공통)
+   - 서버가 종료되고 브라우저에서 페이지가 작동하지 않게 됩니다
+
+---
+
+## 💡 처음 사용하시는 분들을 위한 팁
+
+### 명령 프롬프트 / 터미널이란?
+
+- **Windows**: 명령 프롬프트 (CMD) 또는 PowerShell
+  - 여는 방법: `Windows 키 + R` → `cmd` 입력 → Enter
+- **macOS**: 터미널
+  - 여는 방법: `Spotlight (⌘ + Space)` → "터미널" 입력 → Enter
+- **Linux**: 터미널
+  - 여는 방법: `Ctrl + Alt + T`
+
+### 폴더 이동 방법
+
+명령어를 입력하기 전에 content-builder 폴더로 이동해야 합니다:
+
+**Windows 쉬운 방법:**
+1. content-builder 폴더를 탐색기에서 열기
+2. 주소 표시줄에 `cmd` 입력 후 Enter
+3. 해당 폴더에서 명령 프롬프트가 자동으로 열립니다!
+
+**macOS 쉬운 방법:**
+1. Finder에서 content-builder 폴더 찾기
+2. 폴더를 우클릭 → "폴더에서 새로운 터미널" (또는 Services → New Terminal at Folder)
+
+**수동으로 이동:**
+```bash
+# Windows
+cd C:\Users\사용자명\Documents\content-builder
+
+# macOS/Linux
+cd /Users/사용자명/Documents/content-builder
+```
+
+### 명령어 입력 시 주의사항
+
+- 명령어는 정확하게 입력해야 합니다 (대소문자 구분!)
+- `npm install` 실행 중에는 기다려야 합니다
+- 오류가 발생하면 메시지를 잘 읽어보세요
+
+---
 
 ## 사용 방법
 
@@ -279,20 +448,39 @@ lsof -i :5173  # PID 확인
 kill -9 <PID번호>
 ```
 
-### "Permission denied" 오류 (macOS/Linux)
+### Node.js 또는 Python이 인식되지 않을 때
 
-start.sh 파일에 실행 권한이 없는 경우:
+**증상:**
+- `'node'은(는) 내부 또는 외부 명령... 아닙니다` (Windows)
+- `command not found: node` (macOS/Linux)
+- `'python'은(는) 내부 또는 외부 명령... 아닙니다` (Windows)
 
+**해결:**
+1. 프로그램이 설치되어 있는지 확인
+2. 환경변수 PATH에 추가되어 있는지 확인 (위의 설치 가이드 참고)
+3. 명령 프롬프트/터미널을 **재시작**해야 환경변수가 적용됩니다
+
+### npm install 오류
+
+**증상:**
+- 패키지 설치 중 오류 발생
+
+**해결:**
 ```bash
-chmod +x start.sh stop.sh start.mac.sh stop.mac.sh
+# 캐시 정리
+npm cache clean --force
+
+# 다시 설치
+npm install
 ```
 
-### Python 관련 오류
+### 포트 5173이 이미 사용 중일 때
 
-- **Windows**: `python --version`으로 Python 3 설치 확인
-- **macOS/Linux**: `python3 --version`으로 Python 3 설치 확인
+**증상:**
+- `Port 5173 is already in use`
 
-Python이 설치되어 있지 않다면 https://www.python.org/ 에서 다운로드
+**해결:**
+다른 포트를 사용하거나 기존 프로세스를 종료합니다 (위의 "서버가 종료되지 않거나..." 섹션 참고)
 
 ## 라이센스
 
