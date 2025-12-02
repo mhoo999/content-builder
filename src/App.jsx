@@ -48,6 +48,13 @@ function App() {
         const parsed = JSON.parse(saved)
         // 유효성 검사
         if (parsed && typeof parsed === "object") {
+          // importedImages 복원 (별도 처리 필요)
+          if (parsed.importedImages && Object.keys(parsed.importedImages).length > 0) {
+            // importedImages는 별도 state이므로 여기서 직접 설정할 수 없음
+            // useEffect에서 처리하도록 임시 저장
+            window.__restoredImportedImages = parsed.importedImages
+          }
+
           return {
             courseCode: parsed.courseCode || "",
             courseName: parsed.courseName || "",
@@ -105,6 +112,16 @@ function App() {
                 professor: createProfessorData(),
                 lessons: [],
               })
+              // importedImages도 초기화
+              setImportedImages({})
+              delete window.__restoredImportedImages
+            } else {
+              // 불러오기를 선택한 경우 importedImages 복원
+              if (window.__restoredImportedImages) {
+                setImportedImages(window.__restoredImportedImages)
+                delete window.__restoredImportedImages
+                console.log("Restored importedImages from localStorage")
+              }
             }
           }
         } catch (error) {
@@ -132,7 +149,7 @@ function App() {
   const [showStartModal, setShowStartModal] = useState(false)
 
   // 자동 저장 함수 (debounce 적용)
-  const autoSave = useCallback((data) => {
+  const autoSave = useCallback((data, images) => {
     // localStorage 사용 불가능한 경우
     if (!isLocalStorageAvailable()) {
       setSaveStatus("저장 불가 (시크릿 모드)")
@@ -149,7 +166,8 @@ function App() {
     // 1초 후 저장 (debounce)
     saveTimeoutRef.current = setTimeout(() => {
       try {
-        const dataStr = JSON.stringify(data)
+        const dataToSave = { ...data, importedImages: images || {} }
+        const dataStr = JSON.stringify(dataToSave)
         const dataSize = new Blob([dataStr]).size
 
         // localStorage 용량 제한 확인 (약 5MB)
@@ -172,11 +190,11 @@ function App() {
     }, 1000)
   }, [])
 
-  // courseData 변경 시 자동 저장
+  // courseData 또는 importedImages 변경 시 자동 저장
   useEffect(() => {
     // 초기 로드 시에는 저장하지 않음
     if (courseData.lessons.length > 0 || courseData.courseCode) {
-      autoSave(courseData)
+      autoSave(courseData, importedImages)
     }
 
     return () => {
@@ -184,13 +202,14 @@ function App() {
         clearTimeout(saveTimeoutRef.current)
       }
     }
-  }, [courseData, autoSave])
+  }, [courseData, importedImages, autoSave])
 
   // 페이지 언로드 시 즉시 저장
   useEffect(() => {
     const handleBeforeUnload = () => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(courseData))
+        const dataToSave = { ...courseData, importedImages }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave))
       } catch (error) {
         console.error("페이지 종료 시 저장 실패:", error)
       }
@@ -200,7 +219,7 @@ function App() {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
     }
-  }, [courseData])
+  }, [courseData, importedImages])
 
   // 초기화 함수 (로고 클릭 시)
   const resetToHome = () => {

@@ -280,9 +280,17 @@ def extract_and_save_images(html_content, images_dir, course_code, image_counter
     # 예: ../images/25itinse_img_002.jpg -> ../images/25itinse_img_002.png
     for original_path, actual_path in imported_path_mapping.items():
         if original_path != actual_path:
-            # HTML에서 원본 경로를 실제 경로로 교체
-            result = result.replace(f'src="{original_path}"', f'src="{actual_path}"')
-            result = result.replace(f"src='{original_path}'", f"src='{actual_path}'")
+            # 교체 전 확인
+            if original_path in result:
+                print(f"🔄 경로 교체: {original_path} → {actual_path}")
+                # HTML에서 원본 경로를 실제 경로로 교체
+                before = result
+                result = result.replace(f'src="{original_path}"', f'src="{actual_path}"')
+                result = result.replace(f"src='{original_path}'", f"src='{actual_path}'")
+                if before != result:
+                    print(f"✅ 경로 교체 성공")
+                else:
+                    print(f"⚠️ 경로 교체 실패: HTML에서 매칭되는 패턴을 찾지 못했습니다")
 
     return result
 
@@ -943,6 +951,8 @@ def save_imported_images(imported_images, images_dir):
     saved_count = 0
     path_mapping = {}  # 원본 경로 -> 실제 저장된 경로
 
+    print(f"\n📥 Import된 이미지 처리 시작: {len(imported_images)}개")
+
     for rel_path, base64_data in imported_images.items():
         try:
             # ../images/filename.ext 에서 filename.ext 추출 (크로스 플랫폼 호환)
@@ -969,6 +979,11 @@ def save_imported_images(imported_images, images_dir):
             name_without_ext = os.path.splitext(original_filename)[0]
             actual_filename = f"{name_without_ext}.{image_type}"
 
+            # 타입이 변경되었는지 확인
+            original_ext = os.path.splitext(original_filename)[1][1:]  # 점 제거
+            if original_ext != image_type:
+                print(f"  🔄 {original_filename}: {original_ext} → {image_type}")
+
             # 디코딩 및 저장
             image_data = base64.b64decode(actual_base64_data)
             image_path = images_dir / actual_filename
@@ -983,6 +998,13 @@ def save_imported_images(imported_images, images_dir):
             saved_count += 1
         except Exception as e:
             print(f"⚠️ 이미지 저장 실패 ({rel_path}): {e}")
+
+    # 경로 매핑 결과 출력
+    changed_paths = {k: v for k, v in path_mapping.items() if k != v}
+    if changed_paths:
+        print(f"\n📋 경로 매핑 결과:")
+        for original, actual in changed_paths.items():
+            print(f"  {original} → {actual}")
 
     return saved_count, path_mapping
 
