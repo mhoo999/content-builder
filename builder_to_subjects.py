@@ -1206,11 +1206,14 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
             lesson_num_str = f"{lesson['lessonNumber']:02d}"
             guide_url = f"https://cdn-it.livestudy.com/mov/{year}/{course_code}/down/{course_code}_book_{lesson_num_str}.zip"
         
-        # section 값 가져오기 (Import한 경우 그대로, 없으면 자동 계산)
+        # section 값 가져오기 (App.jsx에서 export 전 재계산됨)
         section_in_week = lesson.get("sectionInWeek")
         if section_in_week is None:
-            # 새로 만든 경우: lessonNumber 기준으로 자동 계산
+            # 혹시 없으면 자동 계산
             section_in_week = ((lesson["lessonNumber"] - 1) % 2) + 1
+            print(f"⚠️ {lesson_num}차시 sectionInWeek 없음, 자동 계산: {section_in_week}")
+
+        print(f"📝 {lesson_num}차시: {lesson['weekNumber']}주 {section_in_week}차")
 
         # data.json 생성
         data_json = {

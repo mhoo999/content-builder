@@ -428,10 +428,20 @@ function App() {
       return // 사용자가 취소
     }
 
+    // Export 전 모든 차시의 sectionInWeek 재계산
+    // (차시 번호나 주차를 수정했을 때 sectionInWeek가 자동 업데이트되지 않으므로)
+    const dataWithRecalculatedSections = {
+      ...courseData,
+      lessons: courseData.lessons.map((lesson, index) => ({
+        ...lesson,
+        sectionInWeek: getLessonOrderInWeek(index),
+      })),
+    }
+
     // 수식과 표를 이미지로 변환
     console.log("수식과 표를 이미지로 변환하는 중...")
     const { convertAllMathAndTablesInData } = await import("./utils/convertToImages")
-    const convertedData = await convertAllMathAndTablesInData(courseData)
+    const convertedData = await convertAllMathAndTablesInData(dataWithRecalculatedSections)
     console.log("변환 완료, export 데이터 확인:", convertedData)
 
     // 익스포트할 데이터 준비
