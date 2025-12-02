@@ -138,6 +138,23 @@ def clean_html_for_export(html_content):
         flags=re.DOTALL
     )
 
+    # H3 태그를 ol 태그로 변환
+    # <h3>텍스트</h3> → <ol style='color:#000;margin-bottom: 4px;'>1) 텍스트</ol>
+    # 순서대로 번호 매기기
+    h3_counter = {'count': 0}
+    def convert_h3_to_ol(match):
+        h3_content = match.group(1).strip()
+        # 이미 "1)", "2)" 같은 번호가 있는지 확인
+        if re.match(r'^\d+\)\s', h3_content):
+            # 이미 번호가 있으면 그대로 사용
+            return f"<ol style='color:#000;margin-bottom: 4px;'>{h3_content}</ol>"
+        else:
+            # 번호가 없으면 자동으로 추가
+            h3_counter['count'] += 1
+            return f"<ol style='color:#000;margin-bottom: 4px;'>{h3_counter['count']}) {h3_content}</ol>"
+
+    html_content = re.sub(r'<h3>(.*?)</h3>', convert_h3_to_ol, html_content, flags=re.DOTALL)
+
     return html_content
 
 
@@ -188,7 +205,7 @@ def save_base64_image(base64_data_url, images_dir, course_code, image_counter):
         return base64_data_url  # 실패 시 원본 반환
 
 
-def extract_and_save_images(html_content, images_dir, course_code, image_counter):
+def extract_and_save_images(html_content, images_dir, course_code, image_counter, imported_path_mapping=None):
     """
     HTML에서 base64 이미지를 추출하여 파일로 저장하고 상대경로로 교체
     수식과 표를 이미지로 변환
@@ -198,12 +215,16 @@ def extract_and_save_images(html_content, images_dir, course_code, image_counter
         images_dir: 이미지 저장 디렉토리
         course_code: 과목 코드
         image_counter: 이미지 카운터 (dict, {'count': int})
+        imported_path_mapping: Import된 이미지 경로 매핑 (원본 -> 실제)
 
     Returns:
         이미지 경로가 교체된 HTML 문자열
     """
     if not html_content:
         return html_content
+
+    if imported_path_mapping is None:
+        imported_path_mapping = {}
 
     # 먼저 에디터 관련 속성 정리
     html_content = clean_html_for_export(html_content)
@@ -254,6 +275,15 @@ def extract_and_save_images(html_content, images_dir, course_code, image_counter
     # 모든 base64 이미지를 찾아서 교체 (순차적으로 처리)
     # re.sub는 모든 매치를 순차적으로 처리하므로 각 이미지마다 카운터가 증가함
     result = re.sub(pattern, replace_image, html_content)
+
+    # Import된 이미지 경로 교체 (확장자가 변경된 경우)
+    # 예: ../images/25itinse_img_002.jpg -> ../images/25itinse_img_002.png
+    for original_path, actual_path in imported_path_mapping.items():
+        if original_path != actual_path:
+            # HTML에서 원본 경로를 실제 경로로 교체
+            result = result.replace(f'src="{original_path}"', f'src="{actual_path}"')
+            result = result.replace(f"src='{original_path}'", f"src='{actual_path}'")
+
     return result
 
 
@@ -355,7 +385,7 @@ def create_orientation_page(orientation, course_code=None, year=None):
     }
 
 
-def create_term_page(terms, images_dir=None, course_code=None, image_counter=None):
+def create_term_page(terms, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None):
     """용어체크 페이지 생성"""
     term_data = []
     for term in terms:
@@ -379,7 +409,7 @@ def create_term_page(terms, images_dir=None, course_code=None, image_counter=Non
                     # 이미지 추출 및 저장 (images_dir가 제공된 경우)
                     processed_item = content_item
                     if images_dir and course_code and image_counter:
-                        processed_item = extract_and_save_images(content_item, images_dir, course_code, image_counter)
+                        processed_item = extract_and_save_images(content_item, images_dir, course_code, image_counter, imported_path_mapping)
                     processed_content.append(processed_item)
             
             term_data.append({
@@ -413,7 +443,7 @@ def is_practice_content_empty(content):
     # 비어있거나 공백만 있으면 True
     return not text or not text.strip()
     
-def create_objectives_page(contents, objectives, images_dir=None, course_code=None, image_counter=None):
+def create_objectives_page(contents, objectives, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None):
     """학습목표 페이지 생성"""
     # 실습 항목 제외하고 학습내용 필터링
     filtered_contents = []
@@ -421,7 +451,7 @@ def create_objectives_page(contents, objectives, images_dir=None, course_code=No
         if c and not is_practice_content_empty(c):
             # 이미지 추출 및 저장
             if images_dir and course_code and image_counter:
-                c = extract_and_save_images(c, images_dir, course_code, image_counter)
+                c = extract_and_save_images(c, images_dir, course_code, image_counter, imported_path_mapping)
             filtered_contents.append(c)
     
     # 학습목표도 이미지 처리
@@ -430,7 +460,7 @@ def create_objectives_page(contents, objectives, images_dir=None, course_code=No
         if obj:
             # 이미지 추출 및 저장
             if images_dir and course_code and image_counter:
-                obj = extract_and_save_images(obj, images_dir, course_code, image_counter)
+                obj = extract_and_save_images(obj, images_dir, course_code, image_counter, imported_path_mapping)
             processed_objectives.append(obj)
     
     # 학습내용과 학습목표에 자동 넘버링 추가
@@ -572,13 +602,13 @@ def create_practice_page(lesson, course_code=None, year=None):
     }
 
 
-def create_check_page(lesson, images_dir=None, course_code=None, image_counter=None):
+def create_check_page(lesson, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None):
     """점검하기 페이지 생성"""
     professor_think = lesson.get("professorThink", "")
     
     # 교수님 의견에 포함된 이미지 추출 및 저장
     if images_dir and course_code and image_counter and professor_think:
-        professor_think = extract_and_save_images(professor_think, images_dir, course_code, image_counter)
+        professor_think = extract_and_save_images(professor_think, images_dir, course_code, image_counter, imported_path_mapping)
     
     return {
         "path": "/check",
@@ -596,7 +626,7 @@ def create_check_page(lesson, images_dir=None, course_code=None, image_counter=N
     }
 
 
-def create_exercise_page(lesson, images_dir=None, course_code=None, image_counter=None):
+def create_exercise_page(lesson, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None):
     """연습문제 페이지 생성 (exercises 배열 형식 지원)"""
     exercises = []
 
@@ -610,12 +640,12 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
             # 문항, 해설, 선택지의 이미지 추출 및 저장
             if images_dir and course_code and image_counter:
                 if question:
-                    question = extract_and_save_images(question, images_dir, course_code, image_counter)
+                    question = extract_and_save_images(question, images_dir, course_code, image_counter, imported_path_mapping)
                     # 문항의 <p> 태그 제거 (단일 단락인 경우)
                     if question.startswith('<p>') and question.endswith('</p>') and question.count('<p>') == 1:
                         question = re.sub(r'</?p>', '', question)
                 if commentary:
-                    commentary = extract_and_save_images(commentary, images_dir, course_code, image_counter)
+                    commentary = extract_and_save_images(commentary, images_dir, course_code, image_counter, imported_path_mapping)
                     # 해설의 <p> 태그 제거 (단일 단락인 경우)
                     if commentary.startswith('<p>') and commentary.endswith('</p>') and commentary.count('<p>') == 1:
                         commentary = re.sub(r'</?p>', '', commentary)
@@ -625,7 +655,7 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
                     for opt in options:
                         if opt:
                             # 이미지 추출 및 저장
-                            processed_opt = extract_and_save_images(opt, images_dir, course_code, image_counter)
+                            processed_opt = extract_and_save_images(opt, images_dir, course_code, image_counter, imported_path_mapping)
                             # <p> 태그를 <br />로 변환 (TipTap 에디터에서 오는 경우)
                             # <p>내용1</p><p>내용2</p> → 내용1<br />내용2
                             processed_opt = re.sub(r'</p>\s*<p>', '<br />', processed_opt)
@@ -665,12 +695,12 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
 
                 # 문항, 해설, 선택지의 이미지 추출 및 저장
                 if images_dir and course_code and image_counter:
-                    question = extract_and_save_images(question, images_dir, course_code, image_counter)
+                    question = extract_and_save_images(question, images_dir, course_code, image_counter, imported_path_mapping)
                     # 문항의 <p> 태그 제거 (단일 단락인 경우)
                     if question.startswith('<p>') and question.endswith('</p>') and question.count('<p>') == 1:
                         question = re.sub(r'</?p>', '', question)
                     if commentary:
-                        commentary = extract_and_save_images(commentary, images_dir, course_code, image_counter)
+                        commentary = extract_and_save_images(commentary, images_dir, course_code, image_counter, imported_path_mapping)
                         # 해설의 <p> 태그 제거 (단일 단락인 경우)
                         if commentary.startswith('<p>') and commentary.endswith('</p>') and commentary.count('<p>') == 1:
                             commentary = re.sub(r'</?p>', '', commentary)
@@ -680,7 +710,7 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
                         for opt in options:
                             if opt:
                                 # 이미지 추출 및 저장
-                                processed_opt = extract_and_save_images(opt, images_dir, course_code, image_counter)
+                                processed_opt = extract_and_save_images(opt, images_dir, course_code, image_counter, imported_path_mapping)
                                 # <p> 태그를 <br />로 변환 (TipTap 에디터에서 오는 경우)
                                 # <p>내용1</p><p>내용2</p> → 내용1<br />내용2
                                 processed_opt = re.sub(r'</p>\s*<p>', '<br />', processed_opt)
@@ -721,7 +751,7 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
     }
 
 
-def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter=None):
+def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None):
     """학습정리 페이지 생성"""
     import re
     summary = [s for s in lesson["summary"] if s]
@@ -729,7 +759,7 @@ def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter
     # 학습정리 내용의 이미지 추출 및 저장
     if images_dir and course_code and image_counter:
         summary = [
-            extract_and_save_images(s, images_dir, course_code, image_counter) if s else s
+            extract_and_save_images(s, images_dir, course_code, image_counter, imported_path_mapping) if s else s
             for s in summary
         ]
     
@@ -905,38 +935,56 @@ def save_imported_images(imported_images, images_dir):
         images_dir: 저장할 디렉토리
 
     Returns:
-        저장된 이미지 개수
+        (저장된 이미지 개수, 경로 매핑 딕셔너리 {원본경로: 실제저장된경로})
     """
     if not imported_images:
-        return 0
+        return 0, {}
 
     saved_count = 0
+    path_mapping = {}  # 원본 경로 -> 실제 저장된 경로
+
     for rel_path, base64_data in imported_images.items():
         try:
             # ../images/filename.ext 에서 filename.ext 추출 (크로스 플랫폼 호환)
             # Windows와 Unix 모두 '/' 또는 '\' 구분자 처리
             # Path 객체 사용하여 더 안전하게 처리
             normalized_path = rel_path.replace('\\', '/')
-            filename = os.path.basename(normalized_path)
-            if not filename:
+            original_filename = os.path.basename(normalized_path)
+            if not original_filename:
                 continue
 
-            # base64 데이터에서 헤더 제거 (data:image/png;base64, 부분)
+            # base64 데이터에서 이미지 타입 추출
+            image_type = 'png'  # 기본값
+            actual_base64_data = base64_data
+
             if ',' in base64_data:
-                base64_data = base64_data.split(',')[1]
+                header, actual_base64_data = base64_data.split(',', 1)
+                # data:image/png;base64 형식에서 타입 추출
+                type_match = re.search(r'data:image/([^;]+)', header)
+                if type_match:
+                    detected_type = type_match.group(1)
+                    image_type = 'png' if detected_type == 'png' else ('jpg' if detected_type in ['jpeg', 'jpg'] else detected_type)
+
+            # 원본 파일명에서 확장자 제거하고 실제 타입 확장자로 교체
+            name_without_ext = os.path.splitext(original_filename)[0]
+            actual_filename = f"{name_without_ext}.{image_type}"
 
             # 디코딩 및 저장
-            image_data = base64.b64decode(base64_data)
-            image_path = images_dir / filename
+            image_data = base64.b64decode(actual_base64_data)
+            image_path = images_dir / actual_filename
 
             with open(image_path, 'wb') as f:
                 f.write(image_data)
+
+            # 경로 매핑 저장 (원본 -> 실제)
+            actual_rel_path = f"../images/{actual_filename}"
+            path_mapping[rel_path] = actual_rel_path
 
             saved_count += 1
         except Exception as e:
             print(f"⚠️ 이미지 저장 실패 ({rel_path}): {e}")
 
-    return saved_count
+    return saved_count, path_mapping
 
 
 def convert_builder_to_subjects(builder_json_path, output_dir=None):
@@ -992,9 +1040,17 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     images_dir.mkdir(exist_ok=True)
 
     # import된 원본 이미지들 복사 (data-original-src에 있는 경로의 이미지들)
+    imported_image_path_mapping = {}
     if imported_images:
-        saved_count = save_imported_images(imported_images, images_dir)
+        saved_count, imported_image_path_mapping = save_imported_images(imported_images, images_dir)
         print(f"✅ 원본 이미지 {saved_count}개 복사 완료")
+        # 경로 변경 사항 출력
+        for original_path, actual_path in imported_image_path_mapping.items():
+            if original_path != actual_path:
+                original_ext = os.path.splitext(original_path)[1]
+                actual_ext = os.path.splitext(actual_path)[1]
+                if original_ext != actual_ext:
+                    print(f"  ⚠️ 확장자 변경: {os.path.basename(original_path)} -> {os.path.basename(actual_path)}")
 
     # 이미지 카운터 (전체 과정에서 공유)
     # HTML 내용의 base64 이미지를 추출하여 파일로 저장하고 상대경로로 교체
@@ -1028,6 +1084,7 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
 
     # 각 차시별 data.json 생성
     lessons_list = course_data["lessons"]
+
     for idx, lesson in enumerate(lessons_list):
         lesson_num = f"{lesson['lessonNumber']:02d}"
         lesson_dir = course_dir / lesson_num / "assets" / "data"
@@ -1045,7 +1102,7 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
             pages.append(create_orientation_page(lesson["orientation"], course_code, year))
 
         # 3. 용어체크
-        pages.append(create_term_page(lesson["terms"], images_dir, course_code, image_counter))
+        pages.append(create_term_page(lesson["terms"], images_dir, course_code, image_counter, imported_image_path_mapping))
 
         # 4. 학습목표
         # 학습내용에 실습 내용 추가 (실습이 있고 내용이 있는 경우)
@@ -1067,7 +1124,8 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
             lesson["learningObjectives"],
             images_dir,
             course_code,
-            image_counter
+            image_counter,
+            imported_image_path_mapping
         ))
 
         # 5. 생각묻기
@@ -1094,13 +1152,13 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
                 pages.append(create_practice_page(lesson, course_code, year))
 
         # 7. 점검하기
-        pages.append(create_check_page(lesson, images_dir, course_code, image_counter))
+        pages.append(create_check_page(lesson, images_dir, course_code, image_counter, imported_image_path_mapping))
 
         # 8. 연습문제
-        pages.append(create_exercise_page(lesson, images_dir, course_code, image_counter))
+        pages.append(create_exercise_page(lesson, images_dir, course_code, image_counter, imported_image_path_mapping))
 
         # 9. 학습정리
-        pages.append(create_theorem_page(lesson, images_dir, course_code, image_counter))
+        pages.append(create_theorem_page(lesson, images_dir, course_code, image_counter, imported_image_path_mapping))
 
         # 10. 다음안내 (다음 차시 정보 포함)
         next_lesson = None
@@ -1126,12 +1184,17 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
             lesson_num_str = f"{lesson['lessonNumber']:02d}"
             guide_url = f"https://cdn-it.livestudy.com/mov/{year}/{course_code}/down/{course_code}_book_{lesson_num_str}.zip"
         
+        # section 값 가져오기 (Import한 경우 그대로, 없으면 자동 계산)
+        section_in_week = lesson.get("sectionInWeek")
+        if section_in_week is None:
+            # 새로 만든 경우: lessonNumber 기준으로 자동 계산
+            section_in_week = ((lesson["lessonNumber"] - 1) % 2) + 1
+
         # data.json 생성
         data_json = {
             "subject": course_name,
             "index": lesson["weekNumber"],
-            "section": lesson["lessonNumber"],
-            "lessonTitle": lesson.get("lessonTitle", ""),
+            "section": section_in_week,
             "instruction": instruction_url,
             "guide": guide_url,
             "sections": ["인트로", "준비하기", "학습하기", "정리하기"],

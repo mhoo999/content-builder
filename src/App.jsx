@@ -231,6 +231,10 @@ function App() {
     newLesson.weekNumber = weekNumber
     newLesson.lessonNumber = courseData.lessons.length + 1
 
+    // sectionInWeek 계산 (같은 주차의 몇 번째 차시인지)
+    const sameWeekLessons = courseData.lessons.filter((l) => l.weekNumber === weekNumber)
+    newLesson.sectionInWeek = sameWeekLessons.length + 1
+
     // 이전 차시의 다운로드 URL 복사
     if (courseData.lessons.length > 0) {
       const previousLesson = courseData.lessons[courseData.lessons.length - 1]
@@ -317,11 +321,22 @@ function App() {
 
   // 모달에서 차시 생성
   const createLessonsFromModal = (lessonStructure, courseCode, courseName, year) => {
+    // 주차별 차시 카운터
+    const weekSectionCounter = {}
+
     const newLessons = lessonStructure.map((structure, index) => {
       const newLesson = createBuilderLessonData()
       newLesson.weekNumber = structure.weekNumber
       newLesson.lessonNumber = structure.lessonNumber || (index + 1)
       newLesson.lessonTitle = structure.title
+
+      // sectionInWeek 계산 (같은 주차의 몇 번째 차시인지)
+      const weekNum = newLesson.weekNumber
+      if (!weekSectionCounter[weekNum]) {
+        weekSectionCounter[weekNum] = 0
+      }
+      weekSectionCounter[weekNum]++
+      newLesson.sectionInWeek = weekSectionCounter[weekNum]
 
       // 차시 번호를 2자리 문자열로 변환 (01, 02, ...)
       const lessonNumStr = String(newLesson.lessonNumber).padStart(2, "0")
@@ -458,6 +473,23 @@ function App() {
     if (files.length === 0) return
 
     try {
+      // 모든 data.json 파일 찾기 (차시 번호 파악용)
+      const dataJsonFiles = files.filter((f) => f.webkitRelativePath.endsWith("/assets/data/data.json"))
+
+      if (dataJsonFiles.length === 0) {
+        alert("data.json 파일을 찾을 수 없습니다.")
+        return
+      }
+
+      // 차시 번호 추출 (최소값 파악)
+      const lessonNumbers = dataJsonFiles.map((file) => {
+        const pathParts = file.webkitRelativePath.split("/")
+        const lessonFolder = pathParts[pathParts.length - 4] // subjects/{code}/{lesson}/assets/data/data.json
+        return parseInt(lessonFolder, 10)
+      })
+
+      const minLessonNumber = Math.min(...lessonNumbers)
+
       // subjects.json 찾기
       const subjectsJsonFile = files.find((f) => f.webkitRelativePath.endsWith("subjects.json"))
       let lessonTitles = {}
@@ -466,7 +498,8 @@ function App() {
       if (subjectsJsonFile) {
         const subjectsText = await subjectsJsonFile.text()
         const subjectsData = JSON.parse(subjectsText)
-        const parsed = parseSubjectsJson(subjectsData)
+        // 시작 차시 번호 전달
+        const parsed = parseSubjectsJson(subjectsData, minLessonNumber)
         lessonTitles = parsed.lessonTitles
         weekTitles = parsed.weekTitles
       }
@@ -507,15 +540,7 @@ function App() {
       setImportedImages(imageStore)
       console.log(`Imported ${Object.keys(imageStore).length} images`)
 
-      // 모든 data.json 파일 찾기
-      const dataJsonFiles = files.filter((f) => f.webkitRelativePath.endsWith("/assets/data/data.json"))
-
-      if (dataJsonFiles.length === 0) {
-        alert("data.json 파일을 찾을 수 없습니다.")
-        return
-      }
-
-      // 차시 번호 추출 및 정렬
+      // 차시 번호 추출 및 정렬 (이미 위에서 dataJsonFiles를 찾았음)
       const lessonData = await Promise.all(
         dataJsonFiles.map(async (file) => {
           const pathParts = file.webkitRelativePath.split("/")

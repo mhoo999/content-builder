@@ -8,6 +8,7 @@
  * HTML 문자열에서 상대경로 이미지에 data-original-src 속성 추가 및 임시 base64 변환
  * (표시용으로 base64 사용, export 시 상대경로로 변환)
  * 배열인 경우 각 항목에 대해 처리
+ * + ol 태그를 H3로 변환 (Import 시)
  */
 export const markRelativeImages = (html, importedImages = {}) => {
   if (!html) return html
@@ -21,6 +22,13 @@ export const markRelativeImages = (html, importedImages = {}) => {
   if (typeof html !== "string") {
     return html
   }
+
+  // ol 태그를 H3로 변환 (Import 시)
+  // <ol style='color:#000;margin-bottom: 4px;'>1) 제목</ol> → <h3>1) 제목</h3>
+  html = html.replace(
+    /<ol\s+style=['"]color:#000;margin-bottom:\s*4px;['"]>(.*?)<\/ol>/gi,
+    "<h3>$1</h3>",
+  )
 
   // ../images/filename.png 또는 images/filename.png 패턴 찾기
   // 더 유연한 패턴: ../images/ 또는 images/로 시작하는 경로
@@ -264,13 +272,15 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
       .replace(/&#39;/g, "'")
   })
 
-  // 차시명 추출 (subjects.json에서 가져오는 것이 정확하지만, 여기서는 기본값)
+  // 주차 및 주차 내 순서 추출
   const weekNumber = dataJson.index || Math.ceil(lessonNumber / 2)
+  const sectionInWeek = dataJson.section || ((lessonNumber - 1) % 2) + 1
 
   return {
     weekNumber: weekNumber,
     lessonNumber: lessonNumber,
     lessonTitle: "", // subjects.json에서 가져와야 함
+    sectionInWeek: sectionInWeek,
 
     hasOrientation: hasOrientation,
     orientation: hasOrientation
@@ -311,17 +321,23 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
 /**
  * subjects.json 파일 파싱하여 주차별 차시 정보 추출
  * subjects.json 구조: { "subjects": [{ "title": "...", "lists": ["<span>1차</span> 제목", ...] }] }
+ *
+ * @param {Object} subjectsJson - subjects.json 데이터
+ * @param {number} startLessonNumber - 시작 차시 번호 (기본값: 1)
  */
-export const parseSubjectsJson = (subjectsJson) => {
+export const parseSubjectsJson = (subjectsJson, startLessonNumber = 1) => {
   const lessonTitles = {}
   const weekTitles = {} // 주차별 타이틀
-  let lessonCounter = 1
-  let weekCounter = 1
+  let lessonCounter = startLessonNumber
 
   // subjects 배열 파싱
   const subjects = subjectsJson.subjects || []
 
   subjects.forEach((subject) => {
+    // 주차 번호 추출: "<span>9주</span> 암호 프로토콜..." -> 9
+    const weekNumberMatch = subject.title?.match(/<span[^>]*>(\d+)주<\/span>/)
+    const weekNumber = weekNumberMatch ? parseInt(weekNumberMatch[1], 10) : null
+
     // 주차 타이틀 추출: "<span>1주</span> 컴퓨터통신, 인터넷, 웹" -> "컴퓨터통신, 인터넷, 웹"
     let weekTitle = subject.title || ""
     if (typeof weekTitle === "string") {
@@ -331,9 +347,9 @@ export const parseSubjectsJson = (subjectsJson) => {
       weekTitle = weekTitle.replace(/<[^>]+>/g, "").trim()
     }
 
-    // 주차 타이틀 저장
-    if (weekTitle) {
-      weekTitles[weekCounter] = weekTitle
+    // 주차 타이틀 저장 (주차 번호를 키로 사용)
+    if (weekTitle && weekNumber) {
+      weekTitles[weekNumber] = weekTitle
     }
 
     const lists = subject.lists || []
@@ -355,8 +371,6 @@ export const parseSubjectsJson = (subjectsJson) => {
         lessonCounter++
       }
     })
-
-    weekCounter++
   })
 
   return { lessonTitles, weekTitles }

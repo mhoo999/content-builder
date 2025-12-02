@@ -236,6 +236,7 @@ export const createBuilderLessonData = () => ({
   weekTitle: "", // 주차 타이틀 (예: "컴퓨터통신, 인터넷, 웹")
   lessonNumber: 1,
   lessonTitle: "",
+  sectionInWeek: 1, // 주차 내 순서 (1차, 2차...)
 
   // 오리엔테이션 (1주1차시만)
   hasOrientation: false,

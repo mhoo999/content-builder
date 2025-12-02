@@ -225,6 +225,18 @@
   line-height: 1.4;
 }
 
+/* H3 자동 번호 매기기 - ol 스타일과 동일하게 */
+.notion-editor-content {
+  counter-reset: h3-counter;
+}
+
+.notion-editor-content h3::before {
+  counter-increment: h3-counter;
+  content: counter(h3-counter) ") ";
+  color: #000;
+  margin-right: 0.3em;
+}
+
 /* 문단 */
 .notion-editor-content p {
   margin: 0.5em 0;
