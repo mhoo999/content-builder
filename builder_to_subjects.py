@@ -223,6 +223,63 @@ def save_base64_image(base64_data_url, images_dir, course_code, image_counter, i
         return base64_data_url  # 실패 시 원본 반환
 
 
+def save_professor_image(base64_data_url, images_dir, filename="professor.png", image_cache=None):
+    """
+    교수 프로필 이미지를 고정된 파일명으로 저장
+    image_counter를 증가시키지 않음
+
+    Args:
+        base64_data_url: data:image/...;base64,... 형식의 문자열
+        images_dir: 이미지 저장 디렉토리
+        filename: 저장할 파일명 (기본값: professor.png)
+        image_cache: 이미지 캐시 (dict, {hash: relative_path})
+
+    Returns:
+        상대경로 문자열 (예: ../images/professor.png)
+    """
+    if not base64_data_url or not base64_data_url.startswith("data:image/"):
+        return base64_data_url
+
+    if image_cache is None:
+        image_cache = {}
+
+    try:
+        # data:image/png;base64,xxxxx 형식에서 타입과 데이터 추출
+        header, data = base64_data_url.split(',', 1)
+        image_type_match = re.search(r'data:image/([^;]+)', header)
+        if not image_type_match:
+            return base64_data_url
+
+        image_type = image_type_match.group(1)
+        base64_data = data
+
+        # base64 데이터의 해시 계산 (중복 확인용)
+        image_hash = hashlib.md5(base64_data.encode('utf-8')).hexdigest()
+
+        # 이미 저장된 이미지인지 확인
+        if image_hash in image_cache:
+            print(f"♻️ 교수 이미지 재사용: {image_cache[image_hash]}")
+            return image_cache[image_hash]
+
+        # 교수 이미지는 고정 파일명 사용 (image_counter 증가 안 함)
+        image_path = images_dir / filename
+
+        # base64 디코딩하여 파일로 저장
+        image_data = base64.b64decode(base64_data)
+        with open(image_path, 'wb') as f:
+            f.write(image_data)
+
+        # 상대경로 생성 및 캐시에 저장
+        relative_path = f"../images/{filename}"
+        image_cache[image_hash] = relative_path
+
+        print(f"✅ 교수 이미지 저장 완료: {filename}")
+        return relative_path
+    except Exception as e:
+        print(f"⚠️ 교수 이미지 저장 실패: {e}")
+        return base64_data_url  # 실패 시 원본 반환
+
+
 def extract_and_save_images(html_content, images_dir, course_code, image_counter, imported_path_mapping=None, image_cache=None):
     """
     HTML에서 base64 이미지를 추출하여 파일로 저장하고 상대경로로 교체
@@ -648,11 +705,25 @@ def create_practice_page(lesson, course_code=None, year=None):
 def create_check_page(lesson, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None, image_cache=None):
     """점검하기 페이지 생성"""
     professor_think = lesson.get("professorThink", "")
-    
+
     # 교수님 의견에 포함된 이미지 추출 및 저장
     if images_dir and course_code and image_counter and professor_think:
         professor_think = extract_and_save_images(professor_think, images_dir, course_code, image_counter, imported_path_mapping, image_cache)
-    
+
+    # 교수님 생각 이미지 처리 (professor-02.png)
+    professor_think_image = lesson.get("professorThinkImage", "")
+    processed_think_image = "../images/professor-02.png"  # 기본값
+
+    if professor_think_image:
+        # base64 데이터인 경우 professor-02.png로 저장
+        if professor_think_image.startswith("data:image/"):
+            processed_think_image = save_professor_image(
+                professor_think_image, images_dir, "professor-02.png", image_cache
+            )
+        # 이미 경로 문자열인 경우 그대로 사용
+        else:
+            processed_think_image = professor_think_image
+
     return {
         "path": "/check",
         "section": 2,
@@ -663,7 +734,7 @@ def create_check_page(lesson, images_dir=None, course_code=None, image_counter=N
         "media": "../../../resources/media/common_check.mp3",
         "data": {
             "title": lesson["opinionQuestion"],
-            "photo": lesson.get("professorThinkImage") or "../images/professor-02.png",
+            "photo": processed_think_image,
             "think": professor_think
         }
     }
@@ -1112,7 +1183,20 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     # 이미지 카운터 및 캐시 (전체 과정에서 공유)
     # HTML 내용의 base64 이미지를 추출하여 파일로 저장하고 상대경로로 교체
     # image_cache는 해시 기반으로 중복 이미지를 재사용
-    image_counter = {'count': 0}
+
+    # import된 이미지 경로에서 최대 번호 찾기 (재export 시 번호 충돌 방지)
+    max_img_number = 0
+    for path in imported_image_path_mapping.values():
+        # ../images/{course_code}_img_{number}.png 형식에서 number 추출
+        match = re.search(rf'{course_code}_img_(\d+)', path)
+        if match:
+            img_num = int(match.group(1))
+            max_img_number = max(max_img_number, img_num)
+
+    if max_img_number > 0:
+        print(f"📝 import된 이미지 최대 번호: {max_img_number}, 새 이미지는 {max_img_number + 1}부터 시작")
+
+    image_counter = {'count': max_img_number}
     image_cache = {}  # {hash: relative_path}
 
     # 교수 사진 미리 처리 (한 번만 처리하여 모든 차시에서 재사용)
@@ -1121,18 +1205,19 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     if professor_photo:
         # HTML 태그가 포함된 경우 (<img src="data:image/...">)
         if "<img" in professor_photo and "data:image/" in professor_photo:
-            # HTML에서 base64 이미지를 추출하여 파일로 저장하고 상대경로로 교체
-            processed_professor_photo = extract_and_save_images(
-                professor_photo, images_dir, course_code, image_counter, imported_image_path_mapping, image_cache
-            )
-            # HTML 태그에서 src 속성의 경로만 추출
-            src_match = re.search(r'src=["\']([^"\']+)["\']', processed_professor_photo)
+            # HTML 태그에서 src 속성의 base64 데이터 추출
+            src_match = re.search(r'src=["\']([^"\']+)["\']', professor_photo)
             if src_match:
-                processed_professor_photo = src_match.group(1)
+                base64_data = src_match.group(1)
+                # 교수 이미지 전용 함수 사용 (professor.png 고정)
+                processed_professor_photo = save_professor_image(
+                    base64_data, images_dir, "professor.png", image_cache
+                )
         # 단순 base64 문자열인 경우 (data:image/...;base64,...)
         elif professor_photo.startswith("data:image/"):
-            processed_professor_photo = save_base64_image(
-                professor_photo, images_dir, course_code, image_counter, image_cache
+            # 교수 이미지 전용 함수 사용 (professor.png 고정)
+            processed_professor_photo = save_professor_image(
+                professor_photo, images_dir, "professor.png", image_cache
             )
         # 이미 상대경로인 경우 그대로 사용
         elif professor_photo.startswith("../images/"):
