@@ -35,6 +35,7 @@ function App() {
       return {
         courseCode: "",
         courseName: "",
+        courseType: "general",
         year: "",
         backgroundImage: "",
         professor: createProfessorData(),
@@ -58,6 +59,7 @@ function App() {
           return {
             courseCode: parsed.courseCode || "",
             courseName: parsed.courseName || "",
+            courseType: parsed.courseType || "general",
             year: parsed.year || "",
             backgroundImage: parsed.backgroundImage || "",
             professor: parsed.professor || createProfessorData(),
@@ -71,6 +73,7 @@ function App() {
     return {
       courseCode: "",
       courseName: "",
+      courseType: "general",
       year: "",
       backgroundImage: "",
       professor: createProfessorData(),
@@ -339,7 +342,7 @@ function App() {
   }
 
   // 모달에서 차시 생성
-  const createLessonsFromModal = (lessonStructure, courseCode, courseName, year) => {
+  const createLessonsFromModal = (lessonStructure, courseCode, courseName, year, courseType) => {
     // 주차별 차시 카운터
     const weekSectionCounter = {}
 
@@ -384,6 +387,7 @@ function App() {
       courseCode: courseCode || prev.courseCode,
       courseName: courseName || prev.courseName,
       year: year || prev.year,
+      courseType: courseType || prev.courseType || 'general',
       lessons: newLessons,
     }))
     setCurrentLessonIndex(0)
@@ -883,6 +887,7 @@ function App() {
                     onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
                     courseCode={courseData.courseCode}
                     year={courseData.year}
+                    courseType={courseData.courseType}
                   />
                 </div>
 
@@ -903,6 +908,7 @@ function App() {
                     onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
                     courseCode={courseData.courseCode}
                     year={courseData.year}
+                    courseType={courseData.courseType}
                   />
                 </div>
               </div>
@@ -997,19 +1003,21 @@ function App() {
                         오리엔테이션
                       </a>
                     )}
-                    <a
-                      href="#subsection-terms"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const element = document.getElementById("subsection-terms")
-                        if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      }}
-                      className="toc-link toc-sub"
-                    >
-                      용어체크
-                    </a>
+                    {courseData.courseType === 'general' && (
+                      <a
+                        href="#subsection-terms"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const element = document.getElementById("subsection-terms")
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="toc-link toc-sub"
+                      >
+                        용어체크
+                      </a>
+                    )}
                     <a
                       href="#subsection-objectives"
                       onClick={(e) => {
@@ -1101,19 +1109,21 @@ function App() {
                     >
                       ✅ 정리하기
                     </a>
-                    <a
-                      href="#subsection-exercises"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const element = document.getElementById("subsection-exercises")
-                        if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      }}
-                      className="toc-link toc-sub"
-                    >
-                      연습문제
-                    </a>
+                    {courseData.courseType === 'general' && (
+                      <a
+                        href="#subsection-exercises"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const element = document.getElementById("subsection-exercises")
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="toc-link toc-sub"
+                      >
+                        연습문제
+                      </a>
+                    )}
                     <a
                       href="#subsection-summary"
                       onClick={(e) => {

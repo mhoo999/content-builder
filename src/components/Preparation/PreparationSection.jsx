@@ -1,7 +1,7 @@
 import "./PreparationSection.css"
 import RichTextEditor from "../RichTextEditor"
 
-function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
+function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType = 'general' }) {
   const isFirstLesson = lessonData.weekNumber === 1 && lessonData.lessonNumber === 1
 
   // 1강 1주차 1차시인 경우 오리엔테이션 자동 활성화 및 URL 자동 생성
@@ -144,7 +144,8 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
         </div>
       )}
 
-      {/* 용어체크 */}
+      {/* 용어체크 (일반 과정만 표시) */}
+      {courseType === 'general' && (
       <div id="subsection-terms" className="subsection">
         <div className="list-header">
           <h4>용어체크</h4>
@@ -214,6 +215,7 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year }) {
           </div>
         ))}
       </div>
+      )}
 
       {/* 학습목표 */}
       <div id="subsection-objectives" className="subsection">

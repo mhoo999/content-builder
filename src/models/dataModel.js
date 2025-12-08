@@ -7,6 +7,8 @@
 export const createCourseData = () => ({
   courseCode: "", // 과목 코드 (예: 25itinse)
   courseName: "", // 과정명 (예: 인터넷보안)
+  courseType: "general", // 과정 유형: "general" | "social-work-practice"
+  year: "", // 연도 (예: 2025)
   backgroundImage: "", // 배경 이미지 경로
   professor: createProfessorData(),
   weeks: [], // 주차별 정보 (subjects.json 생성용)
@@ -237,6 +239,10 @@ export const createBuilderLessonData = () => ({
   lessonNumber: 1,
   lessonTitle: "",
   sectionInWeek: 1, // 주차 내 순서 (1차, 2차...)
+
+  // 사회복지현장실습 전용
+  isPracticeWeek: false, // 현장실습 주차 여부 (이미지만 표시)
+  practiceImage: "", // 현장실습 이미지 URL
 
   // 오리엔테이션 (1주1차시만)
   hasOrientation: false,

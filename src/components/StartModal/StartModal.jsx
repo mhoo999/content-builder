@@ -2,6 +2,7 @@ import { useState } from 'react';
 import './StartModal.css';
 
 function StartModal({ onClose, onCreate }) {
+  const [courseType, setCourseType] = useState('general'); // 과정 유형
   const [startLesson, setStartLesson] = useState(1);
   const [endLesson, setEndLesson] = useState(26);
   const [courseCode, setCourseCode] = useState('');
@@ -31,8 +32,8 @@ function StartModal({ onClose, onCreate }) {
     const lessons = Array.from({ length: lessonCount }, (_, index) => {
       const lessonNumber = startLesson + index;
       let weekNumber = Math.ceil(lessonNumber / 2);
-      // 7주 이후는 8주를 건너뛰고 9주부터 시작
-      if (weekNumber >= 8) {
+      // 일반 과정: 7주 이후는 8주를 건너뛰고 9주부터 시작
+      if (courseType === 'general' && weekNumber >= 8) {
         weekNumber += 1;
       }
       return {
@@ -42,7 +43,7 @@ function StartModal({ onClose, onCreate }) {
       };
     });
 
-    onCreate(lessons, courseCode.trim(), courseName.trim(), year.trim());
+    onCreate(lessons, courseCode.trim(), courseName.trim(), year.trim(), courseType);
     onClose();
   };
 
@@ -56,6 +57,17 @@ function StartModal({ onClose, onCreate }) {
 
         <div className="start-modal-body">
           <div className="course-info-section">
+            <div className="form-group-modal">
+              <label>과정 유형 <span className="required">*</span></label>
+              <select
+                className="course-input"
+                value={courseType}
+                onChange={(e) => setCourseType(e.target.value)}
+              >
+                <option value="general">일반</option>
+                <option value="social-work-practice">사회복지현장실습</option>
+              </select>
+            </div>
             <div className="form-group-modal">
               <label>과목 코드 <span className="required">*</span></label>
               <input
@@ -93,7 +105,11 @@ function StartModal({ onClose, onCreate }) {
 
           <p className="modal-description">
             몇 강부터 몇 강까지 만들까요?<br />
-            <small>2개 강의당 1주차로 자동 생성됩니다. (8주는 중간고사로 건너뜀)</small>
+            <small>
+              {courseType === 'general'
+                ? '2개 강의당 1주차로 자동 생성됩니다. (8주는 중간고사로 건너뜀)'
+                : '2개 강의당 1주차로 자동 생성됩니다.'}
+            </small>
           </p>
 
           <div className="lesson-range-wrapper">

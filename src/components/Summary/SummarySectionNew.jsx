@@ -1,7 +1,7 @@
 import "./SummarySection.css"
 import RichTextEditor from "../RichTextEditor"
 
-function SummarySection({ lessonData, onUpdate, courseCode, year }) {
+function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = 'general' }) {
   // 차시 번호를 2자리 문자열로 변환 (01, 02, ...)
   const lessonNumStr = String(lessonData.lessonNumber).padStart(2, "0")
 
@@ -157,7 +157,8 @@ function SummarySection({ lessonData, onUpdate, courseCode, year }) {
     <div className="form-section">
       <h3>✅ 정리하기</h3>
 
-      {/* 연습문제 */}
+      {/* 연습문제 (일반 과정만 표시) */}
+      {courseType === 'general' && (
       <div id="subsection-exercises" className="subsection">
         <div className="list-header">
           <h4>연습문제</h4>
@@ -260,6 +261,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year }) {
           </div>
         ))}
       </div>
+      )}
 
       {/* 학습정리 */}
       <div id="subsection-summary" className="subsection">
