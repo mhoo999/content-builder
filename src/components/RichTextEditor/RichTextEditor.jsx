@@ -240,7 +240,7 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
         orderedList: false, // 제거
         bulletList: false, // 커스텀 BulletList 사용
         horizontalRule: false, // 제거
-        hardBreak: false, // 제거
+        hardBreak: true, // Shift+Enter로 줄바꿈 (표 안에서 유용)
         history: true, // 유지 (실행 취소/다시 실행)
         dropcursor: true, // 유지 (드래그 앤 드롭)
         gapcursor: true, // 유지 (커서)
