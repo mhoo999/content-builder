@@ -663,10 +663,21 @@ function App() {
         courseName = lessonData[0].dataJson.subject
       }
 
+      // 과정 유형 추론 (용어체크 페이지가 없으면 사회복지현장실습)
+      let courseType = "general"
+      if (lessonData.length > 0) {
+        const firstDataJson = lessonData[0].dataJson
+        const hasTermPage = firstDataJson.pages?.some(page => page.component === "term")
+        if (!hasTermPage) {
+          courseType = "social-work-practice"
+        }
+      }
+
       // 데이터 설정
       setCourseData({
         courseCode: courseCode,
         courseName: courseName,
+        courseType: courseType,
         year: "", // Import 시에는 연도 추출하지 않음 (수동 입력 필요)
         backgroundImage: "",
         professor: professorInfo,
@@ -675,8 +686,9 @@ function App() {
 
       setCurrentLessonIndex(0)
       const imageCount = Object.keys(imageStore).length
+      const courseTypeLabel = courseType === "social-work-practice" ? "사회복지현장실습" : "일반"
       alert(
-        `${lessons.length}개 차시를 성공적으로 불러왔습니다!\n\n과목코드: ${courseCode}\n과정명: ${courseName}\n이미지: ${imageCount}개 저장됨`,
+        `${lessons.length}개 차시를 성공적으로 불러왔습니다!\n\n과목코드: ${courseCode}\n과정명: ${courseName}\n과정 유형: ${courseTypeLabel}\n이미지: ${imageCount}개 저장됨`,
       )
     } catch (error) {
       console.error("Folder import error:", error)

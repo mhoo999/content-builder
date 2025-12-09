@@ -1132,6 +1132,7 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
 
     course_code = course_data["courseCode"]
     course_name = course_data["courseName"]
+    course_type = course_data.get("courseType", "general")  # 과정 유형
     year = course_data.get("year", "")
     professor = course_data["professor"]
     # imported_images: import 시 가져온 원본 이미지들 (경로 -> base64)
@@ -1245,8 +1246,9 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         if lesson["hasOrientation"]:
             pages.append(create_orientation_page(lesson["orientation"], course_code, year))
 
-        # 3. 용어체크
-        pages.append(create_term_page(lesson["terms"], images_dir, course_code, image_counter, imported_image_path_mapping, image_cache))
+        # 3. 용어체크 (일반 과정만)
+        if course_type == "general":
+            pages.append(create_term_page(lesson["terms"], images_dir, course_code, image_counter, imported_image_path_mapping, image_cache))
 
         # 4. 학습목표
         # 학습내용에 실습 내용 추가 (실습이 있고 내용이 있는 경우)
@@ -1299,8 +1301,9 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         # 7. 점검하기
         pages.append(create_check_page(lesson, images_dir, course_code, image_counter, imported_image_path_mapping, image_cache))
 
-        # 8. 연습문제
-        pages.append(create_exercise_page(lesson, images_dir, course_code, image_counter, imported_image_path_mapping, image_cache))
+        # 8. 연습문제 (일반 과정만)
+        if course_type == "general":
+            pages.append(create_exercise_page(lesson, images_dir, course_code, image_counter, imported_image_path_mapping, image_cache))
 
         # 9. 학습정리
         pages.append(create_theorem_page(lesson, images_dir, course_code, image_counter, imported_image_path_mapping, image_cache))
