@@ -28,13 +28,21 @@ function StartModal({ onClose, onCreate }) {
       return;
     }
 
-    // 시작~끝 강의 번호만큼 생성 (2개 강의당 1주차, 8주는 중간고사로 건너뜀)
+    // 시작~끝 강의 번호만큼 생성 (2개 강의당 1주차)
     const lessons = Array.from({ length: lessonCount }, (_, index) => {
       const lessonNumber = startLesson + index;
       let weekNumber = Math.ceil(lessonNumber / 2);
-      // 일반 과정: 7주 이후는 8주를 건너뛰고 9주부터 시작
+      // 일반 과정: 8주를 건너뜀 (중간고사)
       if (courseType === 'general' && weekNumber >= 8) {
         weekNumber += 1;
+      }
+      // 사회복지현장실습: 8주, 16주를 건너뜀 (현장실습 주차)
+      if (courseType === 'social-work-practice') {
+        if (weekNumber >= 16) {
+          weekNumber += 2; // 8주, 16주 모두 건너뜀
+        } else if (weekNumber >= 8) {
+          weekNumber += 1; // 8주만 건너뜀
+        }
       }
       return {
         lessonNumber,
@@ -108,7 +116,7 @@ function StartModal({ onClose, onCreate }) {
             <small>
               {courseType === 'general'
                 ? '2개 강의당 1주차로 자동 생성됩니다. (8주는 중간고사로 건너뜀)'
-                : '2개 강의당 1주차로 자동 생성됩니다.'}
+                : '2개 강의당 1주차로 자동 생성됩니다. (8주, 16주는 현장실습으로 건너뜀)'}
             </small>
           </p>
 
