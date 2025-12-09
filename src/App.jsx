@@ -590,8 +590,12 @@ function App() {
       // 차시 번호로 정렬
       lessonData.sort((a, b) => a.lessonNumber - b.lessonNumber)
 
-      // 교수 정보 추출 (첫 번째 차시에서)
-      let professorInfo = lessonData.length > 0 ? parseProfessorInfo(lessonData[0].dataJson) : createProfessorData()
+      // 교수 정보 추출 (교수 정보가 있는 첫 번째 일반 차시에서)
+      let professorInfo = createProfessorData()
+      const firstNormalLesson = lessonData.find(item => item.dataJson.pages && item.dataJson.pages.length > 0)
+      if (firstNormalLesson) {
+        professorInfo = parseProfessorInfo(firstNormalLesson.dataJson)
+      }
 
       // 교수 사진도 임시 base64로 변환 (표시용)
       if (professorInfo.photo && imageStore[professorInfo.photo]) {
