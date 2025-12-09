@@ -341,6 +341,22 @@ function App() {
     }))
   }
 
+  // 현장실습 이미지 업데이트 (같은 주차의 모든 현장실습 차시에 동기화)
+  const updatePracticeImage = (index, practiceImage) => {
+    const currentLesson = courseData.lessons[index]
+    const weekNumber = currentLesson.weekNumber
+
+    // 같은 주차의 모든 현장실습 차시 업데이트
+    setCourseData((prev) => ({
+      ...prev,
+      lessons: prev.lessons.map((lesson) =>
+        lesson.weekNumber === weekNumber && lesson.isPracticeWeek
+          ? { ...lesson, practiceImage: practiceImage }
+          : lesson
+      ),
+    }))
+  }
+
   // 모달에서 차시 생성
   const createLessonsFromModal = (lessonStructure, courseCode, courseName, year, courseType) => {
     // 주차별 차시 카운터
@@ -927,12 +943,9 @@ function App() {
                           type="url"
                           placeholder="https://it.livestudy.com/files/images/202507/sabok_preparing.png"
                           value={currentLesson.practiceImage || ""}
-                          onChange={(e) => updateLesson(currentLessonIndex, {
-                            ...currentLesson,
-                            practiceImage: e.target.value
-                          })}
+                          onChange={(e) => updatePracticeImage(currentLessonIndex, e.target.value)}
                         />
-                        <small className="hint">현장실습 주차에 표시될 이미지 URL을 입력하세요</small>
+                        <small className="hint">현장실습 주차에 표시될 이미지 URL을 입력하세요 (같은 주차 전체에 적용됨)</small>
                       </div>
                       {currentLesson.practiceImage && (
                         <div className="image-preview">
