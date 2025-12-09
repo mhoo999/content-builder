@@ -1235,6 +1235,25 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         lesson_dir = course_dir / lesson_num / "assets" / "data"
         lesson_dir.mkdir(parents=True, exist_ok=True)
 
+        # 현장실습 주차인 경우 이미지만 생성
+        if lesson.get("isPracticeWeek", False):
+            practice_image = lesson.get("practiceImage", "")
+            data_json = {
+                "image": practice_image
+            }
+            with open(lesson_dir / "data.json", 'w', encoding='utf-8') as f:
+                json.dump(data_json, f, ensure_ascii=False, indent=2)
+
+            # index.html 생성
+            index_html = get_index_html_template()
+            lesson_folder = course_dir / lesson_num
+            index_file = lesson_folder / "index.html"
+            with open(index_file, 'w', encoding='utf-8') as f:
+                f.write(index_html)
+
+            print(f"  📄 {lesson_num}강 (현장실습 주차) 생성 완료")
+            continue  # 다음 차시로 넘어감
+
         # 페이지 생성
         pages = []
 

@@ -88,6 +88,19 @@ const findAllPagesByComponent = (pages, componentType) => {
  * data.json 파일을 Builder 형식으로 변환
  */
 export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
+  // 현장실습 주차 감지 (이미지만 있는 경우)
+  if (dataJson.image && !dataJson.pages) {
+    return {
+      isPracticeWeek: true,
+      practiceImage: dataJson.image,
+      lessonNumber: lessonNumber,
+      weekNumber: Math.ceil(lessonNumber / 2),
+      weekTitle: "",
+      lessonTitle: "",
+      sectionInWeek: 1,
+    }
+  }
+
   const pages = dataJson.pages || []
 
   // 오리엔테이션 확인 (1주1차시만 가능)

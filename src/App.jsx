@@ -781,47 +781,67 @@ function App() {
                     onClick={() => setCurrentLessonIndex(index)}
                   >
                     <div className="lesson-info">
-                      {/* 1줄: 1강 [✓실습] */}
+                      {/* 1줄: 1강 [✓실습] [✓현장실습] */}
                       <div className="lesson-number-row">
                         <span className="lesson-number">{lesson.lessonNumber}강</span>
-                        <label className="practice-checkbox-inline">
-                          <input
-                            type="checkbox"
-                            checked={lesson.hasPractice || false}
-                            onChange={(e) => {
-                              e.stopPropagation()
-                              const hasPractice = e.target.checked
-                              const lectureVideoUrl = lesson.lectureVideoUrl || ""
-                              const lectureSubtitle = lesson.lectureSubtitle || ""
+                        {courseData.courseType === 'general' && (
+                          <label className="practice-checkbox-inline">
+                            <input
+                              type="checkbox"
+                              checked={lesson.hasPractice || false}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                const hasPractice = e.target.checked
+                                const lectureVideoUrl = lesson.lectureVideoUrl || ""
+                                const lectureSubtitle = lesson.lectureSubtitle || ""
 
-                              // 학습내용에서 실습 항목 제거 (기존 데이터 마이그레이션)
-                              const learningContents = lesson.learningContents
-                                ? lesson.learningContents.filter(
-                                    (content) => !(typeof content === "string" && content.includes("class='practice'")),
-                                  )
-                                : []
+                                // 학습내용에서 실습 항목 제거 (기존 데이터 마이그레이션)
+                                const learningContents = lesson.learningContents
+                                  ? lesson.learningContents.filter(
+                                      (content) => !(typeof content === "string" && content.includes("class='practice'")),
+                                    )
+                                  : []
 
-                              // 실습 내용 초기화 (기존 practiceContent가 없으면 기본값 설정)
-                              const practiceContent =
-                                hasPractice && !lesson.practiceContent
-                                  ? "<div class='practice'><ul><li></li></ul></div>"
-                                  : lesson.practiceContent || ""
+                                // 실습 내용 초기화 (기존 practiceContent가 없으면 기본값 설정)
+                                const practiceContent =
+                                  hasPractice && !lesson.practiceContent
+                                    ? "<div class='practice'><ul><li></li></ul></div>"
+                                    : lesson.practiceContent || ""
 
-                              updateLesson(index, {
-                                ...lesson,
-                                hasPractice: hasPractice,
-                                practiceContent: hasPractice ? practiceContent : "",
-                                practiceVideoUrl:
-                                  hasPractice && lectureVideoUrl ? lectureVideoUrl.replace(".mp4", "_P.mp4") : "",
-                                practiceSubtitle:
-                                  hasPractice && lectureSubtitle ? lectureSubtitle.replace(".vtt", "_P.vtt") : "",
-                                learningContents: learningContents, // 실습 항목 제거된 학습내용
-                              })
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <span>실습</span>
-                        </label>
+                                updateLesson(index, {
+                                  ...lesson,
+                                  hasPractice: hasPractice,
+                                  practiceContent: hasPractice ? practiceContent : "",
+                                  practiceVideoUrl:
+                                    hasPractice && lectureVideoUrl ? lectureVideoUrl.replace(".mp4", "_P.mp4") : "",
+                                  practiceSubtitle:
+                                    hasPractice && lectureSubtitle ? lectureSubtitle.replace(".vtt", "_P.vtt") : "",
+                                  learningContents: learningContents, // 실습 항목 제거된 학습내용
+                                })
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span>실습</span>
+                          </label>
+                        )}
+                        {courseData.courseType === 'social-work-practice' && (
+                          <label className="practice-checkbox-inline">
+                            <input
+                              type="checkbox"
+                              checked={lesson.isPracticeWeek || false}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                updateLesson(index, {
+                                  ...lesson,
+                                  isPracticeWeek: e.target.checked,
+                                  practiceImage: e.target.checked ? (lesson.practiceImage || "") : "",
+                                })
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span>현장실습</span>
+                          </label>
+                        )}
                       </div>
 
                       {/* 2줄: 1주 주차타이틀 */}
@@ -892,37 +912,66 @@ function App() {
                 </h2>
                 <p className="subtitle">{currentLesson.lessonTitle || "제목 없음"}</p>
 
-                {/* 준비하기 섹션 */}
-                <div id="section-preparation">
-                  <PreparationSection
-                    lessonData={currentLesson}
-                    onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
-                    courseCode={courseData.courseCode}
-                    year={courseData.year}
-                    courseType={courseData.courseType}
-                  />
-                </div>
+                {/* 현장실습 주차 */}
+                {currentLesson.isPracticeWeek ? (
+                  <div className="form-section">
+                    <h3>📸 현장실습 이미지</h3>
+                    <div className="subsection">
+                      <div className="form-group">
+                        <label>이미지 URL</label>
+                        <input
+                          type="url"
+                          placeholder="https://it.livestudy.com/files/images/202507/sabok_preparing.png"
+                          value={currentLesson.practiceImage || ""}
+                          onChange={(e) => updateLesson(currentLessonIndex, {
+                            ...currentLesson,
+                            practiceImage: e.target.value
+                          })}
+                        />
+                        <small className="hint">현장실습 주차에 표시될 이미지 URL을 입력하세요</small>
+                      </div>
+                      {currentLesson.practiceImage && (
+                        <div className="image-preview">
+                          <img src={currentLesson.practiceImage} alt="현장실습 이미지 미리보기" style={{ maxWidth: '100%', marginTop: '10px' }} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* 준비하기 섹션 */}
+                    <div id="section-preparation">
+                      <PreparationSection
+                        lessonData={currentLesson}
+                        onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+                        courseCode={courseData.courseCode}
+                        year={courseData.year}
+                        courseType={courseData.courseType}
+                      />
+                    </div>
 
-                {/* 학습하기 섹션 */}
-                <div id="section-learning">
-                  <LearningSection
-                    lessonData={currentLesson}
-                    onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
-                    courseCode={courseData.courseCode}
-                    year={courseData.year}
-                  />
-                </div>
+                    {/* 학습하기 섹션 */}
+                    <div id="section-learning">
+                      <LearningSection
+                        lessonData={currentLesson}
+                        onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+                        courseCode={courseData.courseCode}
+                        year={courseData.year}
+                      />
+                    </div>
 
-                {/* 정리하기 섹션 */}
-                <div id="section-summary">
-                  <SummarySection
-                    lessonData={currentLesson}
-                    onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
-                    courseCode={courseData.courseCode}
-                    year={courseData.year}
-                    courseType={courseData.courseType}
-                  />
-                </div>
+                    {/* 정리하기 섹션 */}
+                    <div id="section-summary">
+                      <SummarySection
+                        lessonData={currentLesson}
+                        onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+                        courseCode={courseData.courseCode}
+                        year={courseData.year}
+                        courseType={courseData.courseType}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             ) : null}
           </div>
