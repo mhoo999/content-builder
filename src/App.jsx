@@ -1137,6 +1137,19 @@ function App() {
                     >
                       학습정리
                     </a>
+                    <a
+                      href="#subsection-next"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const element = document.getElementById("subsection-next")
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      }}
+                      className="toc-link toc-sub"
+                    >
+                      다음안내
+                    </a>
                   </nav>
                 </div>
               )}

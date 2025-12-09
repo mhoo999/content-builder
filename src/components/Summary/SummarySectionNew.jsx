@@ -317,6 +317,15 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
           />
         </div>
       </div>
+
+      {/* 다음안내 (아웃트로) */}
+      <div id="subsection-next" className="subsection">
+        <h4>다음안내</h4>
+        <div className="info-box">
+          <p>📢 이것으로 이번 시간 강의를 마쳤습니다. 수고하셨습니다.</p>
+          <small>다음안내 페이지는 Export 시 자동으로 생성됩니다.</small>
+        </div>
+      </div>
     </div>
   )
 }
