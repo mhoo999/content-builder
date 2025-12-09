@@ -20,6 +20,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 
 .start-modal-header {
@@ -59,6 +60,9 @@
 .start-modal-body {
   padding: 32px 40px;
   text-align: center;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .course-info-section {
@@ -213,6 +217,7 @@
   gap: 12px;
   padding: 20px 24px;
   border-top: 1px solid #e0e0e0;
+  flex-shrink: 0;
 }
 
 .cancel-btn, .create-btn {
