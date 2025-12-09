@@ -23,11 +23,22 @@ export const markRelativeImages = (html, importedImages = {}) => {
     return html
   }
 
+  // <p class='main-title'><strong>내용</strong></p> → <h1>내용</h1> 변환 (Import 시)
+  html = html.replace(
+    /<p\s+class=['"]main-title['"][^>]*><strong>(.*?)<\/strong><\/p>/gi,
+    "<h1>$1</h1>",
+  )
+
   // ol 태그를 H3로 변환 (Import 시)
-  // <ol style='color:#000;margin-bottom: 4px;'>1) 제목</ol> → <h3>1) 제목</h3>
+  // <ol style='color:#000;margin-bottom: 4px;'>1) 제목</ol> → <h3>제목</h3>
+  // "1)" 같은 번호는 제거
   html = html.replace(
     /<ol\s+style=['"]color:#000;margin-bottom:\s*4px;['"]>(.*?)<\/ol>/gi,
-    "<h3>$1</h3>",
+    (match, content) => {
+      // "1)", "2)" 같은 번호 제거
+      const cleaned = content.replace(/^\d+\)\s*/, "").trim()
+      return `<h3>${cleaned}</h3>`
+    },
   )
 
   // ../images/filename.png 또는 images/filename.png 패턴 찾기
