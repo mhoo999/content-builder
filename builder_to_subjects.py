@@ -1012,6 +1012,20 @@ def create_subjects_json(course_data):
         if not weeks[week_num]["weekTitle"] and lesson.get("weekTitle"):
             weeks[week_num]["weekTitle"] = lesson.get("weekTitle", "")
 
+    # 8주차 중간고사, 15주차 기말고사 자동 추가
+    if 8 not in weeks:
+        weeks[8] = {
+            "weekNumber": 8,
+            "weekTitle": "중간고사",
+            "lessons": []
+        }
+    if 15 not in weeks:
+        weeks[15] = {
+            "weekNumber": 15,
+            "weekTitle": "기말고사",
+            "lessons": []
+        }
+
     # subjects.json 형식으로 변환
     subjects = []
     for week_num in sorted(weeks.keys()):
@@ -1032,7 +1046,8 @@ def create_subjects_json(course_data):
             title_str = f"<span>{week_num}주</span>"
 
         subject_entry = {"title": title_str}
-        if lists:
+        # 8주차, 15주차 중간고사/기말고사는 lists 제외
+        if lists and week_num not in [8, 15]:
             subject_entry["lists"] = lists
 
         subjects.append(subject_entry)
