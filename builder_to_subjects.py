@@ -563,8 +563,18 @@ def create_objectives_page(contents, objectives, images_dir=None, course_code=No
                 obj = extract_and_save_images(obj, images_dir, course_code, image_counter, imported_path_mapping, image_cache)
             processed_objectives.append(obj)
     
-    # 학습내용과 학습목표에 자동 넘버링 추가
-    numbered_contents = [f"{i+1}. {c}" for i, c in enumerate(filtered_contents) if c]
+    # 학습내용과 학습목표에 자동 넘버링 추가 (단, 실습 항목은 제외)
+    numbered_contents = []
+    content_number = 1
+    for c in filtered_contents:
+        if c:
+            # 실습 항목(<div class='practice'>)은 넘버링 없이 그대로 추가
+            if c.strip().startswith("<div class='practice'>"):
+                numbered_contents.append(c)
+            else:
+                numbered_contents.append(f"{content_number}. {c}")
+                content_number += 1
+
     numbered_objectives = [f"{i+1}. {o}" for i, o in enumerate(processed_objectives) if o]
     
     return {
