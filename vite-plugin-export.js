@@ -14,13 +14,14 @@ export default function exportSubjectsPlugin() {
           return;
         }
 
-        let body = '';
+        const chunks = [];
         req.on('data', chunk => {
-          body += chunk.toString();
+          chunks.push(chunk);
         });
 
         req.on('end', async () => {
           try {
+            const body = Buffer.concat(chunks).toString('utf-8');
             const { courseData, outputPath } = JSON.parse(body);
 
             if (!courseData || !courseData.courseCode) {
