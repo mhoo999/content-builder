@@ -120,7 +120,8 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
 
   // 용어체크 파싱
   const termPage = findPageByComponent(pages, "term")
-  const terms = termPage?.data?.map((term) => {
+  const termData = Array.isArray(termPage?.data) ? termPage.data : []
+  const terms = termData.map((term) => {
     // title의 <br /> 또는 <br> 태그를 줄바꿈(\n)으로 변환
     let title = term.title || ""
     // HTML 엔티티 디코딩 (&lt; → <, &gt; → >, &amp; → &, &quot; → ", &#39; → ')
@@ -157,7 +158,8 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
       title: title,
       content: content.length > 0 ? content : [""],
     }
-  }) || [{ title: "", content: [""] }]
+  })
+  const finalTerms = terms.length > 0 ? terms : [{ title: "", content: [""] }]
 
   // 학습목표 파싱
   const objectivesPage = findPageByComponent(pages, "objectives")
@@ -195,14 +197,18 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   const lecturePage = findPageByComponent(pages, "lecture")
   const lectureVideoUrl = lecturePage?.media || ""
   const lectureSubtitle = lecturePage?.caption?.[0]?.src || ""
-  const timestamps = lecturePage?.data?.map((item) => item.time || "") || ["0:00:04", "0:00:00"]
+  const timestamps = Array.isArray(lecturePage?.data)
+    ? lecturePage.data.map((item) => item.time || "")
+    : ["0:00:04", "0:00:00"]
 
   // 실습 파싱
   const practicePage = findPageByComponent(pages, "practice")
   const hasPractice = !!practicePage
   const practiceVideoUrl = practicePage?.media || ""
   const practiceSubtitle = practicePage?.caption?.[0]?.src || ""
-  const practiceTimestamps = practicePage?.data?.map((item) => item.time || "") || ["0:00:04", "0:00:00"]
+  const practiceTimestamps = Array.isArray(practicePage?.data)
+    ? practicePage.data.map((item) => item.time || "")
+    : ["0:00:04", "0:00:00"]
 
   // 실습 내용 추출 (학습내용에서 실습 항목 찾기)
   let practiceContent = ""
@@ -317,7 +323,7 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
           subtitlePath: "",
         },
 
-    terms: terms,
+    terms: finalTerms,
     learningContents: learningContents,
     learningObjectives: learningObjectives,
 
