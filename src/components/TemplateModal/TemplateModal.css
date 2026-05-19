@@ -1,0 +1,236 @@
+.template-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.template-modal {
+  background: white;
+  border-radius: 12px;
+  width: 900px;
+  max-width: 95vw;
+  height: 650px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.template-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.template-modal-header h2 { 
+  margin: 0; 
+  font-size: 1.25rem; 
+  font-weight: 600;
+  color: #111; 
+}
+
+.template-modal-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.template-sidebar {
+  width: 200px;
+  background-color: #f8f9fa;
+  border-right: 1px solid #eee;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.category-tab {
+  background: none;
+  border: none;
+  padding: 12px 24px;
+  text-align: left;
+  font-size: 0.95rem;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.category-tab:hover {
+  background-color: #f0f0f0;
+}
+
+.category-tab.active {
+  background-color: #fff;
+  color: #0066ff;
+  font-weight: 600;
+  border-left: 4px solid #0066ff;
+}
+
+.template-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background-color: #fff;
+  overflow-y: auto;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.preset-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+}
+
+.preset-card:hover {
+  border-color: #99c2ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.1);
+}
+
+.preset-card.active {
+  border-color: #0066ff;
+  border-width: 2px;
+  box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.1);
+}
+
+.preset-thumbnail-placeholder {
+  height: 120px;
+  background-color: #f4f6f8;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  position: relative;
+}
+
+.preset-section-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #fff;
+  color: #555;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  font-weight: bold;
+}
+
+.preset-sections-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.sec-item {
+  background-color: #e4eaf0;
+  color: #334155;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.preset-info {
+  padding: 16px;
+}
+
+.preset-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.05rem;
+  color: #111;
+}
+
+.preset-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+.theme-selection-area {
+  margin-top: auto;
+  background-color: #f8fafc;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.theme-selection-area h4 {
+  margin: 0 0 12px 0;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.theme-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.theme-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: white;
+  transition: all 0.15s;
+}
+
+.theme-radio-label:hover {
+  background: #f1f5f9;
+}
+
+.theme-radio-label.selected {
+  background: #eff6ff;
+  border-color: #0066ff;
+  color: #0066ff;
+  font-weight: 500;
+}
+
+.template-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border-radius: 0 0 12px 12px;
+}
+
+.selected-summary {
+  font-size: 0.95rem;
+  color: #444;
+}
+
+.selected-summary strong {
+  color: #0066ff;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+}

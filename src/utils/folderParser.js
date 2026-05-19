@@ -364,8 +364,11 @@ export const parseSubjectsJson = (subjectsJson, startLessonNumber = 1) => {
   const subjects = subjectsJson.subjects || []
 
   subjects.forEach((subject) => {
-    // 주차 번호 추출: "<span>9주</span> 암호 프로토콜..." -> 9
-    const weekNumberMatch = subject.title?.match(/<span[^>]*>(\d+)주<\/span>/)
+    // 주차 번호 추출: "<span>9주</span> 암호 프로토콜..." 또는 "9주 암호 프로토콜..." -> 9
+    let weekNumberMatch = subject.title?.match(/<span[^>]*>(\d+)주<\/span>/)
+    if (!weekNumberMatch) {
+      weekNumberMatch = subject.title?.match(/(\d+)주/)
+    }
     const weekNumber = weekNumberMatch ? parseInt(weekNumberMatch[1], 10) : null
 
     // 주차 타이틀 추출: "<span>1주</span> 컴퓨터통신, 인터넷, 웹" -> "컴퓨터통신, 인터넷, 웹"
@@ -373,6 +376,8 @@ export const parseSubjectsJson = (subjectsJson, startLessonNumber = 1) => {
     if (typeof weekTitle === "string") {
       // <span>...</span> 태그 제거
       weekTitle = weekTitle.replace(/<span[^>]*>.*?<\/span>\s*/g, "").trim()
+      // "N주 " 텍스트 제거 (span이 없는 경우 대비)
+      weekTitle = weekTitle.replace(/^\d+주\s*/, "").trim()
       // 다른 HTML 태그도 제거
       weekTitle = weekTitle.replace(/<[^>]+>/g, "").trim()
     }
@@ -392,6 +397,8 @@ export const parseSubjectsJson = (subjectsJson, startLessonNumber = 1) => {
       if (typeof listItem === "string") {
         // <span>...</span> 태그 제거
         title = listItem.replace(/<span[^>]*>.*?<\/span>\s*/g, "").trim()
+        // "N차 " 텍스트 제거 (span이 없는 경우 대비)
+        title = title.replace(/^\d+차\s*/, "").trim()
         // 다른 HTML 태그도 제거
         title = title.replace(/<[^>]+>/g, "").trim()
       }
