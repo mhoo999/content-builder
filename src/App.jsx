@@ -5,12 +5,14 @@ import PreparationSection from "./components/Preparation/PreparationSection"
 import LearningSection from "./components/Learning/LearningSection"
 import SummarySection from "./components/Summary/SummarySectionNew"
 import StartModal from "./components/StartModal/StartModal"
+import TemplateModal from "./components/TemplateModal/TemplateModal"
 import {
   convertDataJsonToBuilderFormat,
   parseSubjectsJson,
   parseProfessorInfo,
   markRelativeImages,
 } from "./utils/folderParser"
+import { TEMPLATE_PRESETS, detectTemplatePreset, detectTemplateTheme } from "./models/templatePresets"
 import "./App.css"
 
 const STORAGE_KEY = "content-builder-autosave"
@@ -38,6 +40,8 @@ function App() {
         courseType: "general",
         year: "",
         backgroundImage: "",
+        templatePreset: "2025-standard",
+        templateTheme: "type-1",
         professor: createProfessorData(),
         lessons: [],
       }
@@ -62,6 +66,8 @@ function App() {
             courseType: parsed.courseType || "general",
             year: parsed.year || "",
             backgroundImage: parsed.backgroundImage || "",
+            templatePreset: parsed.templatePreset || "2025-standard",
+            templateTheme: parsed.templateTheme || "type-1",
             professor: parsed.professor || createProfessorData(),
             lessons: Array.isArray(parsed.lessons) ? parsed.lessons : [],
           }
@@ -76,6 +82,8 @@ function App() {
       courseType: "general",
       year: "",
       backgroundImage: "",
+      templatePreset: "2025-standard",
+      templateTheme: "type-1",
       professor: createProfessorData(),
       lessons: [],
     }
@@ -112,6 +120,8 @@ function App() {
                 courseName: "",
                 year: "",
                 backgroundImage: "",
+                templatePreset: "2025-standard",
+                templateTheme: "type-1",
                 professor: createProfessorData(),
                 lessons: [],
               })
@@ -150,6 +160,8 @@ function App() {
 
   // 시작하기 모달
   const [showStartModal, setShowStartModal] = useState(false)
+  // 템플릿 모달
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
 
   // 자동 저장 함수 (debounce 적용)
   const autoSave = useCallback((data, images) => {
@@ -233,6 +245,8 @@ function App() {
         courseName: "",
         year: "",
         backgroundImage: "",
+        templatePreset: "2025-standard",
+        templateTheme: "type-1",
         professor: createProfessorData(),
         lessons: [],
       })
@@ -539,6 +553,13 @@ function App() {
 
       const minLessonNumber = Math.min(...lessonNumbers)
 
+      // index.html 파일을 하나 찾아서 템플릿 판별용으로 사용
+      const indexHtmlFiles = files.filter((f) => f.webkitRelativePath.endsWith("index.html"))
+      let sampleHtmlContent = ""
+      if (indexHtmlFiles.length > 0) {
+        sampleHtmlContent = await indexHtmlFiles[0].text()
+      }
+
       // subjects.json 찾기
       const subjectsJsonFile = files.find((f) => f.webkitRelativePath.endsWith("subjects.json"))
       let lessonTitles = {}
@@ -693,6 +714,15 @@ function App() {
         }
       }
 
+      // 템플릿 프리셋 감지
+      const detectedPreset = detectTemplatePreset(
+        lessonData.length > 0 ? lessonData[0].dataJson : null, 
+        sampleHtmlContent
+      )
+
+      // 감지된 프리셋의 테마 설정
+      let presetTheme = detectTemplateTheme(detectedPreset, sampleHtmlContent);
+
       // 데이터 설정
       setCourseData({
         courseCode: courseCode,
@@ -700,6 +730,8 @@ function App() {
         courseType: courseType,
         year: "", // Import 시에는 연도 추출하지 않음 (수동 입력 필요)
         backgroundImage: "",
+        templatePreset: detectedPreset,
+        templateTheme: presetTheme,
         professor: professorInfo,
         lessons: lessons,
       })
@@ -717,11 +749,28 @@ function App() {
   }
 
   const currentLesson = courseData.lessons[currentLessonIndex]
+  const currentPreset = TEMPLATE_PRESETS[courseData.templatePreset] || TEMPLATE_PRESETS["2025-standard"]
 
   return (
     <div className="app">
       {/* 시작하기 모달 */}
       {showStartModal && <StartModal onClose={() => setShowStartModal(false)} onCreate={createLessonsFromModal} />}
+
+      {/* 템플릿 선택 모달 */}
+      {showTemplateModal && (
+        <TemplateModal 
+          onClose={() => setShowTemplateModal(false)}
+          activePreset={courseData.templatePreset || "2025-standard"}
+          activeTheme={courseData.templateTheme || "type-1"}
+          onApply={(preset, theme) => {
+            setCourseData(prev => ({
+              ...prev,
+              templatePreset: preset,
+              templateTheme: theme
+            }))
+          }}
+        />
+      )}
 
       {/* 헤더 */}
       <header className="header">
@@ -957,36 +1006,42 @@ function App() {
                 ) : (
                   <>
                     {/* 준비하기 섹션 */}
-                    <div id="section-preparation">
-                      <PreparationSection
-                        lessonData={currentLesson}
-                        onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
-                        courseCode={courseData.courseCode}
-                        year={courseData.year}
-                        courseType={courseData.courseType}
-                      />
-                    </div>
+                    {currentPreset.sections.includes("준비하기") && (
+                      <div id="section-preparation">
+                        <PreparationSection
+                          lessonData={currentLesson}
+                          onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+                          courseCode={courseData.courseCode}
+                          year={courseData.year}
+                          courseType={courseData.courseType}
+                        />
+                      </div>
+                    )}
 
                     {/* 학습하기 섹션 */}
-                    <div id="section-learning">
-                      <LearningSection
-                        lessonData={currentLesson}
-                        onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
-                        courseCode={courseData.courseCode}
-                        year={courseData.year}
-                      />
-                    </div>
+                    {currentPreset.sections.includes("학습하기") && (
+                      <div id="section-learning">
+                        <LearningSection
+                          lessonData={currentLesson}
+                          onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+                          courseCode={courseData.courseCode}
+                          year={courseData.year}
+                        />
+                      </div>
+                    )}
 
                     {/* 정리하기 섹션 */}
-                    <div id="section-summary">
-                      <SummarySection
-                        lessonData={currentLesson}
-                        onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
-                        courseCode={courseData.courseCode}
-                        year={courseData.year}
-                        courseType={courseData.courseType}
-                      />
-                    </div>
+                    {currentPreset.sections.includes("정리하기") && (
+                      <div id="section-summary">
+                        <SummarySection
+                          lessonData={currentLesson}
+                          onUpdate={(updated) => updateLesson(currentLessonIndex, updated)}
+                          courseCode={courseData.courseCode}
+                          year={courseData.year}
+                          courseType={courseData.courseType}
+                        />
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -1035,6 +1090,21 @@ function App() {
                         {courseData.courseName || <span className="empty-value">-</span>}
                       </div>
                     </div>
+                    <div className="form-group">
+                      <label>템플릿 프리셋 / 디자인</label>
+                      <div className="template-select-box" onClick={() => setShowTemplateModal(true)}>
+                        <div className="template-current-info">
+                          <div className="template-current-name">
+                            {TEMPLATE_PRESETS[courseData.templatePreset || "2025-standard"]?.name}
+                          </div>
+                          <div className="template-current-theme">
+                            테마: {TEMPLATE_PRESETS[courseData.templatePreset || "2025-standard"]?.themes.find(t => t.id === (courseData.templateTheme || "type-1"))?.name || courseData.templateTheme || "type-1"}
+                          </div>
+                        </div>
+                        <button className="btn-change-template" onClick={(e) => { e.stopPropagation(); setShowTemplateModal(true); }}>변경</button>
+                      </div>
+                      <small className="hint">Export 시 적용될 레이아웃 및 테마입니다.</small>
+                    </div>
                   </div>
 
                   {/* 교수 정보 */}
@@ -1053,20 +1123,22 @@ function App() {
                 <div className="sidebar-section">
                   <h3>목차</h3>
                   <nav className="toc-nav">
-                    <a
-                      href="#section-preparation"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const element = document.getElementById("section-preparation")
-                        if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      }}
-                      className="toc-link toc-main"
-                    >
-                      📚 준비하기
-                    </a>
-                    {currentLesson.weekNumber === 1 && currentLesson.lessonNumber === 1 && (
+                    {currentPreset.sections.includes("준비하기") && (
+                      <a
+                        href="#section-preparation"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const element = document.getElementById("section-preparation")
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="toc-link toc-main"
+                      >
+                        📚 준비하기
+                      </a>
+                    )}
+                    {currentPreset.features.hasOrientation && currentLesson.weekNumber === 1 && currentLesson.lessonNumber === 1 && (
                       <a
                         href="#subsection-orientation"
                         onClick={(e) => {
@@ -1081,7 +1153,7 @@ function App() {
                         오리엔테이션
                       </a>
                     )}
-                    {courseData.courseType === 'general' && (
+                    {currentPreset.features.hasTerm && courseData.courseType === 'general' && (
                       <a
                         href="#subsection-terms"
                         onClick={(e) => {
@@ -1096,98 +1168,112 @@ function App() {
                         용어체크
                       </a>
                     )}
-                    <a
-                      href="#subsection-objectives"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const element = document.getElementById("subsection-objectives")
-                        if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      }}
-                      className="toc-link toc-sub"
-                    >
-                      학습목표
-                    </a>
-                    <a
-                      href="#subsection-contents"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const element = document.getElementById("subsection-contents")
-                        if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      }}
-                      className="toc-link toc-sub"
-                    >
-                      학습내용
-                    </a>
-                    <a
-                      href="#section-learning"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const element = document.getElementById("section-learning")
-                        if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      }}
-                      className="toc-link toc-main"
-                    >
-                      🎓 학습하기
-                    </a>
-                    <a
-                      href="#subsection-opinion"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const element = document.getElementById("subsection-opinion")
-                        if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      }}
-                      className="toc-link toc-sub"
-                    >
-                      생각묻기
-                    </a>
-                    <a
-                      href="#subsection-lecture"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const element = document.getElementById("subsection-lecture")
-                        if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      }}
-                      className="toc-link toc-sub"
-                    >
-                      강의보기
-                    </a>
-                    <a
-                      href="#subsection-check"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const element = document.getElementById("subsection-check")
-                        if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      }}
-                      className="toc-link toc-sub"
-                    >
-                      점검하기
-                    </a>
-                    <a
-                      href="#section-summary"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const element = document.getElementById("section-summary")
-                        if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      }}
-                      className="toc-link toc-main"
-                    >
-                      ✅ 정리하기
-                    </a>
-                    {courseData.courseType === 'general' && (
+                    {currentPreset.features.hasObjectives && (
+                      <a
+                        href="#subsection-objectives"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const element = document.getElementById("subsection-objectives")
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="toc-link toc-sub"
+                      >
+                        학습목표
+                      </a>
+                    )}
+                    {currentPreset.sections.includes("준비하기") && (
+                      <a
+                        href="#subsection-contents"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const element = document.getElementById("subsection-contents")
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="toc-link toc-sub"
+                      >
+                        학습내용
+                      </a>
+                    )}
+                    {currentPreset.sections.includes("학습하기") && (
+                      <a
+                        href="#section-learning"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const element = document.getElementById("section-learning")
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="toc-link toc-main"
+                      >
+                        🎓 학습하기
+                      </a>
+                    )}
+                    {currentPreset.features.hasOpinion && (
+                      <a
+                        href="#subsection-opinion"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const element = document.getElementById("subsection-opinion")
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="toc-link toc-sub"
+                      >
+                        생각묻기
+                      </a>
+                    )}
+                    {currentPreset.features.hasLecture && (
+                      <a
+                        href="#subsection-lecture"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const element = document.getElementById("subsection-lecture")
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="toc-link toc-sub"
+                      >
+                        강의보기
+                      </a>
+                    )}
+                    {currentPreset.features.hasCheck && (
+                      <a
+                        href="#subsection-check"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const element = document.getElementById("subsection-check")
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="toc-link toc-sub"
+                      >
+                        점검하기
+                      </a>
+                    )}
+                    {currentPreset.sections.includes("정리하기") && (
+                      <a
+                        href="#section-summary"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const element = document.getElementById("section-summary")
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="toc-link toc-main"
+                      >
+                        ✅ 정리하기
+                      </a>
+                    )}
+                    {currentPreset.features.hasExercise && courseData.courseType === 'general' && (
                       <a
                         href="#subsection-exercises"
                         onClick={(e) => {
@@ -1202,32 +1288,36 @@ function App() {
                         연습문제
                       </a>
                     )}
-                    <a
-                      href="#subsection-summary"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const element = document.getElementById("subsection-summary")
-                        if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      }}
-                      className="toc-link toc-sub"
-                    >
-                      학습정리
-                    </a>
-                    <a
-                      href="#subsection-next"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const element = document.getElementById("subsection-next")
-                        if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      }}
-                      className="toc-link toc-sub"
-                    >
-                      다음안내
-                    </a>
+                    {currentPreset.features.hasTheorem && (
+                      <a
+                        href="#subsection-summary"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const element = document.getElementById("subsection-summary")
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="toc-link toc-sub"
+                      >
+                        학습정리
+                      </a>
+                    )}
+                    {currentPreset.features.hasNext && (
+                      <a
+                        href="#subsection-next"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const element = document.getElementById("subsection-next")
+                          if (element) {
+                            element.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        }}
+                        className="toc-link toc-sub"
+                      >
+                        다음안내
+                      </a>
+                    )}
                   </nav>
                 </div>
               )}
