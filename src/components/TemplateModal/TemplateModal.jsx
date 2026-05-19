@@ -75,41 +75,51 @@ function TemplateModal({ onClose, activePreset, activeTheme, onApply }) {
                   onClick={() => handlePresetSelect(preset.id)}
                 >
                   <div className="preset-thumbnail-placeholder">
+                    <img 
+                      key={`${preset.id}-${selectedPreset === preset.id ? selectedTheme : preset.themes[0].id}`}
+                      src={`/templates/${preset.id}-${selectedPreset === preset.id ? selectedTheme : preset.themes[0].id}.png`}
+                      alt={`${preset.name} 썸네일`}
+                      className="preset-thumbnail-img"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                      onLoad={(e) => {
+                        e.target.style.display = 'block';
+                      }}
+                    />
+                    <div className="fallback-placeholder">미리보기 준비중</div>
                     <span className="preset-section-badge">{preset.sections.length}섹션</span>
+                  </div>
+                  <div className="preset-info">
                     <div className="preset-sections-list">
                       {preset.sections.map((sec, i) => (
                         <span key={i} className="sec-item">{sec}</span>
                       ))}
                     </div>
-                  </div>
-                  <div className="preset-info">
                     <h3>{preset.name}</h3>
                     <p>{preset.description}</p>
+                  </div>
+                  <div className="card-theme-options">
+                    {preset.themes.map(theme => (
+                      <button 
+                        key={theme.id}
+                        type="button"
+                        className={`card-theme-btn ${selectedPreset === preset.id && selectedTheme === theme.id ? 'selected' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPreset(preset.id);
+                          setSelectedTheme(theme.id);
+                        }}
+                      >
+                        {theme.name.split(' (')[0]}
+                      </button>
+                    ))}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* 하단: 선택된 템플릿의 디자인 테마 선택 */}
-            {currentPresetObj && (
-              <div className="theme-selection-area">
-                <h4>🎨 디자인 테마 선택</h4>
-                <div className="theme-options">
-                  {currentPresetObj.themes.map(theme => (
-                    <label key={theme.id} className={`theme-radio-label ${selectedTheme === theme.id ? 'selected' : ''}`}>
-                      <input 
-                        type="radio" 
-                        name="theme" 
-                        value={theme.id} 
-                        checked={selectedTheme === theme.id}
-                        onChange={() => setSelectedTheme(theme.id)}
-                      />
-                      {theme.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* 하단 테마 선택 영역은 카드 내부로 이동됨 */}
           </div>
         </div>
 
