@@ -12,7 +12,7 @@ import {
   parseProfessorInfo,
   markRelativeImages,
 } from "./utils/folderParser"
-import { TEMPLATE_PRESETS, detectTemplatePreset, detectTemplateTheme } from "./models/templatePresets"
+import { TEMPLATE_PRESETS, detectTemplatePreset, detectTemplateTheme, getAllTemplates, getTemplateById } from "./models/templatePresets"
 import "./App.css"
 
 const STORAGE_KEY = "content-builder-autosave"
@@ -58,6 +58,14 @@ function App() {
             // importedImages는 별도 state이므로 여기서 직접 설정할 수 없음
             // useEffect에서 처리하도록 임시 저장
             window.__restoredImportedImages = parsed.importedImages
+          }
+          // importedSubtitles 복원 (별도 처리 필요)
+          if (parsed.importedSubtitles && Object.keys(parsed.importedSubtitles).length > 0) {
+            window.__restoredImportedSubtitles = parsed.importedSubtitles
+          }
+          // examWeeks 복원 (별도 처리 필요)
+          if (parsed.examWeeks && Array.isArray(parsed.examWeeks) && parsed.examWeeks.length > 0) {
+            window.__restoredExamWeeks = parsed.examWeeks
           }
 
           return {
@@ -125,15 +133,29 @@ function App() {
                 professor: createProfessorData(),
                 lessons: [],
               })
-              // importedImages도 초기화
+              // importedImages, importedSubtitles, examWeeks도 초기화
               setImportedImages({})
+              setImportedSubtitles({})
+              setExamWeeks([])
               delete window.__restoredImportedImages
+              delete window.__restoredImportedSubtitles
+              delete window.__restoredExamWeeks
             } else {
-              // 불러오기를 선택한 경우 importedImages 복원
+              // 불러오기를 선택한 경우 importedImages, importedSubtitles, examWeeks 복원
               if (window.__restoredImportedImages) {
                 setImportedImages(window.__restoredImportedImages)
                 delete window.__restoredImportedImages
                 console.log("Restored importedImages from localStorage")
+              }
+              if (window.__restoredImportedSubtitles) {
+                setImportedSubtitles(window.__restoredImportedSubtitles)
+                delete window.__restoredImportedSubtitles
+                console.log("Restored importedSubtitles from localStorage")
+              }
+              if (window.__restoredExamWeeks) {
+                setExamWeeks(window.__restoredExamWeeks)
+                delete window.__restoredExamWeeks
+                console.log("Restored examWeeks from localStorage")
               }
             }
           }
@@ -147,6 +169,12 @@ function App() {
 
   // 임포트된 이미지 저장소 (경로 -> base64)
   const [importedImages, setImportedImages] = useState({})
+
+  // 임포트된 자막 저장소 (파일명 -> 내용)
+  const [importedSubtitles, setImportedSubtitles] = useState({})
+
+  // 시험 주차 (중간고사/기말고사 등, lists가 없는 주차)
+  const [examWeeks, setExamWeeks] = useState([])
 
   // 현재 편집 중인 차시
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0)
@@ -164,7 +192,7 @@ function App() {
   const [showTemplateModal, setShowTemplateModal] = useState(false)
 
   // 자동 저장 함수 (debounce 적용)
-  const autoSave = useCallback((data, images) => {
+  const autoSave = useCallback((data, images, subtitles, exams) => {
     // localStorage 사용 불가능한 경우
     if (!isLocalStorageAvailable()) {
       setSaveStatus("저장 불가 (시크릿 모드)")
@@ -181,7 +209,7 @@ function App() {
     // 1초 후 저장 (debounce)
     saveTimeoutRef.current = setTimeout(() => {
       try {
-        const dataToSave = { ...data, importedImages: images || {} }
+        const dataToSave = { ...data, importedImages: images || {}, importedSubtitles: subtitles || {}, examWeeks: exams || [] }
         const dataStr = JSON.stringify(dataToSave)
         const dataSize = new Blob([dataStr]).size
 
@@ -205,11 +233,11 @@ function App() {
     }, 1000)
   }, [])
 
-  // courseData 또는 importedImages 변경 시 자동 저장
+  // courseData 또는 importedImages/importedSubtitles 변경 시 자동 저장
   useEffect(() => {
     // 초기 로드 시에는 저장하지 않음
     if (courseData.lessons.length > 0 || courseData.courseCode) {
-      autoSave(courseData, importedImages)
+      autoSave(courseData, importedImages, importedSubtitles, examWeeks)
     }
 
     return () => {
@@ -217,13 +245,13 @@ function App() {
         clearTimeout(saveTimeoutRef.current)
       }
     }
-  }, [courseData, importedImages, autoSave])
+  }, [courseData, importedImages, importedSubtitles, examWeeks, autoSave])
 
   // 페이지 언로드 시 즉시 저장
   useEffect(() => {
     const handleBeforeUnload = () => {
       try {
-        const dataToSave = { ...courseData, importedImages }
+        const dataToSave = { ...courseData, importedImages, importedSubtitles, examWeeks }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave))
       } catch (error) {
         console.error("페이지 종료 시 저장 실패:", error)
@@ -234,7 +262,7 @@ function App() {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
     }
-  }, [courseData, importedImages])
+  }, [courseData, importedImages, importedSubtitles])
 
   // 초기화 함수 (로고 클릭 시)
   const resetToHome = () => {
@@ -480,9 +508,13 @@ function App() {
 
     // 익스포트할 데이터 준비
     // importedImages는 이미 base64로 변환되어 있음 (export 시 원본 이미지 복사용)
+    // importedSubtitles는 자막 파일 내용 (export 시 복사용)
+    // examWeeks는 시험 주차 (중간고사/기말고사 등, lists가 없는 주차)
     const exportData = {
       ...convertedData,
       importedImages: importedImages, // export 시 원본 이미지 복사용
+      importedSubtitles: importedSubtitles, // export 시 자막 파일 복사용
+      examWeeks: examWeeks, // 시험 주차 (중간고사/기말고사 등)
     }
 
     try {
@@ -564,6 +596,7 @@ function App() {
       const subjectsJsonFile = files.find((f) => f.webkitRelativePath.endsWith("subjects.json"))
       let lessonTitles = {}
       let weekTitles = {}
+      let examWeeks = [] // 시험 주차 (중간고사/기말고사 등)
 
       if (subjectsJsonFile) {
         const subjectsText = await subjectsJsonFile.text()
@@ -572,6 +605,7 @@ function App() {
         const parsed = parseSubjectsJson(subjectsData, minLessonNumber)
         lessonTitles = parsed.lessonTitles
         weekTitles = parsed.weekTitles
+        examWeeks = parsed.examWeeks || []
       }
 
       // 이미지 파일들 찾기 (base64 변환하지 않음, 원본과 동일하게 상대경로만 유지)
@@ -610,6 +644,33 @@ function App() {
       setImportedImages(imageStore)
       console.log(`Imported ${Object.keys(imageStore).length} images`)
 
+      // 자막 파일들 찾기 (.vtt 파일)
+      const subtitleFiles = files.filter((f) => {
+        const path = f.webkitRelativePath.toLowerCase()
+        return path.includes("/subtitles/") && path.endsWith(".vtt")
+      })
+
+      // 자막 파일 읽어서 저장
+      const subtitleStore = {}
+      await Promise.all(
+        subtitleFiles.map(async (file) => {
+          const pathParts = file.webkitRelativePath.split("/")
+          const filename = pathParts[pathParts.length - 1]
+          const content = await file.text()
+          subtitleStore[filename] = content
+        }),
+      )
+
+      // 자막 저장소 업데이트
+      setImportedSubtitles(subtitleStore)
+      console.log(`Imported ${Object.keys(subtitleStore).length} subtitles`)
+
+      // 시험 주차 저장 (중간고사/기말고사 등)
+      setExamWeeks(examWeeks)
+      if (examWeeks.length > 0) {
+        console.log(`Imported ${examWeeks.length} exam weeks:`, examWeeks.map((w) => `${w.weekNumber}주 ${w.weekTitle}`).join(", "))
+      }
+
       // 차시 번호 추출 및 정렬 (이미 위에서 dataJsonFiles를 찾았음)
       const lessonData = await Promise.all(
         dataJsonFiles.map(async (file) => {
@@ -640,35 +701,46 @@ function App() {
       }
 
       // Builder 형식으로 변환 + 상대경로 이미지 마킹 및 임시 base64 변환 (표시용)
+      // Use new parser system with sampleHtmlContent for template detection
       const lessons = lessonData.map((item, index) => {
-        const builderLesson = convertDataJsonToBuilderFormat(item.dataJson, item.lessonNumber)
+        const builderLesson = convertDataJsonToBuilderFormat(
+          item.dataJson,
+          item.lessonNumber,
+          sampleHtmlContent, // Use sample HTML for template detection
+          imageStore // Pass imported images
+        )
         builderLesson.lessonTitle = lessonTitles[item.lessonNumber] || `${item.lessonNumber}차시`
         builderLesson.weekTitle = weekTitles[builderLesson.weekNumber] || ""
 
-        // 이미지가 포함된 필드들에 data-original-src 속성 추가 및 임시 base64 변환
-        // 용어 내용
-        if (builderLesson.terms) {
-          builderLesson.terms = builderLesson.terms.map((term) => ({
-            ...term,
-            content: markRelativeImages(term.content, imageStore),
-          }))
-        }
-        // 교수님 의견
-        if (builderLesson.professorThink) {
-          builderLesson.professorThink = markRelativeImages(builderLesson.professorThink, imageStore)
-        }
-        // 연습문제 (문항, 해설, 선택지)
-        if (builderLesson.exercises) {
-          builderLesson.exercises = builderLesson.exercises.map((ex) => ({
-            ...ex,
-            question: markRelativeImages(ex.question, imageStore),
-            commentary: markRelativeImages(ex.commentary, imageStore),
-            options: ex.options ? ex.options.map((opt) => markRelativeImages(opt, imageStore)) : [],
-          }))
-        }
-        // 학습정리
-        if (builderLesson.summary) {
-          builderLesson.summary = builderLesson.summary.map((s) => markRelativeImages(s, imageStore))
+        // Note: Image marking is now handled by the new parser system
+        // Legacy code below is kept for backward compatibility
+        if (!sampleHtmlContent) {
+          // If no HTML content, use legacy parser which requires manual image marking
+          // 이미지가 포함된 필드들에 data-original-src 속성 추가 및 임시 base64 변환
+          // 용어 내용
+          if (builderLesson.terms) {
+            builderLesson.terms = builderLesson.terms.map((term) => ({
+              ...term,
+              content: markRelativeImages(term.content, imageStore),
+            }))
+          }
+          // 교수님 의견
+          if (builderLesson.professorThink) {
+            builderLesson.professorThink = markRelativeImages(builderLesson.professorThink, imageStore)
+          }
+          // 연습문제 (문항, 해설, 선택지)
+          if (builderLesson.exercises) {
+            builderLesson.exercises = builderLesson.exercises.map((ex) => ({
+              ...ex,
+              question: markRelativeImages(ex.question, imageStore),
+              commentary: markRelativeImages(ex.commentary, imageStore),
+              options: ex.options ? ex.options.map((opt) => markRelativeImages(opt, imageStore)) : [],
+            }))
+          }
+          // 학습정리
+          if (builderLesson.summary) {
+            builderLesson.summary = builderLesson.summary.map((s) => markRelativeImages(s, imageStore))
+          }
         }
 
         return builderLesson
@@ -749,7 +821,7 @@ function App() {
   }
 
   const currentLesson = courseData.lessons[currentLessonIndex]
-  const currentPreset = TEMPLATE_PRESETS[courseData.templatePreset] || TEMPLATE_PRESETS["2025-standard"]
+  const currentPreset = getTemplateById(courseData.templatePreset) || getTemplateById("2025-standard")
 
   return (
     <div className="app">
@@ -1095,10 +1167,10 @@ function App() {
                       <div className="template-select-box" onClick={() => setShowTemplateModal(true)}>
                         <div className="template-current-info">
                           <div className="template-current-name">
-                            {TEMPLATE_PRESETS[courseData.templatePreset || "2025-standard"]?.name}
+                            {getTemplateById(courseData.templatePreset || "2025-standard")?.name}
                           </div>
                           <div className="template-current-theme">
-                            테마: {TEMPLATE_PRESETS[courseData.templatePreset || "2025-standard"]?.themes.find(t => t.id === (courseData.templateTheme || "type-1"))?.name || courseData.templateTheme || "type-1"}
+                            테마: {getTemplateById(courseData.templatePreset || "2025-standard")?.themes.find(t => t.id === (courseData.templateTheme || "type-1"))?.name || courseData.templateTheme || "type-1"}
                           </div>
                         </div>
                         <button className="btn-change-template" onClick={(e) => { e.stopPropagation(); setShowTemplateModal(true); }}>변경</button>

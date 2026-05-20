@@ -27,6 +27,56 @@ if sys.platform == 'win32':
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 
+def legacy_json_dumps(obj, indent='\t', use_space_separator=True):
+    """
+    레거시 템플릿용 커스텀 JSON 직렬화
+    - sections 배열은 한 줄로 유지
+    - 탭 들여쓰기
+    - use_space_separator=True: ' : ' (2018), False: ': ' (2019+)
+    """
+    separator = ' : ' if use_space_separator else ': '
+
+    def serialize_value(value, level=0):
+        indent_str = indent * level
+        next_indent = indent * (level + 1)
+
+        if value is None:
+            return 'null'
+        elif isinstance(value, bool):
+            return 'true' if value else 'false'
+        elif isinstance(value, (int, float)):
+            return str(value)
+        elif isinstance(value, str):
+            # JSON 이스케이프
+            escaped = value.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+            return f'"{escaped}"'
+        elif isinstance(value, list):
+            # sections 배열은 한 줄로 (문자열 배열이고 4개 이하인 경우)
+            if all(isinstance(item, str) for item in value) and len(value) <= 4:
+                # 각 아이템도 제대로 escape 처리
+                items = ', '.join(serialize_value(item, 0) for item in value)
+                return f'[{items}]'
+            # 다른 배열은 여러 줄로
+            if not value:
+                return '[]'
+            items = []
+            for item in value:
+                items.append(f'{next_indent}{serialize_value(item, level + 1)}')
+            return '[\n' + ',\n'.join(items) + f'\n{indent_str}]'
+        elif isinstance(value, dict):
+            if not value:
+                return '{}'
+            items = []
+            for key, val in value.items():
+                serialized_val = serialize_value(val, level + 1)
+                items.append(f'{next_indent}"{key}"{separator}{serialized_val}')
+            return '{\n' + ',\n'.join(items) + f'\n{indent_str}}}'
+        else:
+            return 'null'
+
+    return serialize_value(obj)
+
+
 def clean_html_for_export(html_content):
     """
     HTML에서 에디터 관련 속성 정리 (data-original-src를 src로 변환, notion-image 클래스 등)
@@ -49,8 +99,8 @@ def clean_html_for_export(html_content):
         original_src_match = re.search(r'data-original-src=["\']([^"\']+)["\']', full_tag)
         if original_src_match:
             original_src = original_src_match.group(1)
-            # src를 data-original-src로 교체
-            full_tag = re.sub(r'src=["\'][^"\']+["\']', f'src=\"{original_src}\"', full_tag)
+            # src를 data-original-src로 교체 (작은따옴표 사용)
+            full_tag = re.sub(r'src=["\'][^"\']+["\']', f"src='{original_src}'", full_tag)
             # data-original-src 제거
             full_tag = re.sub(r'\s*data-original-src=["\'][^"\']*["\']', '', full_tag)
             return full_tag
@@ -157,6 +207,15 @@ def clean_html_for_export(html_content):
             return f"<ol style='color:#000;margin-bottom: 4px;'>{h3_counter['count']}) {h3_content}</ol>"
 
     html_content = re.sub(r'<h3>(.*?)</h3>', convert_h3_to_ol, html_content, flags=re.DOTALL)
+
+    # 모든 HTML 속성의 큰따옴표를 작은따옴표로 변환
+    # JSON 직렬화 시 escape 문제를 방지하기 위함
+    # 패턴: <태그 속성="값"> → <태그 속성='값'>
+    html_content = re.sub(
+        r'(<[^>]*?)\s+([a-zA-Z-]+)="([^"]*?)"',
+        r"\1 \2='\3'",
+        html_content
+    )
 
     return html_content
 
@@ -389,21 +448,22 @@ def extract_and_save_images(html_content, images_dir, course_code, image_counter
     return result
 
 
-def create_intro_page(professor, processed_photo=None, lesson_title=None):
+def create_intro_page(professor, processed_photo=None, lesson_title=None, is_2018_template=False):
     """인트로 페이지 생성
-    
+
     Args:
         professor: 교수 정보 딕셔너리
         processed_photo: 이미 처리된 교수 사진 경로 (None이면 professor.photo 사용)
         lesson_title: 차시 타이틀 (선택사항)
+        is_2018_template: 2018 템플릿 여부 (교수 정보 제목 형식 결정)
     """
     photo = processed_photo if processed_photo is not None else professor.get("photo", "")
-    
+
     # 인트로 media 경로: 원본이 있으면 사용, 없으면 기본값
     intro_media = professor.get("introMedia", "")
     if not intro_media:
         intro_media = "../../../resources/media/common_start.mp3"
-    
+
     # 경력 변환: [{ period: '', description: '' }] → ['<b>period</b><br />description']
     career_content = []
     if isinstance(professor.get("career"), list):
@@ -421,24 +481,28 @@ def create_intro_page(professor, processed_photo=None, lesson_title=None):
             elif isinstance(career_item, str) and career_item.strip():
                 # 기존 형식 호환 (문자열인 경우 그대로 사용)
                 career_content.append(career_item)
-    
+
+    # 2018 템플릿: 일반 공백 1개, 기타: 전각 공백
+    edu_title = "학 력" if is_2018_template else "학　력"
+    career_title = "경 력" if is_2018_template else "경　력"
+
     intro_data = {
         "professor": {
             "name": professor["name"],
             "photo": photo,
             "profile": [
                 {
-                    "title": "학　력",
+                    "title": edu_title,
                     "content": professor.get("education", [])
                 },
                 {
-                    "title": "경　력",
+                    "title": career_title,
                     "content": career_content
                 }
             ]
         }
     }
-    
+
     result = {
         "path": "",
         "section": 0,
@@ -447,7 +511,7 @@ def create_intro_page(professor, processed_photo=None, lesson_title=None):
         "media": intro_media,
         "data": intro_data
     }
-    
+
     return result
 
 
@@ -487,23 +551,23 @@ def create_orientation_page(orientation, course_code=None, year=None):
     }
 
 
-def create_term_page(terms, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None, image_cache=None):
+def create_term_page(terms, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None, image_cache=None, is_legacy=False, description=None, script=None):
     """용어체크 페이지 생성"""
     term_data = []
     for term in terms:
         if term.get("title") or term.get("content"):
             title = term.get("title", "")
             content_list = term.get("content", [])
-            
+
             # 제목의 줄바꿈을 <br />로 변환
             if title:
                 title = title.replace('\n', '<br />')
-            
+
             # content가 배열인 경우 각 항목 앞에 불릿(•) 추가
             # content가 문자열인 경우 (기존 형식 호환) 배열로 변환
             if isinstance(content_list, str):
                 content_list = [content_list] if content_list else []
-            
+
             # 각 항목을 처리 (불릿은 HTML 클래스에서 제공되므로 추가하지 않음)
             processed_content = []
             for content_item in content_list:
@@ -513,18 +577,31 @@ def create_term_page(terms, images_dir=None, course_code=None, image_counter=Non
                     if images_dir and course_code and image_counter:
                         processed_item = extract_and_save_images(content_item, images_dir, course_code, image_counter, imported_path_mapping, image_cache)
                     processed_content.append(processed_item)
-            
-            term_data.append({
-                "title": title,
-                "content": processed_content if processed_content else []
-            })
+
+            # 레거시 템플릿: content를 단일 문자열로 저장
+            if is_legacy and processed_content:
+                # 배열의 첫 번째 항목만 사용 (레거시 형식)
+                term_data.append({
+                    "title": title,
+                    "content": processed_content[0]
+                })
+            else:
+                # 최신 템플릿: content를 배열로 저장
+                term_data.append({
+                    "title": title,
+                    "content": processed_content if processed_content else []
+                })
+
+    # 원본 description/script 우선 사용
+    final_description = description if description else "이번 시간에 다룰 주요 용어를 체크해보세요."
+    final_script = script if script else "이번 시간에 다룰 주요 용어를 체크해보세요."
 
     return {
         "path": "/term",
         "section": 1,
         "title": "용어체크",
-        "description": "이번 시간에 다룰 주요 용어를 체크해보세요.",
-        "script": "이번 시간에 다룰 주요 용어를 체크해보세요.",
+        "description": final_description,
+        "script": final_script,
         "component": "term",
         "media": "../../../resources/media/common_word.mp3",
         "data": term_data
@@ -539,13 +616,12 @@ def is_practice_content_empty(content):
     if "class='practice'" not in content and 'class="practice"' not in content:
         return False
     # HTML 태그 제거 후 텍스트만 추출
-    import re
     text = re.sub(r'<[^>]+>', '', content)
     text = text.strip()
     # 비어있거나 공백만 있으면 True
     return not text or not text.strip()
     
-def create_objectives_page(contents, objectives, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None, image_cache=None):
+def create_objectives_page(contents, objectives, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None, image_cache=None, description=None, script=None):
     """학습목표 페이지 생성"""
     # 실습 항목 제외하고 학습내용 필터링
     filtered_contents = []
@@ -555,7 +631,7 @@ def create_objectives_page(contents, objectives, images_dir=None, course_code=No
             if images_dir and course_code and image_counter:
                 c = extract_and_save_images(c, images_dir, course_code, image_counter, imported_path_mapping, image_cache)
             filtered_contents.append(c)
-    
+
     # 학습목표도 이미지 처리
     processed_objectives = []
     for obj in objectives:
@@ -564,37 +640,57 @@ def create_objectives_page(contents, objectives, images_dir=None, course_code=No
             if images_dir and course_code and image_counter:
                 obj = extract_and_save_images(obj, images_dir, course_code, image_counter, imported_path_mapping, image_cache)
             processed_objectives.append(obj)
-    
-    # 학습내용과 학습목표에 자동 넘버링 추가 (단, 실습 항목은 제외)
-    numbered_contents = []
-    content_number = 1
-    for c in filtered_contents:
-        if c:
-            # 실습 항목(<div class='practice'>)은 넘버링 없이 그대로 추가
-            if c.strip().startswith("<div class='practice'>"):
-                numbered_contents.append(c)
-            else:
-                numbered_contents.append(f"{content_number}. {c}")
-                content_number += 1
 
-    numbered_objectives = [f"{i+1}. {o}" for i, o in enumerate(processed_objectives) if o]
-    
+    # 자동 넘버링 추가 여부 판단: 첫 항목에 이미 번호가 있으면 추가하지 않음
+    has_numbering = False
+    if filtered_contents and filtered_contents[0]:
+        # "1. " 또는 "1) " 형태로 시작하는지 확인
+        has_numbering = bool(re.match(r'^\d+[\.\)]\s', filtered_contents[0]))
+
+    # 학습내용 처리
+    final_contents = []
+    if has_numbering:
+        # 이미 번호가 있으면 그대로 사용
+        final_contents = filtered_contents
+    else:
+        # 번호가 없으면 자동 추가 (단, 실습 항목은 제외)
+        content_number = 1
+        for c in filtered_contents:
+            if c:
+                # 실습 항목(<div class='practice'>)은 넘버링 없이 그대로 추가
+                if c.strip().startswith("<div class='practice'>"):
+                    final_contents.append(c)
+                else:
+                    final_contents.append(f"{content_number}. {c}")
+                    content_number += 1
+
+    # 학습목표 처리
+    obj_has_numbering = False
+    if processed_objectives and processed_objectives[0]:
+        obj_has_numbering = bool(re.match(r'^\d+[\.\)]\s', processed_objectives[0]))
+
+    final_objectives = processed_objectives if obj_has_numbering else [f"{i+1}. {o}" for i, o in enumerate(processed_objectives) if o]
+
+    # 원본 description/script 우선 사용
+    final_description = description if description else "주요 학습내용과 학습목표를 살펴보세요."
+    final_script = script if script else "이번 시간에 학습할 주요 학습 내용과 학습목표를 확인해보세요."
+
     return {
         "path": "/objectives",
         "section": 1,
         "title": "학습목표",
-        "description": "주요 학습내용과 학습목표를 살펴보세요.",
-        "script": "이번 시간에 학습할 주요 학습 내용과 학습목표를 확인해보세요.",
+        "description": final_description,
+        "script": final_script,
         "component": "objectives",
         "media": "../../../resources/media/common_goal.mp3",
         "data": [
             {
                 "title": "학습내용",
-                "contents": numbered_contents
+                "contents": final_contents
             },
             {
                 "title": "학습목표",
-                "contents": numbered_objectives
+                "contents": final_objectives
             }
         ]
     }
@@ -639,7 +735,15 @@ def create_lecture_page(lesson, course_code=None, year=None):
     timestamps = []
     for ts in lesson.get("timestamps", []):
         if ts:
-            timestamps.append({"time": ts})
+            # 타임스탬프가 객체인 경우 (time, title)
+            if isinstance(ts, dict):
+                ts_entry = {"time": ts.get("time", "")}
+                if ts.get("title"):
+                    ts_entry["title"] = ts["title"]
+                timestamps.append(ts_entry)
+            # 타임스탬프가 문자열인 경우 (기존 호환)
+            else:
+                timestamps.append({"time": ts})
 
     return {
         "path": "/lecture",
@@ -694,7 +798,15 @@ def create_practice_page(lesson, course_code=None, year=None):
     if "practiceTimestamps" in lesson and isinstance(lesson["practiceTimestamps"], list):
         for ts in lesson["practiceTimestamps"]:
             if ts:
-                practice_timestamps.append({"time": ts})
+                # 타임스탬프가 객체인 경우 (time, title)
+                if isinstance(ts, dict):
+                    ts_entry = {"time": ts.get("time", "")}
+                    if ts.get("title"):
+                        ts_entry["title"] = ts["title"]
+                    practice_timestamps.append(ts_entry)
+                # 타임스탬프가 문자열인 경우 (기존 호환)
+                else:
+                    practice_timestamps.append({"time": ts})
     
     return {
         "path": "/practice",
@@ -714,7 +826,7 @@ def create_practice_page(lesson, course_code=None, year=None):
     }
 
 
-def create_check_page(lesson, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None, image_cache=None):
+def create_check_page(lesson, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None, image_cache=None, description=None, script=None):
     """점검하기 페이지 생성"""
     professor_think = lesson.get("professorThink", "")
 
@@ -736,12 +848,16 @@ def create_check_page(lesson, images_dir=None, course_code=None, image_counter=N
         else:
             processed_think_image = professor_think_image
 
+    # 원본 description/script 우선 사용
+    final_description = description if description else "질문에 대한 교수님의 생각을 확인해보세요."
+    final_script = script if script else "질문에 대한 교수님의 생각을 확인해보세요."
+
     return {
         "path": "/check",
         "section": 2,
         "title": "점검하기",
-        "description": "질문에 대한 교수님의 생각을 확인해보세요.",
-        "script": "질문에 대한 교수님의 생각을 확인해보세요.",
+        "description": final_description,
+        "script": final_script,
         "component": "check",
         "media": "../../../resources/media/common_check.mp3",
         "data": {
@@ -879,44 +995,20 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
 
 def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None, image_cache=None):
     """학습정리 페이지 생성"""
-    import re
     summary = [s for s in lesson["summary"] if s]
-    
+
     # 학습정리 내용의 이미지 추출 및 저장
     if images_dir and course_code and image_counter:
         summary = [
             extract_and_save_images(s, images_dir, course_code, image_counter, imported_path_mapping, image_cache) if s else s
             for s in summary
         ]
-    
-    # 모든 항목의 첫 번째 <p> 태그에 class='main-title' 추가
-    # H1 태그를 <p class='main-title'><strong>로 변환
-    # 첫 번째 <li> 태그가 아닌 H1이나 첫 번째 <p> 태그만 볼드처리
-    processed_summary = []
-    for s in summary:
-        if s and isinstance(s, str):
-            # H1 태그를 <p class='main-title'><strong>내용</strong></p>로 변환
-            # <h1>내용</h1> → <p class='main-title'><strong>내용</strong></p>
-            s = re.sub(r'<h1[^>]*>(.*?)</h1>', r"<p class='main-title'><strong>\1</strong></p>", s, flags=re.DOTALL)
-            
-            # 이미 class='main-title'이 있으면 그대로 유지
-            if "<p class='main-title'>" in s or '<p class="main-title">' in s or "<p class=\"main-title\">" in s:
-                processed_summary.append(s)
-            else:
-                # 첫 번째 <p> 태그를 찾아서 class='main-title' 추가
-                # 단, <ul> 또는 <li> 안에 있는 <p> 태그는 제외 (첫 번째 불렛이 볼드처리되지 않도록)
-                # <p> 태그가 <ul> 또는 <li> 태그 앞에 있는 경우만 처리
-                if not re.search(r'<ul[^>]*>.*?<p', s, re.DOTALL) and not re.search(r'<li[^>]*>.*?<p', s, re.DOTALL):
-                    # <p> 또는 <p 속성> 형태를 찾아서 <p class='main-title'>로 변경
-                    # <p> 태그 뒤에 공백이나 >가 오는 경우 처리
-                    s = re.sub(r'<p(\s[^>]*)?>', r"<p class='main-title'\1>", s, count=1)
-                else:
-                    # <ul> 또는 <li> 앞에 <p> 태그가 있는 경우만 처리
-                    # <ul> 또는 <li> 태그 앞의 첫 번째 <p> 태그에만 class='main-title' 추가
-                    s = re.sub(r'(<p(\s[^>]*)?>)(?![^<]*<(?:ul|li))', r"<p class='main-title'\2>", s, count=1)
-                processed_summary.append(s)
-        else:
-            processed_summary.append(s)
+
+    # 원본 데이터를 최대한 보존 (class 변환 등을 하지 않음)
+    processed_summary = summary
+
+    # reference 필드 보존
+    reference = lesson.get("reference", "")
 
     return {
         "path": "/theorem",
@@ -928,29 +1020,20 @@ def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter
         "media": "../../../resources/media/common_summary.mp3",
         "data": {
             "theorem": processed_summary,
-            "reference": ""
+            "reference": reference
         }
     }
 
 
-def create_next_page(next_lesson=None):
+def create_next_page(week_titles_list):
     """다음안내 페이지 생성
-    
+
     Args:
-        next_lesson: 다음 차시 정보 딕셔너리 (lessonNumber, lessonTitle 등)
+        week_titles_list: 전체 주차 제목 리스트 (문자열 배열)
     """
-    next_data = []
-    
-    # 다음 차시 정보가 있으면 추가
-    if next_lesson:
-        lesson_num = next_lesson.get("lessonNumber", "")
-        lesson_title = next_lesson.get("lessonTitle", "")
-        if lesson_num and lesson_title:
-            next_data.append({
-                "number": lesson_num,
-                "title": lesson_title
-            })
-    
+    # 주차 제목 리스트를 문자열 배열로 반환
+    next_data = week_titles_list if week_titles_list else []
+
     return {
         "path": "/next",
         "section": 3,
@@ -959,7 +1042,6 @@ def create_next_page(next_lesson=None):
         "script": "이것으로 이번 시간 강의를 마쳤습니다. 수고하셨습니다.",
         "component": "next",
         "media": "../../../resources/media/common_out.mp3",
-        "photo": "../images/professor.png",
         "data": next_data
     }
 
@@ -967,17 +1049,51 @@ def create_next_page(next_lesson=None):
 def get_index_html_template(preset_id="2025-standard", theme="type-1"):
     """index.html 템플릿 반환 (프리셋 기반 동적 생성)"""
     preset = export_templates.TEMPLATE_PRESETS.get(preset_id, export_templates.TEMPLATE_PRESETS["2025-standard"])
-    
+
     # 테마(디자인) 값이 없으면 프리셋의 첫 번째 기본 테마를 사용
     if not theme and "themes" in preset and len(preset["themes"]) > 0:
         theme = preset["themes"][0]["id"]
     elif not theme:
         theme = "type-1"
-        
+
     html_head = preset.get("html_head", "").replace("{theme}", theme)
     html_head_scripts = preset.get("html_head_scripts", "")
     html_body_scripts = preset.get("html_body_scripts", "")
-    
+
+    # 레거시 템플릿 확인
+    is_legacy = any(preset_id.startswith(prefix) for prefix in ["2018", "2019", "2020", "2021"])
+
+    # 레거시 템플릿은 다른 제목과 CSS 순서 사용
+    if is_legacy:
+        title = " 원격교육원 "
+        return f'''<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no" />
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>{title}</title>
+	<script src="../../../resources/scripts/jquery/jquery.js"></script>
+	<script src="../../../resources/scripts/vue/vue.min.js"></script>
+	<script src="../../../resources/scripts/vue/vue-router.min.js"></script>
+
+{html_head_scripts}
+
+{html_head}
+	<link rel="stylesheet" media="print" type="text/css" href="../../../resources/styles/print.css">
+</head>
+<body>
+	<div id="app"></div>
+	<script src="../../../resources/scripts/app.js"></script>
+	<script src="../../../resources/scripts/commons.js"></script>
+	<script src="../../../resources/scripts/videojs/video.min.js"></script>
+	<script src="../../../resources/scripts/videojs/videojs-contrib-hls.min.js"></script>
+	<script src="../../../resources/scripts/videojs/videojs.hotkeys.min.js"></script> 
+</body>
+</html>
+'''
+
+    # 최신 템플릿 (2022+)
     return f'''<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -1020,29 +1136,55 @@ def create_subjects_json(course_data, preset_id="2025-standard"):
             weeks[week_num] = {
                 "weekNumber": week_num,
                 "weekTitle": lesson.get("weekTitle", ""),  # 주차 타이틀 (데이터에서 가져오기)
-                "lessons": []
+                "lessons": [],
+                "isPracticeWeek": lesson.get("isPracticeWeek", False)  # 현장실습 주차 여부
             }
-        weeks[week_num]["lessons"].append({
-            "number": lesson["lessonNumber"],
-            "title": lesson["lessonTitle"]
-        })
+
+        # 현장실습 주차가 아닌 경우만 lessons에 추가
+        if not lesson.get("isPracticeWeek", False):
+            weeks[week_num]["lessons"].append({
+                "number": lesson["lessonNumber"],
+                "title": lesson["lessonTitle"]
+            })
+
         # 주차 타이틀이 비어있으면 업데이트 (같은 주차의 차시들은 weekTitle 공유)
         if not weeks[week_num]["weekTitle"] and lesson.get("weekTitle"):
             weeks[week_num]["weekTitle"] = lesson.get("weekTitle", "")
 
-    # 8주차 중간고사, 15주차 기말고사 자동 추가
-    if 8 not in weeks:
-        weeks[8] = {
-            "weekNumber": 8,
-            "weekTitle": "중간고사",
-            "lessons": []
-        }
-    if 15 not in weeks:
-        weeks[15] = {
-            "weekNumber": 15,
-            "weekTitle": "기말고사",
-            "lessons": []
-        }
+    # 전체 주차 수 확인
+    max_week = max(weeks.keys()) if weeks else 0
+
+    # examWeeks에서 시험 주차 정보 가져오기 (Import 시 저장된 중간고사/기말고사 등)
+    exam_weeks = course_data.get("examWeeks", [])
+    for exam_week in exam_weeks:
+        week_num = exam_week.get("weekNumber")
+        week_title = exam_week.get("weekTitle", "")
+        if week_num and week_num not in weeks:
+            weeks[week_num] = {
+                "weekNumber": week_num,
+                "weekTitle": week_title,
+                "lessons": [],
+                "isPracticeWeek": False
+            }
+            # max_week 업데이트
+            max_week = max(max_week, week_num)
+
+    # 15주차 과정인 경우 8주(중간고사), 15주(기말고사) 자동 추가 (examWeeks에 없는 경우만)
+    if max_week >= 14:  # 14주 이상이면 15주 과정으로 간주
+        if 8 not in weeks:
+            weeks[8] = {
+                "weekNumber": 8,
+                "weekTitle": "중간고사",
+                "lessons": [],
+                "isPracticeWeek": False
+            }
+        if 15 not in weeks:
+            weeks[15] = {
+                "weekNumber": 15,
+                "weekTitle": "기말고사",
+                "lessons": [],
+                "isPracticeWeek": False
+            }
 
     # subjects.json 형식으로 변환
     subjects = []
@@ -1055,6 +1197,7 @@ def create_subjects_json(course_data, preset_id="2025-standard"):
         for idx, lesson in enumerate(lessons, 1):
             title = lesson["title"] if lesson["title"] else f"{lesson['number']}차시"
             if is_legacy_template:
+                # 레거시 템플릿: "1차 제목" (차 다음 공백 1개)
                 lists.append(f"{idx}차 {title}")
             else:
                 lists.append(f"<span>{idx}차</span> {title}")
@@ -1073,8 +1216,8 @@ def create_subjects_json(course_data, preset_id="2025-standard"):
                 title_str = f"<span>{week_num}주</span>"
 
         subject_entry = {"title": title_str}
-        # 8주차, 15주차 중간고사/기말고사는 lists 제외
-        if lists and week_num not in [8, 15]:
+        # 모든 주차에서 lists가 있으면 포함 (8주/15주 포함)
+        if lists:
             subject_entry["lists"] = lists
 
         subjects.append(subject_entry)
@@ -1226,6 +1369,15 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     subtitles_dir = course_dir / "subtitles"
     subtitles_dir.mkdir(exist_ok=True)
 
+    # import된 자막 파일들 복사
+    imported_subtitles = course_data.get("importedSubtitles", {})
+    if imported_subtitles:
+        for filename, content in imported_subtitles.items():
+            subtitle_path = subtitles_dir / filename
+            with open(subtitle_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+        print(f"✅ 자막 파일 {len(imported_subtitles)}개 복사 완료")
+
     # images 폴더 생성
     images_dir = course_dir / "images"
     images_dir.mkdir(exist_ok=True)
@@ -1289,6 +1441,19 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         else:
             processed_professor_photo = professor_photo
 
+    # 전체 주차 제목 리스트 생성 (next 페이지용)
+    week_titles_list = []
+    for subject in subjects_json_data.get("subjects", []):
+        title = subject.get("title", "")
+        # HTML 태그 제거하여 순수 텍스트만 추출
+        if title:
+            # <span>N주</span> 제목 → 제목만 추출
+            # span 태그 제거
+            title = re.sub(r'<span[^>]*>.*?</span>\s*', '', title)
+            # N주 텍스트 제거
+            title = re.sub(r'^\d+주\s*', '', title)
+            week_titles_list.append(title)
+
     # 각 차시별 data.json 생성
     lessons_list = course_data["lessons"]
 
@@ -1327,10 +1492,13 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         preset = export_templates.TEMPLATE_PRESETS.get(preset_id, export_templates.TEMPLATE_PRESETS["2025-standard"])
         components = preset.get("components", ["intro", "orientation", "term", "objectives", "opinion", "lecture", "practice", "check", "exercise", "theorem", "next"])
 
+        # 2018 템플릿 여부 확인
+        is_2018 = preset_id == "2018-standard"
+
         for comp in components:
             if comp == "intro":
                 lesson_title = lesson.get("lessonTitle", "")
-                pages.append(create_intro_page(professor, processed_professor_photo, lesson_title))
+                pages.append(create_intro_page(professor, processed_professor_photo, lesson_title, is_2018))
             
             elif comp == "orientation":
                 if lesson.get("hasOrientation"):
@@ -1338,8 +1506,18 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
             
             elif comp == "term":
                 if course_type == "general":
-                    pages.append(create_term_page(lesson["terms"], images_dir, course_code, image_counter, imported_image_path_mapping, image_cache))
-            
+                    pages.append(create_term_page(
+                        lesson["terms"],
+                        images_dir,
+                        course_code,
+                        image_counter,
+                        imported_image_path_mapping,
+                        image_cache,
+                        is_legacy_template,
+                        lesson.get("termDescription"),
+                        lesson.get("termScript")
+                    ))
+
             elif comp == "objectives":
                 learning_contents_for_objectives = list(lesson.get("learningContents", []))
                 if lesson.get("hasPractice", False):
@@ -1351,7 +1529,7 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
                                 break
                     if practice_content and not is_practice_content_empty(practice_content):
                         learning_contents_for_objectives.append(practice_content)
-                
+
                 pages.append(create_objectives_page(
                     learning_contents_for_objectives,
                     lesson["learningObjectives"],
@@ -1359,7 +1537,9 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
                     course_code,
                     image_counter,
                     imported_image_path_mapping,
-                    image_cache
+                    image_cache,
+                    lesson.get("objectivesDescription"),
+                    lesson.get("objectivesScript")
                 ))
             
             elif comp == "opinion":
@@ -1381,7 +1561,16 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
                         pages.append(create_practice_page(lesson, course_code, year))
             
             elif comp == "check":
-                pages.append(create_check_page(lesson, images_dir, course_code, image_counter, imported_image_path_mapping, image_cache))
+                pages.append(create_check_page(
+                    lesson,
+                    images_dir,
+                    course_code,
+                    image_counter,
+                    imported_image_path_mapping,
+                    image_cache,
+                    lesson.get("checkDescription"),
+                    lesson.get("checkScript")
+                ))
             
             elif comp in ["exercise", "exercise_pre", "exercise_post"]:
                 # 현재는 pre/post 상관없이 동일한 연습문제 페이지 생성 
@@ -1392,10 +1581,7 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
                 pages.append(create_theorem_page(lesson, images_dir, course_code, image_counter, imported_image_path_mapping, image_cache))
             
             elif comp == "next":
-                next_lesson = None
-                if idx + 1 < len(lessons_list):
-                    next_lesson = lessons_list[idx + 1]
-                pages.append(create_next_page(next_lesson))
+                pages.append(create_next_page(week_titles_list))
 
         # index.html 생성 (차시 폴더 바로 아래에 생성: 01/index.html)
         index_html = get_index_html_template(preset_id, theme)
@@ -1438,7 +1624,11 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
         data_json_path = lesson_dir / "data.json"
         with open(data_json_path, 'w', encoding='utf-8') as f:
             if is_legacy_template:
-                json.dump(data_json, f, ensure_ascii=False, indent='\t', separators=(',', ' : '))
+                # 레거시 템플릿: 커스텀 직렬화 사용 (sections 배열 한 줄 유지)
+                # 2018만 ' : ' 구분자, 2019+ ': ' 구분자
+                use_space_sep = (preset_id == "2018-standard")
+                f.write(legacy_json_dumps(data_json, use_space_separator=use_space_sep))
+                f.write('\n')
             else:
                 json.dump(data_json, f, ensure_ascii=False, indent=2)
 

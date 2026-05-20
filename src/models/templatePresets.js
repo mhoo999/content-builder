@@ -158,15 +158,53 @@ export const detectTemplatePreset = (dataJson, htmlContent) => {
 
 export const detectTemplateTheme = (presetId, htmlContent) => {
   if (!presetId || !htmlContent) return "type-1";
-  
+
   const preset = TEMPLATE_PRESETS[presetId];
   if (!preset || !preset.themes || preset.themes.length === 0) return "type-1";
-  
+
   for (const theme of preset.themes) {
     if (htmlContent.includes(`${theme.id}.css`)) {
       return theme.id;
     }
   }
-  
+
   return preset.themes[0].id;
+};
+
+export const getAllTemplates = () => {
+  // 동적으로 customTemplates를 import하지 않고, 필요시 직접 가져올 수 있도록 합니다
+  const builtInTemplates = Object.values(TEMPLATE_PRESETS);
+
+  // localStorage에서 커스텀 템플릿 가져오기
+  let customTemplates = [];
+  try {
+    const stored = localStorage.getItem('content-builder-templates');
+    if (stored) {
+      customTemplates = JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error('Failed to load custom templates:', error);
+  }
+
+  return [...builtInTemplates, ...customTemplates];
+};
+
+export const getTemplateById = (templateId) => {
+  // 먼저 built-in 템플릿에서 찾기
+  if (TEMPLATE_PRESETS[templateId]) {
+    return TEMPLATE_PRESETS[templateId];
+  }
+
+  // 커스텀 템플릿에서 찾기
+  try {
+    const stored = localStorage.getItem('content-builder-templates');
+    if (stored) {
+      const customTemplates = JSON.parse(stored);
+      return customTemplates.find(t => t.id === templateId);
+    }
+  } catch (error) {
+    console.error('Failed to load custom templates:', error);
+  }
+
+  return null;
 };

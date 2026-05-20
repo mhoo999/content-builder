@@ -1,12 +1,19 @@
 # export_templates.py
 # 이 파일은 builder_to_subjects.py에서 사용하는 템플릿 프리셋 정의입니다.
+#
+# NOTE: This file is being transitioned to the new exporter system in exporters/
+# For new code, use exporters.template_exporter instead.
 
 TEMPLATE_PRESETS = {
     "2018-standard": {
         "html_head": """	<link rel="stylesheet" href="../../../resources/styles/2018/base.css">
+
+	<link rel="stylesheet" href="../../../resources/scripts/videojs/video-js.min.css">
+
 	<link rel="stylesheet" href="../../../resources/styles/2018/layout.css">
 	<link rel="stylesheet" href="../../../resources/styles/2018/modules.css">
 	<link rel="stylesheet" href="../../../resources/styles/mediaquery.css">
+
 	<link rel="stylesheet" href="../../../resources/styles/2018/{theme}.css">""",
         "html_head_scripts": """	<script src="../../../resources/scripts/templates/layout.js"></script>
 	<script src="../../../resources/scripts/templates/defaults.js"></script>
@@ -17,6 +24,7 @@ TEMPLATE_PRESETS = {
     "2019-standard": {
         "html_head": """	<link rel="stylesheet" href="../../../resources/styles/2019/base.css">
 	<link rel="stylesheet" href="../../../resources/styles/2019/layout.css">
+	<link rel="stylesheet" href="../../../resources/styles/2019/modules.css">
 	<link rel="stylesheet" href="../../../resources/styles/2019/{theme}.css">""",
         "html_head_scripts": """	<script src="../../../resources/scripts/2019/templates/layout.js"></script>
 	<script src="../../../resources/scripts/2019/templates/defaults.js"></script>

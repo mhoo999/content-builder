@@ -2,7 +2,11 @@
  * Subjects 폴더 구조 파싱 유틸리티
  * subjects/{code}/{lesson}/assets/data/data.json 구조를 파싱하여
  * Builder 데이터 형식으로 변환
+ *
+ * NOTE: This file now acts as a facade to the new parser system in src/parsers/
  */
+
+import { parseTemplate, parseSubjectsJson as parseSubjectsJsonNew, isPracticeWeek } from '../parsers/index.js';
 
 /**
  * HTML 문자열에서 상대경로 이미지에 data-original-src 속성 추가 및 임시 base64 변환
@@ -97,8 +101,28 @@ const findAllPagesByComponent = (pages, componentType) => {
 
 /**
  * data.json 파일을 Builder 형식으로 변환
+ *
+ * NOTE: This function now delegates to the new parser system
+ * Use parseTemplate() from src/parsers/ for direct access to new system
+ *
+ * @param {Object} dataJson - data.json content
+ * @param {number} lessonNumber - lesson number
+ * @param {string} htmlContent - HTML content for template detection (optional, for new system)
+ * @param {Object} importedImages - imported images as base64 (optional, for new system)
+ * @returns {Object} Content model in builder format
  */
-export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
+export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber, htmlContent = "", importedImages = {}) => {
+  // If htmlContent is provided, use new parser system
+  if (htmlContent) {
+    try {
+      return parseTemplate(dataJson, htmlContent, importedImages, lessonNumber);
+    } catch (error) {
+      console.warn("New parser system failed, falling back to legacy parser:", error);
+      // Fall through to legacy parser
+    }
+  }
+
+  // Legacy parser (kept for backward compatibility)
   // 현장실습 주차 감지 (이미지만 있는 경우)
   if (dataJson.image && !dataJson.pages) {
     return {
@@ -121,6 +145,8 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   // 용어체크 파싱
   const termPage = findPageByComponent(pages, "term")
   const termData = Array.isArray(termPage?.data) ? termPage.data : []
+  const termDescription = termPage?.description || ""
+  const termScript = termPage?.script || ""
   const terms = termData.map((term) => {
     // title의 <br /> 또는 <br> 태그를 줄바꿈(\n)으로 변환
     let title = term.title || ""
@@ -165,6 +191,8 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   const objectivesPage = findPageByComponent(pages, "objectives")
   const learningContentsRaw = objectivesPage?.data?.[0]?.contents || ["", "", ""]
   const learningObjectivesRaw = objectivesPage?.data?.[1]?.contents || ["", "", ""]
+  const objectivesDescription = objectivesPage?.description || ""
+  const objectivesScript = objectivesPage?.script || ""
 
   // HTML 엔티티 디코딩 및 넘버링 제거 헬퍼 함수 (HTML 태그는 유지)
   const cleanText = (text) => {
@@ -192,14 +220,20 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   const checkPage = findPageByComponent(pages, "check")
   const opinionQuestion = opinionPage?.data?.title || ""
   const professorThink = checkPage?.data?.think || ""
+  const checkDescription = checkPage?.description || ""
+  const checkScript = checkPage?.script || ""
 
   // 강의보기 파싱
   const lecturePage = findPageByComponent(pages, "lecture")
   const lectureVideoUrl = lecturePage?.media || ""
   const lectureSubtitle = lecturePage?.caption?.[0]?.src || ""
+  // 타임스탬프: { time, title } 객체 배열로 파싱 (title이 있는 경우 보존)
   const timestamps = Array.isArray(lecturePage?.data)
-    ? lecturePage.data.map((item) => item.time || "")
-    : ["0:00:04", "0:00:00"]
+    ? lecturePage.data.map((item) => ({
+        time: item.time || "",
+        title: item.title || "",
+      }))
+    : [{ time: "0:00:04", title: "" }, { time: "0:00:00", title: "" }]
 
   // 실습 파싱
   const practicePage = findPageByComponent(pages, "practice")
@@ -207,8 +241,11 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
   const practiceVideoUrl = practicePage?.media || ""
   const practiceSubtitle = practicePage?.caption?.[0]?.src || ""
   const practiceTimestamps = Array.isArray(practicePage?.data)
-    ? practicePage.data.map((item) => item.time || "")
-    : ["0:00:04", "0:00:00"]
+    ? practicePage.data.map((item) => ({
+        time: item.time || "",
+        title: item.title || "",
+      }))
+    : [{ time: "0:00:04", title: "" }, { time: "0:00:00", title: "" }]
 
   // 실습 내용 추출 (학습내용에서 실습 항목 찾기)
   let practiceContent = ""
@@ -301,6 +338,8 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
   })
+  // reference 필드 보존
+  const reference = theoremPage?.data?.reference || ""
 
   // 주차 및 주차 내 순서 추출
   const weekNumber = dataJson.index || Math.ceil(lessonNumber / 2)
@@ -324,11 +363,18 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
         },
 
     terms: finalTerms,
+    termDescription: termDescription,
+    termScript: termScript,
+
     learningContents: learningContents,
     learningObjectives: learningObjectives,
+    objectivesDescription: objectivesDescription,
+    objectivesScript: objectivesScript,
 
     opinionQuestion: opinionQuestion,
     professorThink: professorThink,
+    checkDescription: checkDescription,
+    checkScript: checkScript,
 
     lectureVideoUrl: lectureVideoUrl,
     lectureSubtitle: lectureSubtitle,
@@ -342,6 +388,7 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
 
     exercises: exercises,
     summary: summary,
+    reference: reference,
 
     instructionUrl: dataJson.instruction || "",
     guideUrl: dataJson.guide || "",
@@ -352,12 +399,24 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber) => {
  * subjects.json 파일 파싱하여 주차별 차시 정보 추출
  * subjects.json 구조: { "subjects": [{ "title": "...", "lists": ["<span>1차</span> 제목", ...] }] }
  *
+ * NOTE: This function now delegates to the new parser system
+ *
  * @param {Object} subjectsJson - subjects.json 데이터
  * @param {number} startLessonNumber - 시작 차시 번호 (기본값: 1)
  */
 export const parseSubjectsJson = (subjectsJson, startLessonNumber = 1) => {
+  // Use new parser system
+  try {
+    return parseSubjectsJsonNew(subjectsJson, startLessonNumber);
+  } catch (error) {
+    console.warn("New parser system failed, falling back to legacy parser:", error);
+    // Fall through to legacy parser
+  }
+
+  // Legacy parser (kept for backward compatibility)
   const lessonTitles = {}
   const weekTitles = {} // 주차별 타이틀
+  const examWeeks = [] // lists가 없는 주차 (중간고사/기말고사 등)
   let lessonCounter = startLessonNumber
 
   // subjects 배열 파싱
@@ -389,6 +448,14 @@ export const parseSubjectsJson = (subjectsJson, startLessonNumber = 1) => {
 
     const lists = subject.lists || []
 
+    // lists가 없는 주차는 시험 주차로 저장 (중간고사/기말고사 등)
+    if (lists.length === 0 && weekNumber) {
+      examWeeks.push({
+        weekNumber: weekNumber,
+        weekTitle: weekTitle,
+      })
+    }
+
     lists.forEach((listItem) => {
       // HTML 태그 제거: "<span>1차</span> 제목" -> "제목"
       // 또는 단순 문자열인 경우 그대로 사용
@@ -397,10 +464,12 @@ export const parseSubjectsJson = (subjectsJson, startLessonNumber = 1) => {
       if (typeof listItem === "string") {
         // <span>...</span> 태그 제거
         title = listItem.replace(/<span[^>]*>.*?<\/span>\s*/g, "").trim()
-        // "N차 " 텍스트 제거 (span이 없는 경우 대비)
-        title = title.replace(/^\d+차\s*/, "").trim()
-        // 다른 HTML 태그도 제거
-        title = title.replace(/<[^>]+>/g, "").trim()
+        // "N차 " 또는 "N차  " 텍스트 제거 (span이 없는 경우 대비)
+        title = title.replace(/^\d+차\s+/, "").trim()
+        // 불필요한 HTML 태그 제거 (단, <br>은 유지)
+        // 제거할 태그: div, p, strong, em 등 (span은 이미 제거됨)
+        // 유지할 태그: br, b, i 등
+        // 일단 모든 HTML 태그를 유지하도록 변경 (span 제외)
       }
 
       if (title) {
@@ -410,7 +479,7 @@ export const parseSubjectsJson = (subjectsJson, startLessonNumber = 1) => {
     })
   })
 
-  return { lessonTitles, weekTitles }
+  return { lessonTitles, weekTitles, examWeeks }
 }
 
 /**
