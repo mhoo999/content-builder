@@ -68,8 +68,9 @@ TEMPLATE_PRESETS = {
     },
     "2023-standard": {
         "html_head": """	<link rel="stylesheet" href="../../../resources/styles/2023/base.css">
-	<link rel="stylesheet" href="../../../resources/styles/2023/layout.css">
+	<link rel="stylesheet" href="../../../resources/styles/2025/layout.css">
 	<link rel="stylesheet" href="../../../resources/styles/2023/modules.css">
+	<link rel="stylesheet" href="../../../resources/styles/2023/mediaquery.css">
 	<link rel="stylesheet" href="../../../resources/styles/2023/{theme}.css">""",
         "html_head_scripts": """	<script src="../../../resources/scripts/2023/templates/layout.js"></script>
 	<script src="../../../resources/scripts/2023/templates/defaults.js"></script>

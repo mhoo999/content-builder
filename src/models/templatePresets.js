@@ -144,13 +144,14 @@ export const detectTemplatePreset = (dataJson, htmlContent) => {
       return "2024-hrd";
     }
     
-    if (htmlContent.includes("2025/layout.css")) return "2025-standard";
+    // NOTE: Check base.css first (more reliable than layout.css which can be mixed)
     if (htmlContent.includes("2023/base.css")) return "2023-standard";
     if (htmlContent.includes("2022/base.css")) return "2022-standard";
     if (htmlContent.includes("2021/base.css")) return "2021-standard";
-    if (htmlContent.includes("2020/layout.css")) return "2020-standard";
     if (htmlContent.includes("2019/base.css")) return "2019-standard";
     if (htmlContent.includes("2018/base.css")) return "2018-standard";
+    if (htmlContent.includes("2020/layout.css")) return "2020-standard";
+    if (htmlContent.includes("2025/layout.css")) return "2025-standard"; // Fallback
   }
   
   return "2025-standard"; // Fallback
