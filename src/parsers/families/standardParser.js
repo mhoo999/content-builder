@@ -134,6 +134,10 @@ export class StandardParser extends BaseParser {
     const theoremPage = findPageByComponent(pages, "theorem");
     const theoremResult = parseTheoremData(theoremPage, importedImages);
 
+    // Parse next page (preserve original data)
+    const nextPage = findPageByComponent(pages, "next");
+    const nextData = nextPage?.data || [];
+
     // Week and section numbers
     const weekNumber = dataJson.index || Math.ceil(lessonNumber / 2);
     const sectionInWeek = dataJson.section || ((lessonNumber - 1) % 2) + 1;
@@ -187,6 +191,9 @@ export class StandardParser extends BaseParser {
 
       summary: theoremResult.summary,
       reference: theoremResult.reference,
+      summaryOriginalHtml: theoremResult.summaryOriginalHtml,
+
+      nextWeekTitles: nextData,
 
       instructionUrl: dataJson.instruction || "",
       guideUrl: dataJson.guide || "",
@@ -204,7 +211,11 @@ export class StandardParser extends BaseParser {
         originalFormat: {
           sections: dataJson.sections || [],
           hasPages: true,
-          is2018Format: templateId === "2018-standard"
+          is2018Format: templateId === "2018-standard",
+          // Preserve original component data structures for round-trip compatibility
+          originalTermData: termResult._originalTermData || [],
+          originalNextData: nextData,
+          originalTheoremData: theoremPage?.data || {}
         },
         preservedFields: {
           // Preserve any unknown fields from original data.json

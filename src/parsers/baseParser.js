@@ -128,6 +128,13 @@ export const parseTermData = (termPage, importedImages = {}) => {
   const termDescription = termPage?.description || "";
   const termScript = termPage?.script || "";
 
+  // Preserve original term data structure for round-trip compatibility
+  const originalTermData = termData.map((term) => ({
+    title: term.title || "",
+    content: term.content,
+    _wasArray: Array.isArray(term.content)
+  }));
+
   const terms = termData.map((term) => {
     let title = term.title || "";
 
@@ -163,7 +170,8 @@ export const parseTermData = (termPage, importedImages = {}) => {
   return {
     terms: terms.length > 0 ? terms : [{ title: "", content: [""] }],
     termDescription,
-    termScript
+    termScript,
+    _originalTermData: originalTermData  // Preserve for export
   };
 };
 
@@ -339,6 +347,9 @@ export const parseExerciseData = (exercisePage, importedImages = {}) => {
 export const parseTheoremData = (theoremPage, importedImages = {}) => {
   const summaryRaw = theoremPage?.data?.theorem || ["", "", ""];
 
+  // Preserve original HTML for round-trip compatibility
+  const summaryOriginalHtml = summaryRaw.length > 0 ? [...summaryRaw] : null;
+
   const summary = summaryRaw.map((item) => {
     if (typeof item !== "string") return item;
     return markRelativeImages(decodeHtmlEntities(item), importedImages);
@@ -348,7 +359,8 @@ export const parseTheoremData = (theoremPage, importedImages = {}) => {
 
   return {
     summary,
-    reference
+    reference,
+    summaryOriginalHtml
   };
 };
 

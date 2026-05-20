@@ -33,8 +33,12 @@ TEMPLATE_PRESETS = {
         "components": ["intro", "orientation", "term", "objectives", "opinion", "lecture", "practice", "check", "exercise", "theorem", "next"]
     },
     "2020-standard": {
-        "html_head": """	<link rel="stylesheet" href="../../../resources/styles/base.css">
+        "html_head": """	<link rel="stylesheet" href="../../../resources/scripts/videojs/video-js.min.css">
+
+	<link rel="stylesheet" href="../../../resources/styles/base.css">
 	<link rel="stylesheet" href="../../../resources/styles/2020/layout.css">
+	<link rel="stylesheet" href="../../../resources/styles/2020/modules.css">
+	<link rel="stylesheet" href="../../../resources/styles/2020/mediaquery.css">
 	<link rel="stylesheet" href="../../../resources/styles/2020/{theme}.css">""",
         "html_head_scripts": """	<script src="../../../resources/scripts/2019/templates/layout.js"></script>
 	<script src="../../../resources/scripts/2019/templates/defaults.js"></script>

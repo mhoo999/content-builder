@@ -67,6 +67,10 @@ export const createContentModel = ({
   // Summary
   summary = ["", "", ""],
   reference = "",
+  summaryOriginalHtml = null,  // Preserve original HTML for round-trip
+
+  // Next (week titles list for navigation)
+  nextWeekTitles = [],
 
   // Additional files
   instructionUrl = "",
@@ -130,6 +134,9 @@ export const createContentModel = ({
     exercises,
     summary,
     reference,
+    summaryOriginalHtml,
+
+    nextWeekTitles,
 
     instructionUrl,
     guideUrl,

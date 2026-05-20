@@ -995,14 +995,25 @@ def create_exercise_page(lesson, images_dir=None, course_code=None, image_counte
 
 def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None, image_cache=None):
     """학습정리 페이지 생성"""
-    summary = [s for s in lesson["summary"] if s]
+    # Round-trip compatibility: 원본 HTML이 있으면 우선 사용
+    if lesson.get("summaryOriginalHtml") is not None:
+        summary = lesson["summaryOriginalHtml"]
+        # 원본 HTML의 이미지만 처리
+        if images_dir and course_code and image_counter:
+            summary = [
+                extract_and_save_images(s, images_dir, course_code, image_counter, imported_path_mapping, image_cache) if s else s
+                for s in summary
+            ]
+    else:
+        # 편집된 데이터 사용 (새로 만들어진 경우)
+        summary = [s for s in lesson["summary"] if s]
 
-    # 학습정리 내용의 이미지 추출 및 저장
-    if images_dir and course_code and image_counter:
-        summary = [
-            extract_and_save_images(s, images_dir, course_code, image_counter, imported_path_mapping, image_cache) if s else s
-            for s in summary
-        ]
+        # 학습정리 내용의 이미지 추출 및 저장
+        if images_dir and course_code and image_counter:
+            summary = [
+                extract_and_save_images(s, images_dir, course_code, image_counter, imported_path_mapping, image_cache) if s else s
+                for s in summary
+            ]
 
     # 원본 데이터를 최대한 보존 (class 변환 등을 하지 않음)
     processed_summary = summary
@@ -1025,14 +1036,18 @@ def create_theorem_page(lesson, images_dir=None, course_code=None, image_counter
     }
 
 
-def create_next_page(week_titles_list):
+def create_next_page(week_titles_list, lesson_next_data=None):
     """다음안내 페이지 생성
 
     Args:
-        week_titles_list: 전체 주차 제목 리스트 (문자열 배열)
+        week_titles_list: 전체 주차 제목 리스트 (문자열 배열) - fallback
+        lesson_next_data: lesson 객체에서 가져온 원본 next 데이터 (우선 사용)
     """
-    # 주차 제목 리스트를 문자열 배열로 반환
-    next_data = week_titles_list if week_titles_list else []
+    # lesson에서 가져온 원본 데이터를 우선 사용 (round-trip compatibility)
+    if lesson_next_data is not None and len(lesson_next_data) > 0:
+        next_data = lesson_next_data
+    else:
+        next_data = week_titles_list if week_titles_list else []
 
     return {
         "path": "/next",
@@ -1079,16 +1094,18 @@ def get_index_html_template(preset_id="2025-standard", theme="type-1"):
 
 {html_head_scripts}
 
+	<link rel="stylesheet" href="../../../resources/scripts/videojs/video-js.min.css">
+
 {html_head}
 	<link rel="stylesheet" media="print" type="text/css" href="../../../resources/styles/print.css">
 </head>
 <body>
 	<div id="app"></div>
 	<script src="../../../resources/scripts/app.js"></script>
-	<script src="../../../resources/scripts/commons.js"></script>
+{html_body_scripts}
 	<script src="../../../resources/scripts/videojs/video.min.js"></script>
 	<script src="../../../resources/scripts/videojs/videojs-contrib-hls.min.js"></script>
-	<script src="../../../resources/scripts/videojs/videojs.hotkeys.min.js"></script> 
+	<script src="../../../resources/scripts/videojs/videojs.hotkeys.min.js"></script>
 </body>
 </html>
 '''
@@ -1127,7 +1144,9 @@ def get_index_html_template(preset_id="2025-standard", theme="type-1"):
 
 def create_subjects_json(course_data, preset_id="2025-standard"):
     """subjects.json 생성 (주차별 차시 목록)"""
-    is_legacy_template = any(preset_id.startswith(prefix) for prefix in ["2018", "2019", "2020", "2021"])
+    # 2018-2021 템플릿은 subjects.json에서 <span> 태그를 사용하지 않음 (순수 텍스트)
+    # 2022+ 템플릿만 <span> 태그 사용
+    is_legacy_subjects_format = any(preset_id.startswith(prefix) for prefix in ["2018", "2019", "2020", "2021"])
     # 주차별로 그룹화
     weeks = {}
     for lesson in course_data["lessons"]:
@@ -1196,21 +1215,22 @@ def create_subjects_json(course_data, preset_id="2025-standard"):
         lists = []
         for idx, lesson in enumerate(lessons, 1):
             title = lesson["title"] if lesson["title"] else f"{lesson['number']}차시"
-            if is_legacy_template:
-                # 레거시 템플릿: "1차 제목" (차 다음 공백 1개)
+            if is_legacy_subjects_format:
+                # 2018-2021 템플릿: "1차 제목" (순수 텍스트, span 태그 없음)
                 lists.append(f"{idx}차 {title}")
             else:
+                # 2022+ 템플릿: "<span>1차</span> 제목"
                 lists.append(f"<span>{idx}차</span> {title}")
 
         # 주차 제목 생성 (주차 제목이 없으면 주차 번호만)
         week_title = week.get("weekTitle", "")
         if week_title:
-            if is_legacy_template:
+            if is_legacy_subjects_format:
                 title_str = f"{week_num}주 {week_title}"
             else:
                 title_str = f"<span>{week_num}주</span> {week_title}"
         else:
-            if is_legacy_template:
+            if is_legacy_subjects_format:
                 title_str = f"{week_num}주"
             else:
                 title_str = f"<span>{week_num}주</span>"
@@ -1342,7 +1362,9 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
     # subjects.json 생성
     preset_id = course_data.get("templatePreset", "2025-standard")
     subjects_json_data = create_subjects_json(course_data, preset_id)
-    is_legacy_template = any(preset_id.startswith(prefix) for prefix in ["2018", "2019", "2020", "2021"])
+    # 2018 템플릿만 레거시로 처리 (특수 JSON 포맷, content를 문자열로 저장)
+    # 2019-2021은 content를 배열로 저장
+    is_legacy_template = preset_id.startswith("2018")
     
     with open(course_dir / "subjects.json", 'w', encoding='utf-8') as f:
         if is_legacy_template:
@@ -1581,7 +1603,7 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
                 pages.append(create_theorem_page(lesson, images_dir, course_code, image_counter, imported_image_path_mapping, image_cache))
             
             elif comp == "next":
-                pages.append(create_next_page(week_titles_list))
+                pages.append(create_next_page(week_titles_list, lesson.get("nextWeekTitles")))
 
         # index.html 생성 (차시 폴더 바로 아래에 생성: 01/index.html)
         index_html = get_index_html_template(preset_id, theme)
