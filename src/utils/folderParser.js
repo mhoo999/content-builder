@@ -211,6 +211,14 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber, htmlConte
     return cleaned
   }
 
+  // 원본 번호 형식 감지 (export 시 복원을 위해)
+  const hadContentNumbering = learningContentsRaw.some(text =>
+    typeof text === "string" && /^\d+\.\s*/.test(text.replace(/&[^;]+;/g, ""))
+  )
+  const hadObjectiveNumbering = learningObjectivesRaw.some(text =>
+    typeof text === "string" && /^\d+\.\s*/.test(text.replace(/&[^;]+;/g, ""))
+  )
+
   // 넘버링 제거 (HTML 태그는 유지하여 에디터로 표시)
   let learningContents = learningContentsRaw.map(cleanText)
   const learningObjectives = learningObjectivesRaw.map(cleanText)
@@ -356,10 +364,14 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber, htmlConte
       ? {
           videoUrl: orientationPage?.media || "",
           subtitlePath: orientationPage?.caption?.[0]?.src || "",
+          description: orientationPage?.description || "",
+          script: orientationPage?.script || "",
         }
       : {
           videoUrl: "",
           subtitlePath: "",
+          description: "",
+          script: "",
         },
 
     terms: finalTerms,
@@ -392,6 +404,12 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber, htmlConte
 
     instructionUrl: dataJson.instruction || "",
     guideUrl: dataJson.guide || "",
+
+    // Round-trip compatibility: 원본 형식 메타데이터 보존
+    _meta: {
+      hadContentNumbering: hadContentNumbering,
+      hadObjectiveNumbering: hadObjectiveNumbering,
+    },
   }
 }
 

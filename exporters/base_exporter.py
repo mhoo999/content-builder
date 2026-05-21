@@ -63,8 +63,12 @@ def clean_html_for_export(html_content):
         # <li><p>내용</p></li> → <li>내용</li> (p 태그 제거)
         def remove_p_from_li(li_match):
             li_content = li_match.group(1)
-            # <p>내용</p> 형식이면 p 태그 제거
-            li_content = re.sub(r'^\s*<p>(.*?)</p>\s*$', r'\1', li_content, flags=re.DOTALL)
+            # 반복적으로 모든 <p> 태그 제거
+            while '<p>' in li_content:
+                li_content = re.sub(r'<p>(.*?)</p>', r'\1', li_content, flags=re.DOTALL)
+            # 빈 <p></p> 태그 제거
+            li_content = re.sub(r'<p></p>', '', li_content)
+            li_content = li_content.strip()
             return f'<li>{li_content}</li>'
 
         ul_content = re.sub(r'<li[^>]*>(.*?)</li>', remove_p_from_li, ul_tag, flags=re.DOTALL)

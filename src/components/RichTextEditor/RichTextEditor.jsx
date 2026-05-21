@@ -1,6 +1,7 @@
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import { BulletList } from "@tiptap/extension-bullet-list"
+import { Paragraph } from "@tiptap/extension-paragraph"
 import { Image } from "@tiptap/extension-image"
 import { Placeholder } from "@tiptap/extension-placeholder"
 import { Table } from "@tiptap/extension-table"
@@ -30,6 +31,33 @@ const CustomImage = Image.extend({
         },
       },
     }
+  },
+})
+
+// 커스텀 Paragraph extension - class 속성 지원 (theorem title용)
+const CustomParagraph = Paragraph.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      class: {
+        default: null,
+        parseHTML: (element) => {
+          const classAttr = element.getAttribute("class")
+          return classAttr || null
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.class) {
+            return {}
+          }
+          // class 속성을 명시적으로 반환
+          return { class: attributes.class }
+        },
+      },
+    }
+  },
+  // renderHTML을 오버라이드하여 class 속성이 확실히 포함되도록 함
+  renderHTML({ HTMLAttributes }) {
+    return ["p", { ...HTMLAttributes }, 0]
   },
 })
 
@@ -231,6 +259,7 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
         heading: {
           levels: [1, 3], // H1, H3만 사용
         },
+        paragraph: false, // 커스텀 Paragraph 사용
         bold: false, // 제거
         italic: false, // 제거
         strike: false, // 제거
@@ -245,6 +274,7 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
         dropcursor: true, // 유지 (드래그 앤 드롭)
         gapcursor: true, // 유지 (커서)
       }),
+      CustomParagraph,
       CustomBulletList,
       CustomImage.configure({
         inline: false,

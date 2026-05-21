@@ -86,9 +86,12 @@ export const findAllPagesByComponent = (pages, componentType) => {
 
 /**
  * HTML 엔티티 디코딩 및 넘버링 제거
+ * @param {string} text - 처리할 텍스트
+ * @param {object} options - 옵션 { returnMetadata: boolean }
+ * @returns {string|object} 기본적으로 문자열 반환, returnMetadata=true이면 {text, hadNumbering} 객체 반환
  */
-export const cleanText = (text) => {
-  if (typeof text !== "string") return text;
+export const cleanText = (text, options = {}) => {
+  if (typeof text !== "string") return options.returnMetadata ? { text, hadNumbering: false } : text;
 
   let cleaned = text;
 
@@ -100,8 +103,15 @@ export const cleanText = (text) => {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'");
 
+  // 번호 제거 전 원본 형식 기록
+  const hadNumbering = /^\d+\.\s*/.test(cleaned);
+
   // 넘버링 제거 (예: "1. 내용" -> "내용")
   cleaned = cleaned.replace(/^\d+\.\s*/, "").trim();
+
+  if (options.returnMetadata) {
+    return { text: cleaned, hadNumbering };
+  }
 
   return cleaned;
 };

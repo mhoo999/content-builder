@@ -130,8 +130,12 @@ def clean_html_for_export(html_content):
         # li 태그들을 찾아서 p 태그 제거
         def remove_p_from_li(li_match):
             li_content = li_match.group(1)
-            # <p>내용</p> 형식이면 p 태그 제거
-            li_content = re.sub(r'^\s*<p>(.*?)</p>\s*$', r'\1', li_content, flags=re.DOTALL)
+            # 반복적으로 모든 <p> 태그 제거
+            while '<p>' in li_content:
+                li_content = re.sub(r'<p>(.*?)</p>', r'\1', li_content, flags=re.DOTALL)
+            # 빈 <p></p> 태그 제거
+            li_content = re.sub(r'<p></p>', '', li_content)
+            li_content = li_content.strip()
             return f'<li>{li_content}</li>'
 
         ul_content = re.sub(r'<li[^>]*>(.*?)</li>', remove_p_from_li, ul_tag, flags=re.DOTALL)
@@ -532,13 +536,23 @@ def create_orientation_page(orientation, course_code=None, year=None):
     subtitle_path = orientation.get("subtitlePath", "")
     if not subtitle_path and course_code:
         subtitle_path = f"../subtitles/{course_code}_ot.vtt"
-    
+
+    # description과 script는 원본 데이터 우선, None인 경우에만 기본값 사용
+    # 빈 문자열("")은 의도적인 값으로 간주하여 보존
+    description = orientation.get("description")
+    if description is None:
+        description = "본격적인 학습에 앞서 교수님의 오리엔테이션을 먼저 들어주세요."
+
+    script = orientation.get("script")
+    if script is None:
+        script = "본격적인 학습에 앞서 교수님의 오리엔테이션을 먼저 들어주세요."
+
     return {
         "path": "/orientation",
         "section": 1,
         "title": "오리엔테이션",
-        "description": "본격적인 학습에 앞서 오리엔테이션을 먼저 들어주세요.",
-        "script": "본격적인 학습에 앞서 교수님의 오리엔테이션을 먼저 들어주세요.",
+        "description": description,
+        "script": script,
         "component": "orientation",
         "media": video_url,
         "caption": [{
@@ -621,7 +635,7 @@ def is_practice_content_empty(content):
     # 비어있거나 공백만 있으면 True
     return not text or not text.strip()
     
-def create_objectives_page(contents, objectives, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None, image_cache=None, description=None, script=None):
+def create_objectives_page(contents, objectives, images_dir=None, course_code=None, image_counter=None, imported_path_mapping=None, image_cache=None, description=None, script=None, lesson_meta=None):
     """학습목표 페이지 생성"""
     # 실습 항목 제외하고 학습내용 필터링
     filtered_contents = []
@@ -641,19 +655,23 @@ def create_objectives_page(contents, objectives, images_dir=None, course_code=No
                 obj = extract_and_save_images(obj, images_dir, course_code, image_counter, imported_path_mapping, image_cache)
             processed_objectives.append(obj)
 
-    # 자동 넘버링 추가 여부 판단: 첫 항목에 이미 번호가 있으면 추가하지 않음
-    has_numbering = False
-    if filtered_contents and filtered_contents[0]:
-        # "1. " 또는 "1) " 형태로 시작하는지 확인
-        has_numbering = bool(re.match(r'^\d+[\.\)]\s', filtered_contents[0]))
+    # Round-trip compatibility: 원본 번호 형식 보존
+    # 메타데이터에서 원본 번호 형식 확인 (우선 순위: 메타데이터 > 현재 내용 검사)
+    meta = lesson_meta or {}
+    had_content_numbering = meta.get('hadContentNumbering', False)
+    had_objective_numbering = meta.get('hadObjectiveNumbering', False)
+
+    # Fallback: 메타데이터가 없으면 현재 내용으로 판단
+    if not meta:
+        if filtered_contents and filtered_contents[0]:
+            had_content_numbering = bool(re.match(r'^\d+[\.\)]\s', filtered_contents[0]))
+        if processed_objectives and processed_objectives[0]:
+            had_objective_numbering = bool(re.match(r'^\d+[\.\)]\s', processed_objectives[0]))
 
     # 학습내용 처리
     final_contents = []
-    if has_numbering:
-        # 이미 번호가 있으면 그대로 사용
-        final_contents = filtered_contents
-    else:
-        # 번호가 없으면 자동 추가 (단, 실습 항목은 제외)
+    if had_content_numbering:
+        # 원본에 번호가 있었으면 번호 추가
         content_number = 1
         for c in filtered_contents:
             if c:
@@ -661,15 +679,30 @@ def create_objectives_page(contents, objectives, images_dir=None, course_code=No
                 if c.strip().startswith("<div class='practice'>"):
                     final_contents.append(c)
                 else:
-                    final_contents.append(f"{content_number}. {c}")
+                    # 이미 번호가 있는지 확인
+                    if re.match(r'^\d+[\.\)]\s', c):
+                        final_contents.append(c)
+                    else:
+                        final_contents.append(f"{content_number}. {c}")
                     content_number += 1
+    else:
+        # 원본에 번호가 없었으면 그대로 사용
+        final_contents = filtered_contents
 
     # 학습목표 처리
-    obj_has_numbering = False
-    if processed_objectives and processed_objectives[0]:
-        obj_has_numbering = bool(re.match(r'^\d+[\.\)]\s', processed_objectives[0]))
-
-    final_objectives = processed_objectives if obj_has_numbering else [f"{i+1}. {o}" for i, o in enumerate(processed_objectives) if o]
+    if had_objective_numbering:
+        # 원본에 번호가 있었으면 번호 추가
+        final_objectives = []
+        for i, o in enumerate(processed_objectives):
+            if o:
+                # 이미 번호가 있는지 확인
+                if re.match(r'^\d+[\.\)]\s', o):
+                    final_objectives.append(o)
+                else:
+                    final_objectives.append(f"{i+1}. {o}")
+    else:
+        # 원본에 번호가 없었으면 그대로 사용
+        final_objectives = processed_objectives
 
     # 원본 description/script 우선 사용
     final_description = description if description else "주요 학습내용과 학습목표를 살펴보세요."
@@ -1561,7 +1594,8 @@ def convert_builder_to_subjects(builder_json_path, output_dir=None):
                     imported_image_path_mapping,
                     image_cache,
                     lesson.get("objectivesDescription"),
-                    lesson.get("objectivesScript")
+                    lesson.get("objectivesScript"),
+                    lesson.get("_meta")
                 ))
             
             elif comp == "opinion":
