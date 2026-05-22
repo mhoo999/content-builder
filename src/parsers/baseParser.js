@@ -5,6 +5,68 @@
  */
 
 /**
+ * H 태그 감지 및 정규화
+ * 다양한 H1/H2/H3 패턴을 감지하여 표준 H 태그로 변환
+ */
+export const normalizeHeadings = (html) => {
+  if (!html || typeof html !== 'string') return html;
+
+  let result = html;
+
+  // 1. 기존 H1/H2/H3 태그는 그대로 유지 (이미 올바른 형식)
+  // <h1>내용</h1>, <h2>내용</h2>, <h3>내용</h3> - 변환 불필요
+
+  // 2. main-title 클래스 → H1 (strong 태그 있거나 없거나 모두 처리)
+  result = result.replace(
+    /<p\s+class=['"]main-title['"][^>]*>(?:<strong>)?(.*?)(?:<\/strong>)?<\/p>/gi,
+    '<h1>$1</h1>'
+  );
+
+  // 3. h1, h2, h3 클래스 → 해당 태그
+  result = result.replace(
+    /<(?:p|div|span)\s+class=['"]h1['"][^>]*>(.*?)<\/(?:p|div|span)>/gi,
+    '<h1>$1</h1>'
+  );
+  result = result.replace(
+    /<(?:p|div|span)\s+class=['"]h2['"][^>]*>(.*?)<\/(?:p|div|span)>/gi,
+    '<h2>$1</h2>'
+  );
+  result = result.replace(
+    /<(?:p|div|span)\s+class=['"]h3['"][^>]*>(.*?)<\/(?:p|div|span)>/gi,
+    '<h3>$1</h3>'
+  );
+
+  // 4. 특정 스타일의 ol/p → H3 (기존 패턴 + 유연화)
+  result = result.replace(
+    /<ol\s+style=['"][^'"]*color:\s*#000[^'"]*['"][^>]*>(.*?)<\/ol>/gi,
+    (match, content) => {
+      const cleaned = content.replace(/^\d+\)\s*/, '').trim();
+      return `<h3>${cleaned}</h3>`;
+    }
+  );
+
+  // 5. 큰 폰트 + bold 조합 감지 (font-size: 18px+ 또는 1.2em+)
+  // 5-1. font-size + font-weight 순서
+  result = result.replace(
+    /<(?:p|div|span)[^>]*style=['"][^'"]*font-size:\s*(?:1[89]|[2-9]\d)px[^'"]*font-weight:\s*bold[^'"]*['"][^>]*>(.*?)<\/(?:p|div|span)>/gi,
+    '<h3>$1</h3>'
+  );
+  // 5-2. font-weight + font-size 순서
+  result = result.replace(
+    /<(?:p|div|span)[^>]*style=['"][^'"]*font-weight:\s*bold[^'"]*font-size:\s*(?:1[89]|[2-9]\d)px[^'"]*['"][^>]*>(.*?)<\/(?:p|div|span)>/gi,
+    '<h3>$1</h3>'
+  );
+
+  // 6. sub-title 클래스 → H3
+  result = result.replace(
+    /<(?:p|div|span)\s+class=['"]sub-title['"][^>]*>(.*?)<\/(?:p|div|span)>/gi,
+    '<h3>$1</h3>'
+  );
+
+  return result;
+};
+
+/**
  * HTML 문자열에서 상대경로 이미지에 data-original-src 속성 추가 및 임시 base64 변환
  * (표시용으로 base64 사용, export 시 상대경로로 변환)
  */
@@ -21,20 +83,8 @@ export const markRelativeImages = (html, importedImages = {}) => {
     return html;
   }
 
-  // <p class='main-title'><strong>내용</strong></p> → <h1>내용</h1> 변환 (Import 시)
-  html = html.replace(
-    /<p\s+class=['"]main-title['"][^>]*><strong>(.*?)<\/strong><\/p>/gi,
-    "<h1>$1</h1>"
-  );
-
-  // ol 태그를 H3로 변환 (Import 시)
-  html = html.replace(
-    /<ol\s+style=['"]color:#000;margin-bottom:\s*4px;['"]>(.*?)<\/ol>/gi,
-    (match, content) => {
-      const cleaned = content.replace(/^\d+\)\s*/, "").trim();
-      return `<h3>${cleaned}</h3>`;
-    }
-  );
+  // H 태그 정규화 (Import 시 에디터 호환을 위해 변환, Export 시 역변환으로 라운드트립 보장)
+  html = normalizeHeadings(html);
 
   // ../images/filename.png 또는 images/filename.png 패턴 찾기
   const pattern = /<img\s+([^>]*)src=["']([^"']*images\/[^"']+)["']([^>]*)>/gi;
@@ -234,12 +284,10 @@ export const parseLectureData = (lecturePage) => {
   const lectureVideoUrl = lecturePage?.media || "";
   const lectureSubtitle = lecturePage?.caption?.[0]?.src || "";
 
+  // 타임스탬프는 time 값만 문자열 배열로 반환 (title은 사용하지 않음)
   const timestamps = Array.isArray(lecturePage?.data)
-    ? lecturePage.data.map((item) => ({
-        time: item.time || "",
-        title: item.title || ""
-      }))
-    : [{ time: "0:00:04", title: "" }, { time: "0:00:00", title: "" }];
+    ? lecturePage.data.map((item) => item.time || "0:00:00")
+    : ["0:00:04", "0:00:00"];
 
   return {
     lectureVideoUrl,
@@ -256,12 +304,10 @@ export const parsePracticeData = (practicePage, learningContents, importedImages
   const practiceVideoUrl = practicePage?.media || "";
   const practiceSubtitle = practicePage?.caption?.[0]?.src || "";
 
+  // 실습 타임스탬프도 time 값만 문자열 배열로 반환
   const practiceTimestamps = Array.isArray(practicePage?.data)
-    ? practicePage.data.map((item) => ({
-        time: item.time || "",
-        title: item.title || ""
-      }))
-    : [{ time: "0:00:04", title: "" }, { time: "0:00:00", title: "" }];
+    ? practicePage.data.map((item) => item.time || "0:00:00")
+    : ["0:00:04", "0:00:00"];
 
   // 실습 내용 추출 (학습내용에서 실습 항목 찾기)
   let practiceContent = "";
@@ -398,18 +444,30 @@ export const parseProfessorInfo = (introPage, importedImages = {}) => {
   const parsePeriodToDates = (period) => {
     if (!period) return { startDate: "", endDate: "" };
 
-    const match = period.match(/(\d{4})년\s*(\d{1,2})월\s*~\s*(\d{4})년\s*(\d{1,2})월/);
-    if (match) {
-      const [, startYear, startMonth, endYear, endMonth] = match;
+    // 전체 범위: YYYY년 M월 ~ YYYY년 M월
+    const fullRangeMatch = period.match(/(\d{4})년\s*(\d{1,2})월\s*~\s*(\d{4})년\s*(\d{1,2})월/);
+    if (fullRangeMatch) {
+      const [, startYear, startMonth, endYear, endMonth] = fullRangeMatch;
       return {
         startDate: `${startYear}-${String(startMonth).padStart(2, "0")}-01`,
         endDate: `${endYear}-${String(endMonth).padStart(2, "0")}-01`
       };
     }
 
-    const singleMatch = period.match(/(\d{4})년\s*(\d{1,2})월\s*~/);
-    if (singleMatch) {
-      const [, year, month] = singleMatch;
+    // 시작만: YYYY년 M월 ~ (진행중)
+    const startOnlyMatch = period.match(/(\d{4})년\s*(\d{1,2})월\s*~/);
+    if (startOnlyMatch) {
+      const [, year, month] = startOnlyMatch;
+      return {
+        startDate: `${year}-${String(month).padStart(2, "0")}-01`,
+        endDate: "" // 종료일 없음 (현재 재직중)
+      };
+    }
+
+    // 단일 날짜: YYYY년 M월 (기간 표시 없이)
+    const singleDateMatch = period.match(/(\d{4})년\s*(\d{1,2})월/);
+    if (singleDateMatch) {
+      const [, year, month] = singleDateMatch;
       return {
         startDate: `${year}-${String(month).padStart(2, "0")}-01`,
         endDate: ""
@@ -420,37 +478,67 @@ export const parseProfessorInfo = (introPage, importedImages = {}) => {
   };
 
   const careerContent = careerItem?.content || [];
-  const parsedCareer = careerContent.map((careerStr) => {
+  const parsedCareer = careerContent.map((careerStr, idx) => {
     if (typeof careerStr === "string") {
-      const boldMatch = careerStr.match(/<b>(.*?)<\/b><br\s*\/?>(.*)/)
+      // HTML 엔티티 디코딩
+      let decoded = careerStr
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+
+      // 먼저 <b> 또는 <strong> 태그로 기간 추출
+      const boldRegex = /<(?:b|strong)>(.*?)<\/(?:b|strong)>/i;
+      const boldMatch = decoded.match(boldRegex);
+
       if (boldMatch) {
         const period = boldMatch[1].trim();
+
+        // bold 태그 이후의 모든 내용 추출
+        const boldEndIndex = decoded.indexOf(boldMatch[0]) + boldMatch[0].length;
+        let afterBold = decoded.substring(boldEndIndex);
+
+        // <br> 또는 <br/> 제거
+        afterBold = afterBold.replace(/<br\s*\/?>/gi, ' ');
+
+        // 나머지 HTML 태그 제거
+        const description = afterBold.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+
         const dates = parsePeriodToDates(period);
         return {
           period: period,
           startDate: dates.startDate,
           endDate: dates.endDate,
-          description: boldMatch[2].trim()
+          description: description
         };
       }
 
-      const boldOnlyMatch = careerStr.match(/<b>(.*?)<\/b>/);
-      if (boldOnlyMatch) {
-        const period = boldOnlyMatch[1].trim();
+      // bold 태그 없는 경우 - HTML 태그 모두 제거하고 텍스트로 파싱
+      const cleanText = decoded.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
+      // 기간 패턴으로 직접 감지: "YYYY년 M월 ~ YYYY년 M월 내용"
+      const periodPattern = /^(\d{4}년\s*\d{1,2}월\s*~\s*(?:\d{4}년\s*\d{1,2}월|현재|재직중)?)\s+(.+)$/;
+      const periodMatch = cleanText.match(periodPattern);
+
+      if (periodMatch) {
+        const period = periodMatch[1].trim();
+        const description = periodMatch[2].trim();
         const dates = parsePeriodToDates(period);
         return {
           period: period,
           startDate: dates.startDate,
           endDate: dates.endDate,
-          description: ""
+          description: description
         };
       }
 
+      // 매칭 실패: 전체를 description으로 처리
       return {
         period: "",
         startDate: "",
         endDate: "",
-        description: careerStr
+        description: cleanText
       };
     }
 

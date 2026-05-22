@@ -11,6 +11,8 @@
     "test:round-trip": "node cli/round-trip-test.cjs"
   },
   "dependencies": {
+    "@codecogs/eqneditor-tinymce6": "^1.0.2",
+    "@tinymce/tinymce-react": "^6.3.0",
     "@tiptap/extension-bubble-menu": "^3.11.0",
     "@tiptap/extension-bullet-list": "^3.11.1",
     "@tiptap/extension-floating-menu": "^3.11.0",
@@ -29,7 +31,8 @@
     "html2canvas": "^1.4.1",
     "katex": "^0.16.25",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "tinymce": "^8.5.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

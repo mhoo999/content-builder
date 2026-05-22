@@ -1,111 +1,182 @@
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import "./PreparationSection.css"
-import RichTextEditor from "../RichTextEditor"
+import TinyMCEEditor from "../TinyMCEEditor/TinyMCEEditor"
+
+const DEBOUNCE_DELAY = 300
 
 function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType = 'general' }) {
-  const isFirstLesson = lessonData.weekNumber === 1 && lessonData.lessonNumber === 1
+  // 로컬 state로 입력값 관리 (빠른 UI 응답)
+  const [localData, setLocalData] = useState(lessonData)
+  const debounceRef = useRef(null)
+  const isInitialMount = useRef(true)
 
-  // 1강 1주차 1차시인 경우 오리엔테이션 자동 활성화 및 URL 자동 생성
-  if (isFirstLesson) {
-    if (!lessonData.hasOrientation) {
+  // lessonData가 외부에서 변경되면 로컬 state 동기화
+  useEffect(() => {
+    setLocalData(lessonData)
+  }, [lessonData.lessonNumber, lessonData.weekNumber]) // 차시 변경 시에만 동기화
+
+  // 로컬 데이터 변경 시 debounce로 부모에 전달
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+    }
+
+    debounceRef.current = setTimeout(() => {
+      onUpdate(localData)
+    }, DEBOUNCE_DELAY)
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+      }
+    }
+  }, [localData]) // onUpdate 의존성 제거 (안정적인 참조 가정)
+
+  // 로컬 업데이트 함수 (즉시 UI 반영, debounce로 부모 전달)
+  const updateLocal = useCallback((updates) => {
+    setLocalData(prev => ({ ...prev, ...updates }))
+  }, [])
+
+  const isFirstLesson = localData.weekNumber === 1 && localData.lessonNumber === 1
+
+  // 1강 1주차 1차시 오리엔테이션 초기화 (useEffect로 이동)
+  useEffect(() => {
+    if (!isFirstLesson) return
+
+    if (!localData.hasOrientation) {
       const autoVideoUrl =
         courseCode && year ? `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/${courseCode}_ot.mp4` : ""
       const autoSubtitlePath = courseCode ? `../subtitles/${courseCode}_ot.vtt` : ""
-      onUpdate({
-        ...lessonData,
+      updateLocal({
         hasOrientation: true,
         orientation: {
           videoUrl: autoVideoUrl,
           subtitlePath: autoSubtitlePath,
         },
       })
-    } else if (courseCode && year && !lessonData.orientation.videoUrl) {
-      // 이미 활성화되어 있지만 URL이 없는 경우 자동 생성
+    } else if (courseCode && year && !localData.orientation?.videoUrl) {
       const autoVideoUrl = `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/${courseCode}_ot.mp4`
       const autoSubtitlePath = `../subtitles/${courseCode}_ot.vtt`
-      onUpdate({
-        ...lessonData,
+      updateLocal({
         orientation: {
           videoUrl: autoVideoUrl,
           subtitlePath: autoSubtitlePath,
         },
       })
     }
-  }
+  }, [isFirstLesson, courseCode, year, localData.hasOrientation, localData.orientation?.videoUrl, updateLocal])
+
+  // terms 초기화 (useEffect로 이동)
+  useEffect(() => {
+    if (!localData.terms || localData.terms.length === 0) {
+      updateLocal({
+        terms: [
+          { title: "", content: ["", "", ""] },
+          { title: "", content: ["", "", ""] },
+          { title: "", content: ["", "", ""] },
+        ],
+      })
+    }
+  }, [localData.terms, updateLocal])
 
   const handleOrientationChange = (field, value) => {
-    onUpdate({
-      ...lessonData,
-      orientation: { ...lessonData.orientation, [field]: value },
+    updateLocal({
+      orientation: { ...localData.orientation, [field]: value },
     })
   }
 
   const handleTermChange = (index, field, value) => {
-    const newTerms = [...lessonData.terms]
+    const newTerms = [...localData.terms]
     newTerms[index] = { ...newTerms[index], [field]: value }
-    onUpdate({ ...lessonData, terms: newTerms })
+    updateLocal({ terms: newTerms })
   }
 
   const handleTermContentChange = (termIndex, contentIndex, value) => {
-    const newTerms = [...lessonData.terms]
+    const newTerms = [...localData.terms]
     const newContent = [...(newTerms[termIndex].content || [])]
     newContent[contentIndex] = value
     newTerms[termIndex] = { ...newTerms[termIndex], content: newContent }
-    onUpdate({ ...lessonData, terms: newTerms })
+    updateLocal({ terms: newTerms })
   }
 
   const addTermContent = (termIndex) => {
-    const newTerms = [...lessonData.terms]
+    const newTerms = [...localData.terms]
     const newContent = [...(newTerms[termIndex].content || []), ""]
     newTerms[termIndex] = { ...newTerms[termIndex], content: newContent }
-    onUpdate({ ...lessonData, terms: newTerms })
+    updateLocal({ terms: newTerms })
   }
 
   const removeTermContent = (termIndex, contentIndex) => {
-    const newTerms = [...lessonData.terms]
+    const newTerms = [...localData.terms]
     const newContent = (newTerms[termIndex].content || []).filter((_, i) => i !== contentIndex)
     newTerms[termIndex] = { ...newTerms[termIndex], content: newContent }
-    onUpdate({ ...lessonData, terms: newTerms })
+    updateLocal({ terms: newTerms })
+  }
+
+  const handleTermContentPaste = (termIndex, contentIndex, e) => {
+    const pastedText = e.clipboardData.getData('text/plain');
+
+    if (pastedText.includes('\n')) {
+      e.preventDefault();
+
+      const lines = pastedText
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+      if (lines.length > 1) {
+        const newTerms = [...localData.terms];
+        const currentContent = [...(newTerms[termIndex].content || [])];
+        currentContent[contentIndex] = lines[0];
+
+        for (let i = 1; i < lines.length; i++) {
+          currentContent.splice(contentIndex + i, 0, lines[i]);
+        }
+
+        newTerms[termIndex] = { ...newTerms[termIndex], content: currentContent };
+        updateLocal({ terms: newTerms });
+
+        console.log(`[용어 ${termIndex + 1}] 붙여넣기: ${lines.length}개 항목으로 자동 분리됨`);
+      } else if (lines.length === 1) {
+        const newTerms = [...localData.terms];
+        const currentContent = [...(newTerms[termIndex].content || [])];
+        currentContent[contentIndex] = lines[0];
+        newTerms[termIndex] = { ...newTerms[termIndex], content: currentContent };
+        updateLocal({ terms: newTerms });
+      }
+    }
   }
 
   const handleLearningContentChange = (index, value) => {
-    const newContents = [...lessonData.learningContents]
+    const newContents = [...localData.learningContents]
     newContents[index] = value
-    onUpdate({ ...lessonData, learningContents: newContents })
+    updateLocal({ learningContents: newContents })
   }
 
   const handleLearningObjectiveChange = (index, value) => {
-    const newObjectives = [...lessonData.learningObjectives]
+    const newObjectives = [...localData.learningObjectives]
     newObjectives[index] = value
-    onUpdate({ ...lessonData, learningObjectives: newObjectives })
+    updateLocal({ learningObjectives: newObjectives })
   }
 
-  // HTML 태그 포함 여부 확인
   const isHtmlContent = (text) => {
     if (!text || typeof text !== "string") return false
     return /<[^>]+>/.test(text)
   }
 
-  // terms가 없거나 비어있을 때 기본 3개 제공
   const terms =
-    lessonData.terms && lessonData.terms.length > 0
-      ? lessonData.terms
+    localData.terms && localData.terms.length > 0
+      ? localData.terms
       : [
           { title: "", content: ["", "", ""] },
           { title: "", content: ["", "", ""] },
           { title: "", content: ["", "", ""] },
         ]
-
-  // terms가 비어있을 때 자동으로 초기화
-  if (!lessonData.terms || lessonData.terms.length === 0) {
-    onUpdate({
-      ...lessonData,
-      terms: [
-        { title: "", content: ["", "", ""] },
-        { title: "", content: ["", "", ""] },
-        { title: "", content: ["", "", ""] },
-      ],
-    })
-  }
 
   return (
     <div className="form-section">
@@ -124,7 +195,7 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
                   : "https://cdn-it.livestudy.com/mov/{연도}/{코드명}/{코드명}_ot.mp4"
               }
               value={
-                lessonData.orientation.videoUrl ||
+                localData.orientation?.videoUrl ||
                 (courseCode && year
                   ? `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/${courseCode}_ot.mp4`
                   : "")
@@ -137,7 +208,7 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
             <input
               type="text"
               placeholder={courseCode ? `../subtitles/${courseCode}_ot.vtt` : "../subtitles/{코드명}_ot.vtt"}
-              value={lessonData.orientation.subtitlePath || (courseCode ? `../subtitles/${courseCode}_ot.vtt` : "")}
+              value={localData.orientation?.subtitlePath || (courseCode ? `../subtitles/${courseCode}_ot.vtt` : "")}
               onChange={(e) => handleOrientationChange("subtitlePath", e.target.value)}
             />
           </div>
@@ -152,8 +223,8 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
           <button
             className="btn-add-small"
             onClick={() => {
-              const newTerms = [...lessonData.terms, { title: "", content: ["", "", ""] }]
-              onUpdate({ ...lessonData, terms: newTerms })
+              const newTerms = [...localData.terms, { title: "", content: ["", "", ""] }]
+              updateLocal({ terms: newTerms })
             }}
           >
             + 용어 추가
@@ -167,8 +238,8 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
                 <button
                   className="btn-remove-inline"
                   onClick={() => {
-                    const newTerms = lessonData.terms.filter((_, i) => i !== index)
-                    onUpdate({ ...lessonData, terms: newTerms })
+                    const newTerms = localData.terms.filter((_, i) => i !== index)
+                    updateLocal({ terms: newTerms })
                   }}
                 >
                   ×
@@ -199,6 +270,8 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
                     placeholder={`내용 ${contentIndex + 1}`}
                     value={contentItem}
                     onChange={(e) => handleTermContentChange(index, contentIndex, e.target.value)}
+                    onPaste={(e) => handleTermContentPaste(index, contentIndex, e)}
+                    title="여러 줄 붙여넣기 시 자동으로 항목 분리"
                   />
                   {(term.content || []).length > 1 && (
                     <button
@@ -211,6 +284,7 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
                   )}
                 </div>
               ))}
+              <small className="hint">💡 여러 줄을 붙여넣으면 자동으로 항목이 분리됩니다.</small>
             </div>
           </div>
         ))}
@@ -227,31 +301,28 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
             <button
               className="btn-add-small"
               onClick={() => {
-                // 학습내용만 추가 (실습과 완전히 분리)
-                const learningContents = lessonData.learningContents
+                const learningContents = localData.learningContents
                   ? [
-                      ...lessonData.learningContents.filter(
+                      ...localData.learningContents.filter(
                         (content) => !(typeof content === "string" && content.includes("class='practice'")),
                       ),
                       "",
                     ]
                   : [""]
-                onUpdate({ ...lessonData, learningContents: learningContents })
+                updateLocal({ learningContents: learningContents })
               }}
             >
               + 추가
             </button>
           </div>
-          {/* 학습내용만 표시 (실습과 완전히 분리) */}
           {(() => {
-            const nonPracticeContents = (lessonData.learningContents || []).filter(
+            const nonPracticeContents = (localData.learningContents || []).filter(
               (content) => !(typeof content === "string" && content.includes("class='practice'")),
             )
             return nonPracticeContents.map((content, index) => {
               const isHtml = isHtmlContent(content)
               const contentNumber = index + 1
-              // 원본 배열에서의 인덱스 찾기
-              const actualIndex = lessonData.learningContents.findIndex((c) => c === content)
+              const actualIndex = localData.learningContents.findIndex((c) => c === content)
 
               return (
                 <div
@@ -265,8 +336,8 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
                         <button
                           className="btn-remove-small"
                           onClick={() => {
-                            const newContents = lessonData.learningContents.filter((_, i) => i !== actualIndex)
-                            onUpdate({ ...lessonData, learningContents: newContents })
+                            const newContents = localData.learningContents.filter((_, i) => i !== actualIndex)
+                            updateLocal({ learningContents: newContents })
                           }}
                         >
                           ×
@@ -275,7 +346,7 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
                     </div>
                   )}
                   {isHtml ? (
-                    <RichTextEditor
+                    <TinyMCEEditor
                       value={content}
                       onChange={(value) => handleLearningContentChange(actualIndex, value)}
                       placeholder={`학습내용 ${contentNumber}`}
@@ -292,8 +363,8 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
                         <button
                           className="btn-remove-small"
                           onClick={() => {
-                            const newContents = lessonData.learningContents.filter((_, i) => i !== actualIndex)
-                            onUpdate({ ...lessonData, learningContents: newContents })
+                            const newContents = localData.learningContents.filter((_, i) => i !== actualIndex)
+                            updateLocal({ learningContents: newContents })
                           }}
                         >
                           ×
@@ -307,24 +378,21 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
           })()}
 
           {/* 실습 에디터 별도 표시 (항상 마지막) */}
-          {lessonData.hasPractice && (
+          {localData.hasPractice && (
             <div key="practice-editor" className="dynamic-item-vertical">
               <div className="item-header">
                 <label>실습</label>
               </div>
-              <RichTextEditor
+              <TinyMCEEditor
                 value={
-                  lessonData.practiceContent ||
-                  lessonData.learningContents?.find(
+                  localData.practiceContent ||
+                  localData.learningContents?.find(
                     (content) => typeof content === "string" && content.includes("class='practice'"),
                   ) ||
                   "<ul class='practice'><li></li></ul>"
                 }
                 onChange={(value) => {
-                  onUpdate({
-                    ...lessonData,
-                    practiceContent: value,
-                  })
+                  updateLocal({ practiceContent: value })
                 }}
                 placeholder="실습 내용"
               />
@@ -338,26 +406,26 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
             <button
               className="btn-add-small"
               onClick={() => {
-                const newObjectives = [...lessonData.learningObjectives, ""]
-                onUpdate({ ...lessonData, learningObjectives: newObjectives })
+                const newObjectives = [...localData.learningObjectives, ""]
+                updateLocal({ learningObjectives: newObjectives })
               }}
             >
               + 추가
             </button>
           </div>
-          {lessonData.learningObjectives.map((objective, index) => {
+          {localData.learningObjectives.map((objective, index) => {
             const isHtml = isHtmlContent(objective)
             return (
               <div key={index} className={isHtml ? "dynamic-item-vertical" : "dynamic-item"}>
                 {isHtml && (
                   <div className="item-header">
                     <label>학습목표 {index + 1}</label>
-                    {lessonData.learningObjectives.length > 1 && (
+                    {localData.learningObjectives.length > 1 && (
                       <button
                         className="btn-remove-small"
                         onClick={() => {
-                          const newObjectives = lessonData.learningObjectives.filter((_, i) => i !== index)
-                          onUpdate({ ...lessonData, learningObjectives: newObjectives })
+                          const newObjectives = localData.learningObjectives.filter((_, i) => i !== index)
+                          updateLocal({ learningObjectives: newObjectives })
                         }}
                       >
                         ×
@@ -366,7 +434,7 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
                   </div>
                 )}
                 {isHtml ? (
-                  <RichTextEditor
+                  <TinyMCEEditor
                     value={objective}
                     onChange={(value) => handleLearningObjectiveChange(index, value)}
                     placeholder={`학습목표 ${index + 1}`}
@@ -379,12 +447,12 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
                       value={objective}
                       onChange={(e) => handleLearningObjectiveChange(index, e.target.value)}
                     />
-                    {lessonData.learningObjectives.length > 1 && (
+                    {localData.learningObjectives.length > 1 && (
                       <button
                         className="btn-remove-small"
                         onClick={() => {
-                          const newObjectives = lessonData.learningObjectives.filter((_, i) => i !== index)
-                          onUpdate({ ...lessonData, learningObjectives: newObjectives })
+                          const newObjectives = localData.learningObjectives.filter((_, i) => i !== index)
+                          updateLocal({ learningObjectives: newObjectives })
                         }}
                       >
                         ×
@@ -401,4 +469,4 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
   )
 }
 
-export default PreparationSection
+export default React.memo(PreparationSection)

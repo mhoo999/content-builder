@@ -207,40 +207,41 @@
 .notion-editor-content h1 {
   font-size: 1.875em;
   font-weight: 700;
-  margin: 1em 0 0.5em;
+  margin: 0.5em 0 0.3em;
   line-height: 1.3;
 }
 
 .notion-editor-content h2 {
   font-size: 1.5em;
   font-weight: 600;
-  margin: 0.8em 0 0.4em;
+  margin: 0.5em 0 0.3em;
   line-height: 1.35;
 }
 
 .notion-editor-content h3 {
   font-size: 1.25em;
   font-weight: 600;
-  margin: 0.6em 0 0.3em;
+  margin: 0.5em 0 0.3em;
   line-height: 1.4;
 }
 
-/* H3 자동 번호 매기기 - ol 스타일과 동일하게 */
+/* H3 자동 번호 매기기 제거 (사용자가 직접 입력) */
 .notion-editor-content {
-  counter-reset: h3-counter;
+  /* counter-reset: h3-counter; */
 }
 
-.notion-editor-content h3::before {
+/* .notion-editor-content h3::before {
   counter-increment: h3-counter;
   content: counter(h3-counter) ") ";
   color: #000;
   margin-right: 0.3em;
-}
+} */
 
 /* 문단 */
 .notion-editor-content p {
   margin: 0.5em 0;
 }
+
 
 /* 번호가 포함된 줄 (예: 1), 2), 3) 등) 스타일링 */
 .notion-editor-content p.numbered-item {
@@ -352,11 +353,18 @@
   box-shadow: 0 2px 8px rgba(35, 131, 226, 0.2);
 }
 
+/* 표 래퍼 (Tiptap이 자동 생성) */
+.notion-editor-content .tableWrapper {
+  position: relative;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
 /* 표 */
 .notion-editor-content table {
   border-collapse: collapse;
+  table-layout: fixed;
   width: 100%;
-  margin: 1em 0;
   overflow: hidden;
   border-radius: 8px;
   border: 1px solid #e1e4e8;
@@ -365,9 +373,10 @@
 .notion-editor-content th,
 .notion-editor-content td {
   border: 1px solid #e1e4e8;
-  padding: 10px 14px;
+  padding: 4px 6px;
   text-align: left;
   min-width: 100px;
+  line-height: 1.3;
 }
 
 /* 셀 정렬 스타일 (인라인 스타일이 우선) */
@@ -402,11 +411,57 @@
   background: #e8f4ff;
 }
 
+/* 표 열 너비 조정 핸들 (ProseMirror 기본) */
+.ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: #2383e2;
+  cursor: col-resize;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* 마우스 호버 시 핸들 표시 */
+.ProseMirror .tableWrapper:hover .column-resize-handle {
+  pointer-events: all;
+}
+
+.ProseMirror .resize-cursor {
+  cursor: col-resize;
+}
+
+/* 표 셀에 상대 위치 설정 (핸들 위치 기준) */
+.notion-editor-content th,
+.notion-editor-content td {
+  position: relative;
+}
+
+/* 리사이즈 중 테이블 선택 방지 */
+.ProseMirror.resize-cursor {
+  cursor: col-resize;
+  user-select: none;
+}
+
 /* 수평선 */
 .notion-editor-content hr {
   border: none;
   border-top: 1px solid #e1e4e8;
   margin: 1.5em 0;
+}
+
+/* 마지막 줄바꿈 경고 */
+.trailing-newline-warning {
+  padding: 8px 12px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-left: 4px solid #ff9800;
+  font-size: 12px;
+  color: #856404;
+  margin-top: 8px;
+  border-radius: 4px;
 }
 
 /* 힌트 */

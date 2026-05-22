@@ -1,0 +1,167 @@
+.tinymce-editor-wrapper {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  margin: 8px 0;
+}
+
+.tinymce-editor-wrapper .tox-tinymce {
+  border: none;
+  border-radius: 4px;
+}
+
+/* 에디터 포커스 스타일 */
+.tinymce-editor-wrapper:focus-within {
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+/* 테이블 스타일 조정 */
+.tinymce-editor-wrapper table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.tinymce-editor-wrapper table td,
+.tinymce-editor-wrapper table th {
+  border: 1px solid #ddd;
+  padding: 6px 8px;
+  line-height: 1.4;
+}
+
+.tinymce-editor-wrapper table th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
+
+/* 이미지 스타일 */
+.tinymce-editor-wrapper img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 체크 불릿 리스트 */
+.tinymce-editor-wrapper ul.check-bullet {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.tinymce-editor-wrapper ul.check-bullet li:before {
+  content: "✓";
+  margin-right: 8px;
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+/* 수식 모달 */
+.math-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.math-modal {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 500px;
+  max-width: 600px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.math-modal h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.math-modal-content label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.math-modal-content label input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.math-modal-content textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+.math-preview {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.math-preview strong {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #666;
+  text-align: left;
+}
+
+.math-modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.math-modal-actions button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.math-modal-actions button:first-child {
+  background: #4CAF50;
+  color: white;
+  border-color: #4CAF50;
+}
+
+.math-modal-actions button:first-child:hover {
+  background: #45a049;
+}
+
+.math-modal-actions button:last-child:hover {
+  background: #f5f5f5;
+}
+
+/* 수식 스타일 */
+.math-inline,
+.math-block {
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+}
+
+.math-block {
+  display: block;
+  text-align: center;
+  margin: 8px 0;
+  padding: 12px;
+}

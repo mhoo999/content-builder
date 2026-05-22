@@ -640,14 +640,19 @@ export async function convertTableToImage(tableHtml) {
 /**
  * HTML 콘텐츠에서 수식과 표를 이미지로 변환
  * RichTextEditor에 입력된 수식(<span data-formula>)과 표(<table>)만 변환
+ * @param {string} htmlContent - 변환할 HTML 콘텐츠
+ * @param {Object} options - 변환 옵션
+ * @param {boolean} options.convertTables - 표를 이미지로 변환할지 여부 (기본값: false)
  */
-export async function convertMathAndTablesToImages(htmlContent) {
+export async function convertMathAndTablesToImages(htmlContent, options = {}) {
+  const { convertTables = false } = options
+
   if (!htmlContent || typeof htmlContent !== 'string') {
     return htmlContent
   }
 
   // 수식이나 표가 없으면 변환하지 않음
-  if (!htmlContent.includes('data-formula') && !htmlContent.includes('<table')) {
+  if (!htmlContent.includes('data-formula') && (!convertTables || !htmlContent.includes('<table'))) {
     return htmlContent
   }
 
@@ -688,26 +693,30 @@ export async function convertMathAndTablesToImages(htmlContent) {
     }
   }
 
-  // 표 변환: <table>...</table>
-  const tables = tempDiv.querySelectorAll('table')
-  console.log(`표 발견: ${tables.length}개`)
-  
-  // 역순으로 처리 (DOM 변경 시 인덱스 문제 방지)
-  for (let i = tables.length - 1; i >= 0; i--) {
-    const table = tables[i]
-    const tableHtml = table.outerHTML
-    console.log(`표 변환 중...`)
-    const base64 = await convertTableToImage(tableHtml)
-    if (base64) {
-      const img = document.createElement('img')
-      img.src = base64
-      img.alt = '표'
-      img.setAttribute('data-table', 'true')
-      table.parentNode?.replaceChild(img, table)
-      console.log(`표 변환 완료`)
-    } else {
-      console.warn(`표 변환 실패`)
+  // 표 변환: <table>...</table> (옵션이 활성화된 경우만)
+  if (convertTables) {
+    const tables = tempDiv.querySelectorAll('table')
+    console.log(`표 발견: ${tables.length}개`)
+
+    // 역순으로 처리 (DOM 변경 시 인덱스 문제 방지)
+    for (let i = tables.length - 1; i >= 0; i--) {
+      const table = tables[i]
+      const tableHtml = table.outerHTML
+      console.log(`표 변환 중...`)
+      const base64 = await convertTableToImage(tableHtml)
+      if (base64) {
+        const img = document.createElement('img')
+        img.src = base64
+        img.alt = '표'
+        img.setAttribute('data-table', 'true')
+        table.parentNode?.replaceChild(img, table)
+        console.log(`표 변환 완료`)
+      } else {
+        console.warn(`표 변환 실패`)
+      }
     }
+  } else {
+    console.log(`표 변환 건너뛰기 (convertTables 옵션이 비활성화됨)`)
   }
 
   const result = tempDiv.innerHTML
@@ -717,9 +726,12 @@ export async function convertMathAndTablesToImages(htmlContent) {
 
 /**
  * 객체의 모든 HTML 필드에서 수식과 표를 이미지로 변환
+ * @param {Object} data - 변환할 데이터 객체
+ * @param {Object} options - 변환 옵션
+ * @param {boolean} options.convertTables - 표를 이미지로 변환할지 여부 (기본값: false)
  */
-export async function convertAllMathAndTablesInData(data) {
-  console.log('수식과 표 변환 시작...')
+export async function convertAllMathAndTablesInData(data, options = {}) {
+  console.log('수식과 표 변환 시작...', options)
   const converted = JSON.parse(JSON.stringify(data)) // Deep clone
 
   let conversionCount = 0
@@ -730,11 +742,11 @@ export async function convertAllMathAndTablesInData(data) {
       // HTML 태그가 포함된 문자열인 경우
       const hasMath = value.includes('data-formula')
       const hasTable = value.includes('<table')
-      
+
       if (hasMath || hasTable) {
         console.log(`변환 대상 발견 (${path}): 수식=${hasMath}, 표=${hasTable}`)
         conversionCount++
-        const converted = await convertMathAndTablesToImages(value)
+        const converted = await convertMathAndTablesToImages(value, options)
         return converted
       }
     } else if (Array.isArray(value)) {

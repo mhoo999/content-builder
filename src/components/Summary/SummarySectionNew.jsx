@@ -1,11 +1,49 @@
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import "./SummarySection.css"
-import RichTextEditor from "../RichTextEditor"
+import TinyMCEEditor from "../TinyMCEEditor/TinyMCEEditor"
+
+const DEBOUNCE_DELAY = 300
 
 function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = 'general' }) {
-  // 차시 번호를 2자리 문자열로 변환 (01, 02, ...)
-  const lessonNumStr = String(lessonData.lessonNumber).padStart(2, "0")
+  // 로컬 state로 입력값 관리 (빠른 UI 응답)
+  const [localData, setLocalData] = useState(lessonData)
+  const debounceRef = useRef(null)
+  const isInitialMount = useRef(true)
 
-  // 자동 생성된 다운로드 URL들
+  // lessonData가 외부에서 변경되면 로컬 state 동기화
+  useEffect(() => {
+    setLocalData(lessonData)
+  }, [lessonData.lessonNumber, lessonData.weekNumber])
+
+  // 로컬 데이터 변경 시 debounce로 부모에 전달
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+    }
+
+    debounceRef.current = setTimeout(() => {
+      onUpdate(localData)
+    }, DEBOUNCE_DELAY)
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+      }
+    }
+  }, [localData])
+
+  // 로컬 업데이트 함수
+  const updateLocal = useCallback((updates) => {
+    setLocalData(prev => ({ ...prev, ...updates }))
+  }, [])
+
+  const lessonNumStr = String(localData.lessonNumber).padStart(2, "0")
+
   const autoInstructionUrl =
     courseCode && year
       ? `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/down/${courseCode}_mp3_${lessonNumStr}.zip`
@@ -14,16 +52,46 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
     courseCode && year
       ? `https://cdn-it.livestudy.com/mov/${year}/${courseCode}/down/${courseCode}_book_${lessonNumStr}.zip`
       : ""
-  // 연습문제 추가
+
+  // exercises 초기화 (useEffect로 이동)
+  useEffect(() => {
+    if (!localData.exercises || localData.exercises.length === 0) {
+      updateLocal({
+        exercises: [
+          {
+            type: "boolean",
+            question: "",
+            answer: "",
+            options: [],
+            commentary: "",
+          },
+          {
+            type: "multiple",
+            question: "",
+            answer: "",
+            options: ["", "", "", ""],
+            commentary: "",
+          },
+          {
+            type: "multiple",
+            question: "",
+            answer: "",
+            options: ["", "", "", ""],
+            commentary: "",
+          },
+        ],
+      })
+    }
+  }, [localData.exercises, updateLocal])
+
   const addExercise = () => {
-    onUpdate({
-      ...lessonData,
+    updateLocal({
       exercises: [
-        ...lessonData.exercises,
+        ...localData.exercises,
         {
           type: "boolean",
           question: "",
-          answer: "", // 기본 선택 없음
+          answer: "",
           options: [],
           commentary: "",
         },
@@ -31,74 +99,62 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
     })
   }
 
-  // 연습문제 삭제
   const removeExercise = (index) => {
-    onUpdate({
-      ...lessonData,
-      exercises: lessonData.exercises.filter((_, i) => i !== index),
+    updateLocal({
+      exercises: localData.exercises.filter((_, i) => i !== index),
     })
   }
 
-  // 연습문제 타입 변경
   const changeExerciseType = (index, newType) => {
-    const newExercises = [...lessonData.exercises]
+    const newExercises = [...localData.exercises]
     newExercises[index] = {
       ...newExercises[index],
       type: newType,
-      answer: "", // 기본 선택 없음
+      answer: "",
       options: newType === "multiple" ? ["", "", "", ""] : [],
     }
-    onUpdate({ ...lessonData, exercises: newExercises })
+    updateLocal({ exercises: newExercises })
   }
 
-  // 연습문제 업데이트
   const updateExercise = (index, field, value) => {
-    const newExercises = [...lessonData.exercises]
+    const newExercises = [...localData.exercises]
     newExercises[index] = { ...newExercises[index], [field]: value }
-    onUpdate({ ...lessonData, exercises: newExercises })
+    updateLocal({ exercises: newExercises })
   }
 
-  // 연습문제 선택지 업데이트
   const updateExerciseOption = (exerciseIndex, optionIndex, value) => {
-    const newExercises = [...lessonData.exercises]
+    const newExercises = [...localData.exercises]
     const newOptions = [...newExercises[exerciseIndex].options]
     newOptions[optionIndex] = value
     newExercises[exerciseIndex] = { ...newExercises[exerciseIndex], options: newOptions }
-    onUpdate({ ...lessonData, exercises: newExercises })
+    updateLocal({ exercises: newExercises })
   }
 
-  // 학습정리 추가
   const addSummary = () => {
-    onUpdate({
-      ...lessonData,
-      summary: [...lessonData.summary, ""],
+    updateLocal({
+      summary: [...localData.summary, ""],
     })
   }
 
-  // 학습정리 삭제
   const removeSummary = (index) => {
-    onUpdate({
-      ...lessonData,
-      summary: lessonData.summary.filter((_, i) => i !== index),
+    updateLocal({
+      summary: localData.summary.filter((_, i) => i !== index),
     })
   }
 
-  // 학습정리 업데이트
   const updateSummary = (index, value) => {
-    const newSummary = [...lessonData.summary]
+    const newSummary = [...localData.summary]
     newSummary[index] = value
-    onUpdate({ ...lessonData, summary: newSummary })
+    updateLocal({ summary: newSummary })
   }
 
-  // 다운로드 URL 업데이트
   const handleDownloadChange = (field, value) => {
-    onUpdate({ ...lessonData, [field]: value })
+    updateLocal({ [field]: value })
   }
 
-  // exercises가 없거나 비어있을 때 기본 3개 제공
   const exercises =
-    lessonData.exercises && lessonData.exercises.length > 0
-      ? lessonData.exercises
+    localData.exercises && localData.exercises.length > 0
+      ? localData.exercises
       : [
           {
             type: "boolean",
@@ -122,36 +178,6 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
             commentary: "",
           },
         ]
-
-  // exercises가 비어있을 때 자동으로 초기화
-  if (!lessonData.exercises || lessonData.exercises.length === 0) {
-    onUpdate({
-      ...lessonData,
-      exercises: [
-        {
-          type: "boolean",
-          question: "",
-          answer: "",
-          options: [],
-          commentary: "",
-        },
-        {
-          type: "multiple",
-          question: "",
-          answer: "",
-          options: ["", "", "", ""],
-          commentary: "",
-        },
-        {
-          type: "multiple",
-          question: "",
-          answer: "",
-          options: ["", "", "", ""],
-          commentary: "",
-        },
-      ],
-    })
-  }
 
   return (
     <div className="form-section">
@@ -190,7 +216,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
 
             <div className="form-group">
               <label>문항</label>
-              <RichTextEditor
+              <TinyMCEEditor
                 value={exercise.question}
                 onChange={(value) => updateExercise(index, "question", value)}
                 placeholder="문제를 입력하세요"
@@ -203,7 +229,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
                 {exercise.options.map((option, optIndex) => (
                   <div key={optIndex} className="form-group">
                     <label>선택지 {optIndex + 1}</label>
-                    <RichTextEditor
+                    <TinyMCEEditor
                       value={option}
                       onChange={(value) => updateExerciseOption(index, optIndex, value)}
                       placeholder={`선택지 ${optIndex + 1}를 입력하세요`}
@@ -252,7 +278,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
 
             <div className="form-group">
               <label>해설</label>
-              <RichTextEditor
+              <TinyMCEEditor
                 value={exercise.commentary}
                 onChange={(value) => updateExercise(index, "commentary", value)}
                 placeholder="정답에 대한 해설을 작성하세요"
@@ -271,18 +297,18 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
             + 추가
           </button>
         </div>
-        {lessonData.summary.map((sum, index) => (
+        {localData.summary.map((sum, index) => (
           <div key={index} className="dynamic-item-vertical">
             <div className="item-header">
               <label>정리 {index + 1}</label>
-              {lessonData.summary.length > 1 && (
+              {localData.summary.length > 1 && (
                 <button className="btn-remove-inline" onClick={() => removeSummary(index)}>
                   ×
                 </button>
               )}
             </div>
-            <RichTextEditor
-              key={`summary-editor-${index}-${lessonData.lessonNumber}`}
+            <TinyMCEEditor
+              key={`summary-editor-${index}-${localData.lessonNumber}`}
               value={sum}
               onChange={(value) => updateSummary(index, value)}
               placeholder={`학습정리 내용 ${index + 1}`}
@@ -301,7 +327,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
             placeholder={
               autoInstructionUrl || "https://cdn-it.livestudy.com/mov/{연도}/{코드명}/down/{코드명}_mp3_{차시번호}.zip"
             }
-            value={lessonData.instructionUrl || autoInstructionUrl}
+            value={localData.instructionUrl || autoInstructionUrl}
             onChange={(e) => handleDownloadChange("instructionUrl", e.target.value)}
           />
         </div>
@@ -312,7 +338,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
             placeholder={
               autoGuideUrl || "https://cdn-it.livestudy.com/mov/{연도}/{코드명}/down/{코드명}_book_{차시번호}.zip"
             }
-            value={lessonData.guideUrl || autoGuideUrl}
+            value={localData.guideUrl || autoGuideUrl}
             onChange={(e) => handleDownloadChange("guideUrl", e.target.value)}
           />
         </div>
@@ -330,4 +356,4 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
   )
 }
 
-export default SummarySection
+export default React.memo(SummarySection)

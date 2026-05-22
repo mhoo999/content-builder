@@ -248,6 +248,7 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
   const [showMathModal, setShowMathModal] = useState(false)
   const [mathFormula, setMathFormula] = useState("")
   const [mathDisplay, setMathDisplay] = useState(false)
+  const [hasTrailingNewline, setHasTrailingNewline] = useState(false)
 
   // LaTeX 예시 (백슬래시 이스케이프)
   const mathExampleInline = "x^2 + y^2 = r^2"
@@ -357,7 +358,48 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
 
       const reader = new FileReader()
       reader.onload = (e) => {
-        editor.chain().focus().setImage({ src: e.target.result }).run()
+        const base64 = e.target.result
+
+        // 이미지 로드하여 크기 확인 (HTMLImageElement 사용)
+        const img = document.createElement('img')
+        img.onload = () => {
+          try {
+            const maxWidth = 600
+            let finalSrc = base64
+
+            // 이미지 크기 확인
+            const imgWidth = img.naturalWidth || img.width
+            const imgHeight = img.naturalHeight || img.height
+
+            console.log(`이미지 원본 크기: ${imgWidth} x ${imgHeight}`)
+
+            // 이미지 폭이 600px 초과하면 자동 리사이즈
+            if (imgWidth > maxWidth) {
+              const canvas = document.createElement('canvas')
+              const ratio = imgHeight / imgWidth
+              canvas.width = maxWidth
+              canvas.height = window.Math.round(maxWidth * ratio)
+
+              console.log(`리사이즈: ${canvas.width} x ${canvas.height}`)
+
+              const ctx = canvas.getContext('2d')
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+              finalSrc = canvas.toDataURL('image/png')
+            }
+
+            editor.chain().focus().setImage({ src: finalSrc }).run()
+          } catch (error) {
+            console.error('이미지 리사이즈 실패:', error)
+            // 오류 발생 시 원본 이미지 그대로 삽입
+            editor.chain().focus().setImage({ src: base64 }).run()
+          }
+        }
+        img.onerror = () => {
+          console.error('이미지 로드 실패')
+          // 오류 발생 시 원본 이미지 그대로 삽입
+          editor.chain().focus().setImage({ src: base64 }).run()
+        }
+        img.src = base64
       }
       reader.readAsDataURL(file)
     },
@@ -527,6 +569,37 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
       }
     }
   }, [editor])
+
+  // 마지막 줄바꿈 감지 - DISABLED (성능 이슈)
+  // useEffect(() => {
+  //   if (!editor) return
+
+  //   const checkTrailingNewline = () => {
+  //     const html = editor.getHTML()
+
+  //     // 끝에 빈 문단이나 br 태그가 있는지 확인
+  //     const trailingPatterns = [
+  //       /<p><\/p>\s*$/, // 빈 p 태그
+  //       /<p><br><\/p>\s*$/, // br만 있는 p 태그
+  //       /<p>\s*<\/p>\s*$/, // 공백만 있는 p 태그
+  //       /<br\s*\/?>\s*$/, // 마지막 br 태그
+  //       /<p><br\s*\/><\/p>\s*$/, // 자체 닫는 br이 있는 p 태그
+  //     ]
+
+  //     const hasTrailing = trailingPatterns.some(pattern => pattern.test(html))
+  //     setHasTrailingNewline(hasTrailing)
+  //   }
+
+  //   // 초기 체크
+  //   checkTrailingNewline()
+
+  //   // 에디터 내용 변경 시 체크
+  //   editor.on('update', checkTrailingNewline)
+
+  //   return () => {
+  //     editor.off('update', checkTrailingNewline)
+  //   }
+  // }, [editor])
 
   if (!editor) {
     return <div className="notion-editor-loading">로딩 중...</div>
@@ -1089,6 +1162,13 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
 
       {/* 에디터 본문 */}
       <EditorContent editor={editor} />
+
+      {/* 마지막 줄바꿈 경고 */}
+      {hasTrailingNewline && (
+        <div className="trailing-newline-warning">
+          ⚠️ 끝에 불필요한 줄바꿈이 있습니다. (Export 시 여백 발생 가능)
+        </div>
+      )}
 
       {/* 숨겨진 파일 입력 */}
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: "none" }} />

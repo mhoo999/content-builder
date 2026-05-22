@@ -42,7 +42,7 @@ body {
 .header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 20px 0;
+  padding: 8px 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -86,14 +86,14 @@ body {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 0 32px;
+  gap: 12px;
+  padding: 0 16px;
   flex: 1;
 }
 
 .header h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -151,8 +151,8 @@ body {
 
 .header-actions {
   display: flex;
-  gap: 12px;
-  padding: 0 32px;
+  gap: 8px;
+  padding: 0 16px;
 }
 
 /* 메인 컨텐츠 */
@@ -479,14 +479,16 @@ body {
   overflow-y: auto;
   background: var(--background);
   display: flex;
-  justify-content: center;
-  padding: 32px 0;
+  flex-direction: column; /* 스텝바 + 에디터 영역 수직 배치 */
+  justify-content: flex-start;
+  padding: 0;
 }
 
 .editor-area {
   width: 100%;
   max-width: 900px; /* Google Docs 스타일 너비 */
-  padding: 0 32px;
+  padding: 32px;
+  flex: 1;
 }
 
 .welcome-screen {

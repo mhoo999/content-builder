@@ -27,19 +27,17 @@ export const markRelativeImages = (html, importedImages = {}) => {
     return html
   }
 
-  // <p class='main-title'><strong>내용</strong></p> → <h1>내용</h1> 변환 (Import 시)
+  // Import 시 에디터 호환을 위해 변환 (Export 시 역변환으로 라운드트립 보장)
+  // <p class='main-title'><strong>내용</strong></p> → <h1>내용</h1>
   html = html.replace(
     /<p\s+class=['"]main-title['"][^>]*><strong>(.*?)<\/strong><\/p>/gi,
     "<h1>$1</h1>",
   )
 
-  // ol 태그를 H3로 변환 (Import 시)
-  // <ol style='color:#000;margin-bottom: 4px;'>1) 제목</ol> → <h3>제목</h3>
-  // "1)" 같은 번호는 제거
+  // ol 태그를 H3로 변환
   html = html.replace(
     /<ol\s+style=['"]color:#000;margin-bottom:\s*4px;['"]>(.*?)<\/ol>/gi,
     (match, content) => {
-      // "1)", "2)" 같은 번호 제거
       const cleaned = content.replace(/^\d+\)\s*/, "").trim()
       return `<h3>${cleaned}</h3>`
     },
@@ -578,7 +576,24 @@ export const parseProfessorInfo = (dataJson) => {
           description: "",
         }
       }
-      // 일반 문자열인 경우 (기존 형식 호환)
+      // 일반 문자열인 경우 - plain text에서 날짜 패턴 추출 시도
+      // "YYYY년 M월 ~ YYYY년 M월 내용" 또는 "YYYY년 M월 ~ 현재 내용" 형식
+      const datePattern = /^(\d{4}년\s*\d{1,2}월\s*~\s*(?:\d{4}년\s*\d{1,2}월|현재))\s*(.*)$/
+      const dateMatch = careerStr.match(datePattern)
+
+      if (dateMatch) {
+        const period = dateMatch[1].trim()
+        const description = dateMatch[2].trim()
+        const dates = parsePeriodToDates(period)
+        return {
+          period: period,
+          startDate: dates.startDate,
+          endDate: dates.endDate,
+          description: description,
+        }
+      }
+
+      // 날짜 패턴이 없으면 전체를 description으로
       return {
         period: "",
         startDate: "",

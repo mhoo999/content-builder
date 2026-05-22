@@ -1,5 +1,5 @@
 .exercise-item {
-  background: var(--background);
+  background: #fafbfc;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 20px;
@@ -56,6 +56,18 @@
 
 .options-group {
   margin: 16px 0;
+  padding: 16px;
+  background: #e8f4ff;
+  border-radius: var(--radius-sm);
+  border: 1px solid #b3d9ff;
+}
+
+.options-group .group-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e40af;
+  margin-bottom: 12px;
 }
 
 .options-group .form-group {

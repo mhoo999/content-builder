@@ -6,6 +6,8 @@ import LearningSection from "./components/Learning/LearningSection"
 import SummarySection from "./components/Summary/SummarySectionNew"
 import StartModal from "./components/StartModal/StartModal"
 import TemplateModal from "./components/TemplateModal/TemplateModal"
+import SaveStatusIndicator from "./components/SaveStatusIndicator"
+import StepBar from "./components/StepBar/StepBar"
 import {
   convertDataJsonToBuilderFormat,
   parseSubjectsJson,
@@ -13,6 +15,7 @@ import {
   markRelativeImages,
 } from "./utils/folderParser"
 import { TEMPLATE_PRESETS, detectTemplatePreset, detectTemplateTheme, getAllTemplates, getTemplateById } from "./models/templatePresets"
+import { validateCourseData, logValidationResult, formatValidationMessage } from "./utils/dataValidator"
 import "./App.css"
 
 const STORAGE_KEY = "content-builder-autosave"
@@ -206,7 +209,7 @@ function App() {
 
     setSaveStatus("저장 중...")
 
-    // 1초 후 저장 (debounce)
+    // 3초 후 저장 (debounce) - 성능 최적화
     saveTimeoutRef.current = setTimeout(() => {
       try {
         const dataToSave = { ...data, importedImages: images || {}, importedSubtitles: subtitles || {}, examWeeks: exams || [] }
@@ -230,7 +233,7 @@ function App() {
           setSaveStatus("저장 실패")
         }
       }
-    }, 1000)
+    }, 3000)
   }, [])
 
   // courseData 또는 importedImages/importedSubtitles 변경 시 자동 저장
@@ -284,6 +287,20 @@ function App() {
     }
   }
 
+  // 수동 검증 함수
+  const runValidation = () => {
+    if (courseData.lessons.length === 0) {
+      alert("검증할 차시가 없습니다. 먼저 차시를 추가하거나 불러와주세요.");
+      return;
+    }
+
+    const validationResult = validateCourseData(courseData);
+    logValidationResult(validationResult);
+
+    const message = formatValidationMessage(validationResult);
+    alert(message);
+  }
+
   // 새 차시 추가
   const addLesson = () => {
     const newLesson = createBuilderLessonData()
@@ -331,12 +348,20 @@ function App() {
   }
 
   // 차시 데이터 업데이트
-  const updateLesson = (index, updatedLesson) => {
+  const updateLesson = useCallback((index, updatedLesson) => {
     setCourseData((prev) => ({
       ...prev,
       lessons: prev.lessons.map((lesson, i) => (i === index ? updatedLesson : lesson)),
     }))
-  }
+  }, [])
+
+  // 섹션 클릭 시 스크롤 핸들러
+  const handleSectionClick = useCallback((sectionId) => {
+    const element = document.getElementById(`section-${sectionId}`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [])
 
   // 차시 번호 업데이트 (인라인 편집용)
   const updateLessonNumber = (index, lessonNumber) => {
@@ -476,6 +501,19 @@ function App() {
       return
     }
 
+    // 데이터 검증
+    const validationResult = validateCourseData(courseData);
+    logValidationResult(validationResult);
+
+    if (validationResult.hasIssues) {
+      const proceed = window.confirm(
+        `⚠️ ${validationResult.issues.length}개의 미입력 필드가 발견되었습니다.\n\n그래도 Export를 진행하시겠습니까?\n\n💡 콘솔(F12)에서 상세 내용을 확인할 수 있습니다.`
+      );
+      if (!proceed) {
+        return;
+      }
+    }
+
     // 출력 경로 입력 받기
     // Windows/macOS/Linux 공통 경로 안내
     const isWindows = navigator.platform.toLowerCase().includes("win")
@@ -500,10 +538,10 @@ function App() {
       })),
     }
 
-    // 수식과 표를 이미지로 변환
-    console.log("수식과 표를 이미지로 변환하는 중...")
+    // 수식만 이미지로 변환 (표는 HTML로 유지)
+    console.log("수식을 이미지로 변환하는 중... (표는 HTML 유지)")
     const { convertAllMathAndTablesInData } = await import("./utils/convertToImages")
-    const convertedData = await convertAllMathAndTablesInData(dataWithRecalculatedSections)
+    const convertedData = await convertAllMathAndTablesInData(dataWithRecalculatedSections, { convertTables: false })
     console.log("변환 완료, export 데이터 확인:", convertedData)
 
     // 익스포트할 데이터 준비
@@ -795,25 +833,39 @@ function App() {
       // 감지된 프리셋의 테마 설정
       let presetTheme = detectTemplateTheme(detectedPreset, sampleHtmlContent);
 
-      // 데이터 설정
-      setCourseData({
+      // 임포트 데이터 검증
+      const tempCourseData = {
         courseCode: courseCode,
         courseName: courseName,
         courseType: courseType,
-        year: "", // Import 시에는 연도 추출하지 않음 (수동 입력 필요)
+        year: "",
         backgroundImage: "",
         templatePreset: detectedPreset,
         templateTheme: presetTheme,
         professor: professorInfo,
         lessons: lessons,
-      })
+      };
 
-      setCurrentLessonIndex(0)
-      const imageCount = Object.keys(imageStore).length
-      const courseTypeLabel = courseType === "social-work-practice" ? "사회복지현장실습" : "일반"
-      alert(
-        `${lessons.length}개 차시를 성공적으로 불러왔습니다!\n\n과목코드: ${courseCode}\n과정명: ${courseName}\n과정 유형: ${courseTypeLabel}\n이미지: ${imageCount}개 저장됨`,
-      )
+      // 데이터 설정
+      setCourseData(tempCourseData);
+      setCurrentLessonIndex(0);
+
+      // 데이터 검증
+      const validationResult = validateCourseData(tempCourseData);
+      logValidationResult(validationResult);
+
+      // 성공 메시지 표시
+      const imageCount = Object.keys(imageStore).length;
+      const courseTypeLabel = courseType === "social-work-practice" ? "사회복지현장실습" : "일반";
+      let successMessage = `${lessons.length}개 차시를 성공적으로 불러왔습니다!\n\n과목코드: ${courseCode}\n과정명: ${courseName}\n과정 유형: ${courseTypeLabel}\n이미지: ${imageCount}개 저장됨`;
+
+      if (validationResult.hasIssues) {
+        successMessage += `\n\n⚠️ ${validationResult.issues.length}개의 미입력 필드가 발견되었습니다.\n💡 콘솔(F12)에서 상세 내용을 확인하세요.`;
+      } else {
+        successMessage += '\n\n✅ 모든 필수 필드가 입력되었습니다.';
+      }
+
+      alert(successMessage);
     } catch (error) {
       console.error("Folder import error:", error)
       alert("폴더를 불러오는 중 오류가 발생했습니다: " + error.message)
@@ -857,9 +909,7 @@ function App() {
           <h1 className="logo-clickable" onClick={resetToHome} title="처음으로 돌아가기">
             📚 Content Builder
           </h1>
-          <span className={`save-status ${saveStatus.includes("실패") || saveStatus.includes("불가") ? "error" : ""}`}>
-            {saveStatus}
-          </span>
+          <SaveStatusIndicator saveStatus={saveStatus} />
           {!isLocalStorageAvailable() && (
             <span
               className="storage-warning"
@@ -881,6 +931,14 @@ function App() {
               style={{ display: "none" }}
             />
           </label>
+          <button
+            className="btn-secondary"
+            onClick={runValidation}
+            disabled={courseData.lessons.length === 0}
+            title="현재 데이터 검증 (누락 필드, 형식 오류 등)"
+          >
+            🔍 검증
+          </button>
           <button
             className="btn-primary"
             onClick={exportToSubjects}
@@ -1029,6 +1087,7 @@ function App() {
 
         {/* 에디터 영역 */}
         <main className="editor-area-wrapper">
+          {currentLesson && <StepBar lessonData={currentLesson} onSectionClick={handleSectionClick} />}
           <div className="editor-area">
             {courseData.lessons.length === 0 ? (
               <div className="welcome-screen">
