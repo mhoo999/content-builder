@@ -152,6 +152,8 @@ function App() {
               setImportedImages({})
               setImportedSubtitles({})
               setExamWeeks([])
+              setLeftSidebarOpen(false)
+              setRightSidebarOpen(false)
               delete window.__restoredImportedImages
               delete window.__restoredImportedSubtitles
               delete window.__restoredExamWeeks
@@ -195,9 +197,9 @@ function App() {
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0)
 
   // 왼쪽 사이드바 접기/펼치기
-  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(() => loadSavedData().lessons.length > 0)
   // 오른쪽 사이드바 접기/펼치기
-  const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(() => loadSavedData().lessons.length > 0)
   // 오른쪽 사이드바 탭 (info: 과목정보/교수정보, toc: 목차)
   const [rightSidebarTab, setRightSidebarTab] = useState("info")
   // 중앙 편집 탭
@@ -296,6 +298,8 @@ function App() {
         lessons: [],
       })
       setCurrentLessonIndex(0)
+      setLeftSidebarOpen(false)
+      setRightSidebarOpen(false)
       setShowStartModal(true)
       setSaveStatus("저장됨")
     }
@@ -489,6 +493,8 @@ function App() {
       lessons: newLessons,
     }))
     setCurrentLessonIndex(0)
+    setLeftSidebarOpen(true)
+    setRightSidebarOpen(true)
   }
 
   // 과목 정보 업데이트
@@ -895,6 +901,8 @@ function App() {
       // 데이터 설정
       setCourseData(tempCourseData);
       setCurrentLessonIndex(0);
+      setLeftSidebarOpen(true);
+      setRightSidebarOpen(true);
 
       // 데이터 검증
       const validationResult = validateCourseData(tempCourseData);
@@ -1169,9 +1177,8 @@ function App() {
           <div className="editor-area">
             {courseData.lessons.length === 0 ? (
               <div className="welcome-screen">
-                <div className="welcome-mark">C</div>
-                <h2>새 콘텐츠 빌더</h2>
-                <p>과목 정보와 차시 범위를 입력하면 편집 가능한 차시 구조가 만들어집니다.</p>
+                <h2>Content Builder 2.0</h2>
+                <p>템플릿 구조를 유지하며 LMS 콘텐츠를 빠르게 편집합니다.</p>
                 <div className="welcome-actions">
                   <label className="btn-secondary">
                     가져오기
