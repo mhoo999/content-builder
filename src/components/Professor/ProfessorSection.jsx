@@ -80,9 +80,6 @@ function ProfessorSection({ professor, onUpdate, disabled = false }) {
   return (
     <div className="professor-section">
       <div className="professor-profile-head">
-        <div className="professor-avatar">
-          {professor.name?.trim()?.charAt(0) || '교'}
-        </div>
         <label className="professor-name-field">
           <span>교수명</span>
           <input

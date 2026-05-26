@@ -1,27 +1,13 @@
 .professor-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .professor-profile-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.professor-avatar {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 22px;
-  background: linear-gradient(135deg, var(--accent), #818cf8);
-  color: white;
-  font-size: 16px;
-  font-weight: 700;
+  gap: 0;
 }
 
 .professor-name-field {
@@ -47,8 +33,8 @@
 .dynamic-item input,
 .career-item .form-group input {
   width: 100%;
-  min-height: 28px;
-  padding: 4px 0;
+  min-height: 18px;
+  padding: 0;
   border: none;
   border-bottom: 1px solid var(--border);
   border-radius: 0;
@@ -72,12 +58,12 @@
 }
 
 .professor-compact-details summary {
-  padding: 8px 10px;
+  padding: 5px 8px;
   cursor: pointer;
 }
 
 .professor-compact-details .image-uploader {
-  padding: 0 10px 10px;
+  padding: 0 8px 8px;
 }
 
 .current-image-preview {
@@ -105,7 +91,8 @@
 .dynamic-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
+  margin-top: 2px;
 }
 
 .list-header {
@@ -113,13 +100,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 0;
+  margin-bottom: 2px;
 }
 
 .dynamic-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-height: 22px;
 }
 
 .dynamic-item input {
@@ -128,7 +116,7 @@
 
 .career-item {
   position: relative;
-  padding: 9px 34px 10px 10px;
+  padding: 6px 28px 7px 8px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg);
@@ -137,7 +125,7 @@
 .career-inputs {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 3px;
 }
 
 .career-item .form-group {
@@ -146,29 +134,40 @@
 
 .career-item .form-group label {
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: 0;
+}
+
+.career-item .form-group input {
+  min-height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
 .btn-remove-small {
-  width: 24px;
-  height: 24px;
-  min-height: 24px;
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 5px;
-  background: var(--surface);
+  background: transparent;
   color: var(--text-tertiary);
-  font-size: 16px;
+  font-size: 14px;
+  opacity: 0.75;
 }
 
 .btn-remove-small:hover {
-  border-color: var(--error);
   background: #fef2f2;
   color: var(--error);
+  opacity: 1;
 }
 
 .career-item .btn-remove-small {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 5px;
+  right: 5px;
 }

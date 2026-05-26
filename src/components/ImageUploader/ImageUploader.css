@@ -1,32 +1,34 @@
 .image-uploader {
-  margin-top: 12px;
-  padding: 16px;
-  background: var(--background);
+  margin-top: 6px;
+  padding: 8px;
+  background: var(--bg);
   border: 1px dashed var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
 }
 
 .uploader-controls {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
   justify-content: center;
 }
 
 .btn-upload {
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .btn-upload:hover {
-  background: var(--primary-hover);
+  border-color: var(--border-strong);
+  background: var(--hover);
 }
 
 .btn-upload.disabled {
@@ -36,143 +38,143 @@
 }
 
 .btn-insert {
-  background: #10b981;
+  background: var(--good);
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-insert:hover {
-  background: #059669;
+  opacity: 0.85;
 }
 
 .btn-cancel {
   background: transparent;
-  color: var(--text-tertiary);
+  color: var(--text-mute);
   border: 1px solid var(--border);
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-cancel:hover {
-  background: var(--error);
-  border-color: var(--error);
+  background: var(--err);
+  border-color: var(--err);
   color: white;
 }
 
 .image-preview {
-  margin-top: 16px;
-  padding: 12px;
+  margin-top: 8px;
+  padding: 6px;
   background: white;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
 }
 
 .preview-label {
-  margin: 0 0 8px 0;
-  font-size: 13px;
+  margin: 0 0 4px 0;
+  font-size: 10px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-mute);
 }
 
 .image-preview img {
   max-width: 100%;
-  max-height: 300px;
+  max-height: 80px;
   display: block;
   margin: 0 auto;
   border-radius: 4px;
 }
 
 .preview-name {
-  margin: 8px 0 0 0;
-  font-size: 12px;
-  color: var(--text-tertiary);
+  margin: 4px 0 0 0;
+  font-size: 10px;
+  color: var(--text-mute);
   text-align: center;
 }
 
 /* 이미지 크기 정보 */
 .image-size-info {
-  margin-top: 12px;
-  padding: 12px;
-  background: #f0f7ff;
-  border-radius: 6px;
-  border: 1px solid #b3d9ff;
+  margin-top: 6px;
+  padding: 6px;
+  background: var(--accent-soft);
+  border-radius: 4px;
+  border: 1px solid var(--border);
 }
 
 .size-label {
-  margin: 0 0 8px 0;
-  font-size: 13px;
+  margin: 0 0 4px 0;
+  font-size: 10px;
   font-weight: 600;
-  color: #1e40af;
+  color: var(--accent);
 }
 
 .size-hint {
   margin: 0;
-  font-size: 12px;
-  color: #3b82f6;
+  font-size: 10px;
+  color: var(--text-sub);
 }
 
 /* 크기 조절 컨트롤 */
 .image-resize-controls {
-  margin-top: 12px;
-  padding: 12px;
-  background: var(--background);
-  border-radius: 6px;
+  margin-top: 6px;
+  padding: 6px;
+  background: var(--bg);
+  border-radius: 4px;
   border: 1px solid var(--border);
 }
 
 .size-input-group {
   display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .size-input-group label {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 13px;
+  gap: 2px;
+  font-size: 10px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-sub);
 }
 
 .size-input-group input[type="number"] {
-  padding: 8px 12px;
+  padding: 4px 6px;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 4px;
+  font-size: 11px;
   font-family: inherit;
   transition: all 0.2s;
 }
 
 .size-input-group input[type="number"]:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.1);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .keep-ratio-checkbox {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 4px;
+  font-size: 10px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-sub);
   cursor: pointer;
 }
 
 .keep-ratio-checkbox input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 12px;
+  height: 12px;
   cursor: pointer;
 }

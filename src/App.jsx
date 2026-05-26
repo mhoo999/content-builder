@@ -202,8 +202,6 @@ function App() {
   const [rightSidebarTab, setRightSidebarTab] = useState("info")
   // 중앙 편집 탭
   const [activeSection, setActiveSection] = useState("preparation")
-  // 왼쪽 차시 목록 주차 아코디언
-  const [collapsedWeeks, setCollapsedWeeks] = useState(() => new Set())
 
   // 시작하기 모달
   const [showStartModal, setShowStartModal] = useState(false)
@@ -496,18 +494,6 @@ function App() {
   // 과목 정보 업데이트
   const updateCourseInfo = (field, value) => {
     setCourseData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const toggleCollapsedWeek = (weekNumber) => {
-    setCollapsedWeeks((prev) => {
-      const next = new Set(prev)
-      if (next.has(weekNumber)) {
-        next.delete(weekNumber)
-      } else {
-        next.add(weekNumber)
-      }
-      return next
-    })
   }
 
   const togglePracticeForLesson = (index, checked) => {
@@ -1107,13 +1093,6 @@ function App() {
                 {Object.values(lessonsByWeek).map((group) => (
                   <div className="week-group-block" key={group.weekNumber}>
                     <div className="week-group-label">
-                      <button
-                        className={`week-toggle ${collapsedWeeks.has(group.weekNumber) ? "collapsed" : ""}`}
-                        onClick={() => toggleCollapsedWeek(group.weekNumber)}
-                        title={collapsedWeeks.has(group.weekNumber) ? "주차 펼치기" : "주차 접기"}
-                      >
-                        ▾
-                      </button>
                       {group.weekNumber}주차 ·
                       <input
                         type="text"
@@ -1123,8 +1102,7 @@ function App() {
                         onChange={(e) => updateWeekTitle(group.lessons[0].index, e.target.value)}
                       />
                     </div>
-                    {!collapsedWeeks.has(group.weekNumber) &&
-                      group.lessons.map(({ lesson, index }) => (
+                    {group.lessons.map(({ lesson, index }) => (
                         <div
                           key={index}
                           className={`lesson-tab ${currentLessonIndex === index ? "active" : ""}`}
@@ -1180,12 +1158,6 @@ function App() {
         <main className="editor-area-wrapper">
           {currentLesson && (
             <div className="center-top">
-              <div className="lesson-head">
-                <div className="lesson-head-left">
-                  <span className="lesson-kicker">{lessonLabel} · {currentLesson.weekTitle || "주차 타이틀 없음"}</span>
-                  <h2>{currentLesson.lessonTitle || "제목 없음"}</h2>
-                </div>
-              </div>
               <StepBar
                 lessonData={currentLesson}
                 onSectionClick={handleSectionClick}
