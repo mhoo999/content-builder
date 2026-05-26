@@ -200,6 +200,10 @@ function App() {
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
   // 오른쪽 사이드바 탭 (info: 과목정보/교수정보, toc: 목차)
   const [rightSidebarTab, setRightSidebarTab] = useState("info")
+  // 중앙 편집 탭
+  const [activeSection, setActiveSection] = useState("preparation")
+  // 왼쪽 차시 목록 주차 아코디언
+  const [collapsedWeeks, setCollapsedWeeks] = useState(() => new Set())
 
   // 시작하기 모달
   const [showStartModal, setShowStartModal] = useState(false)
@@ -369,6 +373,7 @@ function App() {
 
   // 섹션 클릭 시 스크롤 핸들러
   const handleSectionClick = useCallback((sectionId) => {
+    setActiveSection(sectionId)
     const element = document.getElementById(`section-${sectionId}`)
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -491,6 +496,49 @@ function App() {
   // 과목 정보 업데이트
   const updateCourseInfo = (field, value) => {
     setCourseData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const toggleCollapsedWeek = (weekNumber) => {
+    setCollapsedWeeks((prev) => {
+      const next = new Set(prev)
+      if (next.has(weekNumber)) {
+        next.delete(weekNumber)
+      } else {
+        next.add(weekNumber)
+      }
+      return next
+    })
+  }
+
+  const togglePracticeForLesson = (index, checked) => {
+    const lesson = courseData.lessons[index]
+    if (!lesson) return
+
+    if (courseData.courseType === "social-work-practice") {
+      updateLesson(index, {
+        ...lesson,
+        isPracticeWeek: checked,
+        practiceImage: checked ? (lesson.practiceImage || "") : "",
+      })
+      return
+    }
+
+    const lectureVideoUrl = lesson.lectureVideoUrl || ""
+    const lectureSubtitle = lesson.lectureSubtitle || ""
+    const learningContents = lesson.learningContents
+      ? lesson.learningContents.filter((content) => !(typeof content === "string" && content.includes("class='practice'")))
+      : []
+    const practiceContent =
+      checked && !lesson.practiceContent ? "<div class='practice'><ul><li></li></ul></div>" : lesson.practiceContent || ""
+
+    updateLesson(index, {
+      ...lesson,
+      hasPractice: checked,
+      practiceContent: checked ? practiceContent : "",
+      practiceVideoUrl: checked && lectureVideoUrl ? lectureVideoUrl.replace(".mp4", "_P.mp4") : "",
+      practiceSubtitle: checked && lectureSubtitle ? lectureSubtitle.replace(".vtt", "_P.vtt") : "",
+      learningContents,
+    })
   }
 
   // 교수 정보 업데이트
@@ -886,6 +934,54 @@ function App() {
 
   const currentLesson = courseData.lessons[currentLessonIndex]
   const currentPreset = getTemplateById(courseData.templatePreset) || getTemplateById("2025-standard")
+  const currentTemplateTheme = currentPreset?.themes?.find((theme) => theme.id === (courseData.templateTheme || "type-1"))
+  const sameWeekLessons = currentLesson
+    ? courseData.lessons
+        .filter((lesson) => lesson.weekNumber === currentLesson.weekNumber)
+        .sort((a, b) => a.lessonNumber - b.lessonNumber)
+    : []
+  const currentWeekLessonNumber = currentLesson
+    ? sameWeekLessons.findIndex((lesson) => lesson.lessonNumber === currentLesson.lessonNumber) + 1
+    : 0
+  const lessonLabel = currentLesson
+    ? `${currentLesson.weekNumber}주 ${currentWeekLessonNumber}차시 · ${currentLesson.lessonNumber}강`
+    : "새 작업"
+  const completionPercent = lessonCompletionStats.totalCount
+    ? Math.round((lessonCompletionStats.completedCount / lessonCompletionStats.totalCount) * 100)
+    : 0
+  const lessonsByWeek = courseData.lessons.reduce((groups, lesson, index) => {
+    const week = lesson.weekNumber || 0
+    if (!groups[week]) {
+      groups[week] = {
+        weekNumber: week,
+        weekTitle: lesson.weekTitle || "주차 타이틀 없음",
+        lessons: [],
+      }
+    }
+    groups[week].lessons.push({ lesson, index })
+    return groups
+  }, {})
+  const getLessonStatusClass = (lesson, index) => {
+    const issues = validateLesson(lesson, index, courseData.courseType)
+    if (issues.length === 0) return "complete"
+    if (lesson.lessonTitle || lesson.learningObjectives?.length || lesson.learningContents?.length) return "progress"
+    return "draft"
+  }
+  const canShowSection = (sectionId) => {
+    const sectionNames = {
+      preparation: "준비하기",
+      learning: "학습하기",
+      summary: "정리하기",
+    }
+    return currentPreset.sections.includes(sectionNames[sectionId])
+  }
+  const visibleActiveSection = canShowSection(activeSection)
+    ? activeSection
+    : currentPreset.sections.includes("준비하기")
+      ? "preparation"
+      : currentPreset.sections.includes("학습하기")
+        ? "learning"
+        : "summary"
 
   return (
     <div className="app">
@@ -911,29 +1007,42 @@ function App() {
       {/* 헤더 */}
       <header className="header">
         <button
-          className="header-toggle-btn header-toggle-left"
+          className="icon-btn header-toggle-left"
           onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
           title={leftSidebarOpen ? "차시 목록 닫기" : "차시 목록 열기"}
         >
-          {leftSidebarOpen ? "◀" : "▶"}
+          {leftSidebarOpen ? "←" : "→"}
         </button>
         <div className="header-left">
           <h1 className="logo-clickable" onClick={resetToHome} title="처음으로 돌아가기">
-            📚 Content Builder
+            <span className="logo-mark">C</span>
+            Content Builder
           </h1>
+          <span className="header-divider" />
+          <span className="header-crumb">
+            {courseData.courseCode || "새 과정"}
+            <span>/</span>
+            {courseData.courseName || "콘텐츠 빌더"}
+            {currentLesson && (
+              <>
+                <span>/</span>
+                <strong>{lessonLabel}</strong>
+              </>
+            )}
+          </span>
           <SaveStatusIndicator saveStatus={saveStatus} />
           {!isLocalStorageAvailable() && (
             <span
               className="storage-warning"
               title="시크릿 모드에서는 자동 저장이 작동하지 않습니다. 수동으로 Export하여 백업하세요."
             >
-              ⚠️ 저장 불가
+              저장 불가
             </span>
           )}
         </div>
         <div className="header-actions">
           <label className="btn-secondary">
-            📂 Import Folder
+            가져오기
             <input
               type="file"
               webkitdirectory=""
@@ -949,7 +1058,7 @@ function App() {
             disabled={courseData.lessons.length === 0}
             title="현재 데이터 검증 (누락 필드, 형식 오류 등)"
           >
-            🔍 검증
+            검증
           </button>
           <button
             className="btn-primary"
@@ -957,15 +1066,15 @@ function App() {
             disabled={courseData.lessons.length === 0 || !courseData.courseCode}
             title="JSON 다운로드 + 폴더 구조 생성 안내"
           >
-            📁 Export to Subjects
+            내보내기
           </button>
         </div>
         <button
-          className="header-toggle-btn header-toggle-right"
+          className="icon-btn header-toggle-right"
           onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
           title={rightSidebarOpen ? "과목 정보 닫기" : "과목 정보 열기"}
         >
-          {rightSidebarOpen ? "▶" : "◀"}
+          {rightSidebarOpen ? "→" : "←"}
         </button>
       </header>
 
@@ -991,152 +1100,129 @@ function App() {
             </div>
 
             {courseData.lessons.length === 0 ? (
-              <p className="empty-message">차시를 추가해주세요</p>
+              <p className="empty-message">과목을 시작하면 차시 목록이 표시됩니다.</p>
             ) : (
               <div className="lesson-tabs">
-                {courseData.lessons.map((lesson, index) => (
-                  <div
-                    key={index}
-                    className={`lesson-tab ${currentLessonIndex === index ? "active" : ""}`}
-                    onClick={() => setCurrentLessonIndex(index)}
-                  >
-                    <div className="lesson-info">
-                      {/* 1줄: 1강 [✓실습] [✓현장실습] */}
-                      <div className="lesson-number-row">
-                        <span className="lesson-number">{lesson.lessonNumber}강</span>
-                        {courseData.courseType === 'general' && (
-                          <label className="practice-checkbox-inline">
-                            <input
-                              type="checkbox"
-                              checked={lesson.hasPractice || false}
-                              onChange={(e) => {
-                                e.stopPropagation()
-                                const hasPractice = e.target.checked
-                                const lectureVideoUrl = lesson.lectureVideoUrl || ""
-                                const lectureSubtitle = lesson.lectureSubtitle || ""
-
-                                // 학습내용에서 실습 항목 제거 (기존 데이터 마이그레이션)
-                                const learningContents = lesson.learningContents
-                                  ? lesson.learningContents.filter(
-                                      (content) => !(typeof content === "string" && content.includes("class='practice'")),
-                                    )
-                                  : []
-
-                                // 실습 내용 초기화 (기존 practiceContent가 없으면 기본값 설정)
-                                const practiceContent =
-                                  hasPractice && !lesson.practiceContent
-                                    ? "<div class='practice'><ul><li></li></ul></div>"
-                                    : lesson.practiceContent || ""
-
-                                updateLesson(index, {
-                                  ...lesson,
-                                  hasPractice: hasPractice,
-                                  practiceContent: hasPractice ? practiceContent : "",
-                                  practiceVideoUrl:
-                                    hasPractice && lectureVideoUrl ? lectureVideoUrl.replace(".mp4", "_P.mp4") : "",
-                                  practiceSubtitle:
-                                    hasPractice && lectureSubtitle ? lectureSubtitle.replace(".vtt", "_P.vtt") : "",
-                                  learningContents: learningContents, // 실습 항목 제거된 학습내용
-                                })
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <span>실습</span>
-                          </label>
-                        )}
-                        {courseData.courseType === 'social-work-practice' && (
-                          <label className="practice-checkbox-inline">
-                            <input
-                              type="checkbox"
-                              checked={lesson.isPracticeWeek || false}
-                              onChange={(e) => {
-                                e.stopPropagation()
-                                updateLesson(index, {
-                                  ...lesson,
-                                  isPracticeWeek: e.target.checked,
-                                  practiceImage: e.target.checked ? (lesson.practiceImage || "") : "",
-                                })
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <span>현장실습</span>
-                          </label>
-                        )}
-                      </div>
-
-                      {/* 2줄: 1주 주차타이틀 */}
-                      <div className="week-title-row">
-                        <span className="week-label">{lesson.weekNumber}주</span>
-                        <input
-                          type="text"
-                          className="week-title-input"
-                          placeholder="주차 타이틀 입력"
-                          value={lesson.weekTitle || ""}
-                          onChange={(e) => updateWeekTitle(index, e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-
-                      {/* 3줄: 1차 차시제목 */}
-                      <div className="lesson-title-row">
-                        <span className="lesson-order-label">{getLessonOrderInWeek(index)}차</span>
-                        <input
-                          type="text"
-                          className="lesson-title-input"
-                          placeholder="차시 제목 입력"
-                          value={lesson.lessonTitle}
-                          onChange={(e) => updateLessonTitle(index, e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
+                {Object.values(lessonsByWeek).map((group) => (
+                  <div className="week-group-block" key={group.weekNumber}>
+                    <div className="week-group-label">
+                      <button
+                        className={`week-toggle ${collapsedWeeks.has(group.weekNumber) ? "collapsed" : ""}`}
+                        onClick={() => toggleCollapsedWeek(group.weekNumber)}
+                        title={collapsedWeeks.has(group.weekNumber) ? "주차 펼치기" : "주차 접기"}
+                      >
+                        ▾
+                      </button>
+                      {group.weekNumber}주차 ·
+                      <input
+                        type="text"
+                        className="week-title-input"
+                        placeholder="주차 타이틀"
+                        value={group.weekTitle === "주차 타이틀 없음" ? "" : group.weekTitle}
+                        onChange={(e) => updateWeekTitle(group.lessons[0].index, e.target.value)}
+                      />
                     </div>
-                    <button
-                      className="btn-delete"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        deleteLesson(index)
-                      }}
-                    >
-                      ×
-                    </button>
+                    {!collapsedWeeks.has(group.weekNumber) &&
+                      group.lessons.map(({ lesson, index }) => (
+                        <div
+                          key={index}
+                          className={`lesson-tab ${currentLessonIndex === index ? "active" : ""}`}
+                          onClick={() => setCurrentLessonIndex(index)}
+                        >
+                          <span className={`status-dot ${getLessonStatusClass(lesson, index)}`} />
+                          <span className="lesson-number">{String(lesson.lessonNumber).padStart(2, "0")}</span>
+                          <input
+                            type="text"
+                            className="lesson-title-input"
+                            placeholder="차시 제목"
+                            value={lesson.lessonTitle}
+                            onChange={(e) => updateLessonTitle(index, e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <label
+                            className="practice-mini-toggle"
+                            title={courseData.courseType === "social-work-practice" ? "현장실습 주차" : "실습 차시"}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={courseData.courseType === "social-work-practice" ? !!lesson.isPracticeWeek : !!lesson.hasPractice}
+                              onChange={(e) => togglePracticeForLesson(index, e.target.checked)}
+                            />
+                            {courseData.courseType === "social-work-practice" ? "현장" : "실습"}
+                          </label>
+                          <button
+                            className="btn-delete"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              deleteLesson(index)
+                            }}
+                            title="차시 삭제"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
                   </div>
                 ))}
               </div>
             )}
           </div>
+          <div className="lesson-legend">
+            <span><i className="status-dot complete" />완료</span>
+            <span><i className="status-dot progress" />진행중</span>
+            <span><i className="status-dot draft" />초안</span>
+          </div>
         </aside>
 
         {/* 에디터 영역 */}
         <main className="editor-area-wrapper">
-          {currentLesson && <StepBar lessonData={currentLesson} onSectionClick={handleSectionClick} courseType={courseData.courseType} />}
+          {currentLesson && (
+            <div className="center-top">
+              <div className="lesson-head">
+                <div className="lesson-head-left">
+                  <span className="lesson-kicker">{lessonLabel} · {currentLesson.weekTitle || "주차 타이틀 없음"}</span>
+                  <h2>{currentLesson.lessonTitle || "제목 없음"}</h2>
+                  <div className="lesson-meta-row">
+                    <span>강의 영상: {currentLesson.lectureVideoUrl || "미입력"}</span>
+                    <span>자막: {currentLesson.lectureSubtitle || "미입력"}</span>
+                  </div>
+                </div>
+              </div>
+              <StepBar
+                lessonData={currentLesson}
+                onSectionClick={handleSectionClick}
+                courseType={courseData.courseType}
+                activeSection={visibleActiveSection}
+              />
+            </div>
+          )}
           <div className="editor-area">
             {courseData.lessons.length === 0 ? (
               <div className="welcome-screen">
-                <h2>Content Builder에 오신 것을 환영합니다! 👋</h2>
-                <p>차시 구조를 먼저 만들어 시작하세요.</p>
-                <button className="btn-start-center" onClick={() => setShowStartModal(true)}>
-                  시작하기
-                </button>
+                <div className="welcome-mark">C</div>
+                <h2>새 콘텐츠 빌더</h2>
+                <p>과목 정보와 차시 범위를 입력하면 편집 가능한 차시 구조가 만들어집니다.</p>
+                <div className="welcome-actions">
+                  <label className="btn-secondary">
+                    가져오기
+                    <input type="file" webkitdirectory="" directory="" multiple onChange={importFolder} style={{ display: "none" }} />
+                  </label>
+                  <button className="btn-start-center" onClick={() => setShowStartModal(true)}>
+                    새 과목 시작
+                  </button>
+                </div>
+                <div className="welcome-preview">
+                  <span>최근 작업 없음</span>
+                  <strong>차시 목록과 과목 정보가 이 화면에 표시됩니다.</strong>
+                </div>
               </div>
             ) : currentLesson ? (
               <div className="lesson-editor">
-                <h2>
-                  {(() => {
-                    // 같은 주차에 속한 차시들 중에서 현재 차시가 몇 번째인지 계산
-                    const sameWeekLessons = courseData.lessons
-                      .filter((lesson) => lesson.weekNumber === currentLesson.weekNumber)
-                      .sort((a, b) => a.lessonNumber - b.lessonNumber)
-                    const weekLessonNumber =
-                      sameWeekLessons.findIndex((lesson) => lesson.lessonNumber === currentLesson.lessonNumber) + 1
-                    return `${currentLesson.lessonNumber}강 ${currentLesson.weekNumber}주차 ${weekLessonNumber}차시`
-                  })()}
-                </h2>
-                <p className="subtitle">{currentLesson.lessonTitle || "제목 없음"}</p>
-
                 {/* 현장실습 주차 */}
                 {currentLesson.isPracticeWeek ? (
                   <div className="form-section">
-                    <h3>📸 현장실습 이미지</h3>
+                    <h3>현장실습 이미지</h3>
                     <div className="subsection">
                       <div className="form-group">
                         <label>이미지 URL</label>
@@ -1158,7 +1244,7 @@ function App() {
                 ) : (
                   <>
                     {/* 준비하기 섹션 */}
-                    {currentPreset.sections.includes("준비하기") && (
+                    {visibleActiveSection === "preparation" && currentPreset.sections.includes("준비하기") && (
                       <div id="section-preparation">
                         <PreparationSection
                           lessonData={currentLesson}
@@ -1171,7 +1257,7 @@ function App() {
                     )}
 
                     {/* 학습하기 섹션 */}
-                    {currentPreset.sections.includes("학습하기") && (
+                    {visibleActiveSection === "learning" && currentPreset.sections.includes("학습하기") && (
                       <div id="section-learning">
                         <LearningSection
                           lessonData={currentLesson}
@@ -1183,7 +1269,7 @@ function App() {
                     )}
 
                     {/* 정리하기 섹션 */}
-                    {currentPreset.sections.includes("정리하기") && (
+                    {visibleActiveSection === "summary" && currentPreset.sections.includes("정리하기") && (
                       <div id="section-summary">
                         <SummarySection
                           lessonData={currentLesson}
@@ -1225,37 +1311,52 @@ function App() {
               </div>
 
               {/* 탭 내용 */}
-              {rightSidebarTab === "info" && (
-                <>
+              <div className="sidebar-main-scroll">
+                {rightSidebarTab === "info" && (
+                  <>
                   {/* 과목 정보 */}
                   <div className="sidebar-section">
                     <h3>과목 정보</h3>
-                    <div className="form-group">
-                      <label>과목 코드</label>
-                      <div className="readonly-input">
-                        {courseData.courseCode || <span className="empty-value">-</span>}
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label>과정명</label>
-                      <div className="readonly-input">
-                        {courseData.courseName || <span className="empty-value">-</span>}
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label>템플릿 프리셋 / 디자인</label>
-                      <div className="template-select-box" onClick={() => setShowTemplateModal(true)}>
-                        <div className="template-current-info">
-                          <div className="template-current-name">
-                            {getTemplateById(courseData.templatePreset || "2025-standard")?.name}
-                          </div>
-                          <div className="template-current-theme">
-                            테마: {getTemplateById(courseData.templatePreset || "2025-standard")?.themes.find(t => t.id === (courseData.templateTheme || "type-1"))?.name || courseData.templateTheme || "type-1"}
-                          </div>
-                        </div>
-                        <button className="btn-change-template" onClick={(e) => { e.stopPropagation(); setShowTemplateModal(true); }}>변경</button>
-                      </div>
-                      <small className="hint">Export 시 적용될 레이아웃 및 테마입니다.</small>
+                    <label className="sidebar-kv editable">
+                      <span>과목 코드</span>
+                      <input
+                        value={courseData.courseCode}
+                        placeholder="-"
+                        onChange={(e) => updateCourseInfo("courseCode", e.target.value)}
+                      />
+                    </label>
+                    <label className="sidebar-kv editable">
+                      <span>과정명</span>
+                      <input
+                        value={courseData.courseName}
+                        placeholder="-"
+                        onChange={(e) => updateCourseInfo("courseName", e.target.value)}
+                      />
+                    </label>
+                    <label className="sidebar-kv editable">
+                      <span>연도</span>
+                      <input
+                        value={courseData.year}
+                        placeholder="-"
+                        onChange={(e) => updateCourseInfo("year", e.target.value.replace(/\D/g, ""))}
+                      />
+                    </label>
+                    <label className="sidebar-kv editable">
+                      <span>유형</span>
+                      <select
+                        value={courseData.courseType || "general"}
+                        onChange={(e) => updateCourseInfo("courseType", e.target.value)}
+                      >
+                        <option value="general">일반</option>
+                        <option value="social-work-practice">사회복지현장실습</option>
+                      </select>
+                    </label>
+                    <div className="sidebar-kv template-row">
+                      <span>템플릿</span>
+                      <button className="editable-template" onClick={() => setShowTemplateModal(true)}>
+                        <strong>{currentPreset?.name}</strong>
+                        <small>{currentTemplateTheme?.name || courseData.templateTheme || "type-1"}</small>
+                      </button>
                     </div>
                   </div>
 
@@ -1268,10 +1369,11 @@ function App() {
                       disabled={courseData.lessons.length === 0}
                     />
                   </div>
-                </>
-              )}
 
-              {rightSidebarTab === "toc" && courseData.lessons.length > 0 && currentLesson && (
+                  </>
+                )}
+
+                {rightSidebarTab === "toc" && courseData.lessons.length > 0 && currentLesson && (
                 <div className="sidebar-section">
                   <h3>목차</h3>
                   <nav className="toc-nav">
@@ -1287,7 +1389,7 @@ function App() {
                         }}
                         className="toc-link toc-main"
                       >
-                        📚 준비하기
+                        준비하기
                       </a>
                     )}
                     {currentPreset.features.hasOrientation && currentLesson.weekNumber === 1 && currentLesson.lessonNumber === 1 && (
@@ -1362,7 +1464,7 @@ function App() {
                         }}
                         className="toc-link toc-main"
                       >
-                        🎓 학습하기
+                        학습하기
                       </a>
                     )}
                     {currentPreset.features.hasOpinion && (
@@ -1422,7 +1524,7 @@ function App() {
                         }}
                         className="toc-link toc-main"
                       >
-                        ✅ 정리하기
+                        정리하기
                       </a>
                     )}
                     {currentPreset.features.hasExercise && courseData.courseType === 'general' && (
@@ -1472,13 +1574,25 @@ function App() {
                     )}
                   </nav>
                 </div>
-              )}
+                )}
 
-              {rightSidebarTab === "toc" && courseData.lessons.length === 0 && (
+                {rightSidebarTab === "toc" && courseData.lessons.length === 0 && (
                 <div className="sidebar-section">
                   <p className="empty-message">차시를 먼저 생성해주세요.</p>
                 </div>
-              )}
+                )}
+              </div>
+
+              <div className="sidebar-progress-fixed">
+                <h3>전체 진행률</h3>
+                <div className="progress-summary">
+                  <strong>{completionPercent}<span>%</span></strong>
+                  <p>{lessonCompletionStats.totalCount}개 차시 중 {lessonCompletionStats.completedCount}개 완료</p>
+                  <div className="progress-track">
+                    <div style={{ width: `${completionPercent}%` }} />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </aside>

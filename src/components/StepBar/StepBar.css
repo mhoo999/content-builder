@@ -1,72 +1,111 @@
+/* Step Bar - V2 Notion Design */
+
 .step-bar {
-  position: sticky;
-  top: 0;
-  z-index: 100;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px 16px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
-  gap: 12px;
-  height: auto;
-  min-height: 40px;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  margin-top: 8px;
 }
 
 .step-item {
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 12.5px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border-radius: 8px;
-  min-width: auto;
+  color: var(--text-sub);
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  transition: all 0.15s;
 }
 
 .step-item:hover {
-  background-color: #e9ecef;
-  transform: translateY(-2px);
+  background: var(--v2-hover);
+}
+
+.step-item.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .step-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background-color: #fff;
-  border: 2px solid #dee2e6;
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: bold;
-  color: #6c757d;
-  transition: all 0.2s ease;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-mute);
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.step-item.active .step-icon {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
 }
 
 .step-item.complete .step-icon {
-  background-color: #28a745;
-  border-color: #28a745;
-  color: #fff;
+  background: var(--good);
+  border-color: var(--good);
+  color: white;
 }
 
 .step-title {
-  font-size: 12px;
-  font-weight: 500;
-  color: #495057;
-  text-align: center;
+  font-size: 12.5px;
   white-space: nowrap;
 }
 
 .step-item.complete .step-title {
-  color: #28a745;
+  color: inherit;
   font-weight: 600;
 }
 
+.step-count {
+  font-size: 11px;
+  color: var(--text-mute);
+  font-weight: 500;
+}
+
+.step-item.active .step-count {
+  color: var(--accent);
+}
+
+.step-item.complete .step-count {
+  color: inherit;
+}
+
 .step-divider {
-  width: 40px;
-  height: 2px;
-  background-color: #dee2e6;
+  width: 16px;
+  height: 1px;
+  background: var(--border);
   flex-shrink: 0;
+}
+
+/* Navigation Buttons */
+.step-nav {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.step-nav button {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
 }

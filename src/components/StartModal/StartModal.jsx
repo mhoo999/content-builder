@@ -59,11 +59,20 @@ function StartModal({ onClose, onCreate }) {
     <div className="start-modal-overlay" onClick={onClose}>
       <div className="start-modal" onClick={(e) => e.stopPropagation()}>
         <div className="start-modal-header">
-          <h2>차시 구조 만들기</h2>
+          <div>
+            <span className="modal-kicker">새 과목 시작</span>
+            <h2>차시 구조 만들기</h2>
+          </div>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
         <div className="start-modal-body">
+          <div className="modal-steps">
+            <span className="active">1 과정 유형</span>
+            <span>2 기본 정보</span>
+            <span>3 차시 구조</span>
+          </div>
+
           <div className="course-info-section">
             <div className="form-group-modal">
               <label>과정 유형 <span className="required">*</span></label>
@@ -147,8 +156,11 @@ function StartModal({ onClose, onCreate }) {
 
           <div className="preview">
             <small className="preview-text">
-              📊 생성 예정: {lessonCount}개 강의 ({startLesson}강~{endLesson}강)
+              생성 예정: {lessonCount}개 강의 ({startLesson}강~{endLesson}강)
             </small>
+            <code>
+              https://cdn-it.livestudy.com/mov/{year || "2025"}/{courseCode || "course-code"}/{courseCode || "course-code"}_01.mp4
+            </code>
           </div>
         </div>
 
