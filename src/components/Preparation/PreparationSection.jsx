@@ -180,7 +180,7 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
 
   return (
     <div className="form-section">
-      <h3>📖 준비하기</h3>
+      <h3>준비하기</h3>
 
       {/* 오리엔테이션 (1주1차시만, 자동 활성화) */}
       {isFirstLesson && (

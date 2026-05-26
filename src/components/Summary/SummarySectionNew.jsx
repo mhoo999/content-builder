@@ -181,7 +181,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
 
   return (
     <div className="form-section">
-      <h3>✅ 정리하기</h3>
+      <h3>정리하기</h3>
 
       {/* 연습문제 (일반 과정만 표시) */}
       {courseType === 'general' && (

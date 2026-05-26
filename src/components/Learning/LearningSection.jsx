@@ -179,7 +179,7 @@ function LearningSection({ lessonData, onUpdate, courseCode, year }) {
 
   return (
     <div className="form-section">
-      <h3>🎓 학습하기</h3>
+      <h3>학습하기</h3>
 
       {/* 생각묻기 */}
       <div id="subsection-opinion" className="subsection">

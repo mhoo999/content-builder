@@ -90,26 +90,29 @@ function ProfessorSection({ professor, onUpdate, disabled = false }) {
             disabled={disabled}
           />
         </label>
+        <details className="professor-photo-menu">
+          <summary>
+            <span className={`photo-status ${professor.photo ? 'has-photo' : ''}`}>
+              {professor.photo ? '사진 있음' : '사진 없음'}
+            </span>
+            <strong>{professor.photo ? '변경' : '추가'}</strong>
+          </summary>
+          <div className="professor-photo-panel">
+            <ImageUploader
+              onImageInsert={(imageHtml) => {
+                onUpdate({ ...professor, photo: imageHtml });
+              }}
+              disabled={disabled}
+            />
+            {professor.photo && (
+              <div className="professor-photo-preview" dangerouslySetInnerHTML={{ __html: professor.photo }} />
+            )}
+          </div>
+        </details>
       </div>
 
-      <details className="professor-compact-details">
-        <summary>교수 사진</summary>
-        <ImageUploader
-          onImageInsert={(imageHtml) => {
-            onUpdate({ ...professor, photo: imageHtml });
-          }}
-          disabled={disabled}
-        />
-        {professor.photo && (
-          <div className="current-image-preview">
-            <small>현재 이미지</small>
-            <div dangerouslySetInnerHTML={{ __html: professor.photo }} />
-          </div>
-        )}
-      </details>
-
       {/* 학력 */}
-      <div className="dynamic-list">
+      <div className="professor-list professor-education-list">
         <div className="list-header">
           <label>학력</label>
           <button className="btn-add-small" onClick={addEducation} disabled={disabled}>
@@ -137,7 +140,7 @@ function ProfessorSection({ professor, onUpdate, disabled = false }) {
       </div>
 
       {/* 경력 */}
-      <div className="dynamic-list">
+      <div className="professor-list professor-career-list">
         <div className="list-header">
           <label>경력</label>
           <button className="btn-add-small" onClick={addCareer} disabled={disabled}>
