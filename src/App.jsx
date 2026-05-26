@@ -1087,7 +1087,7 @@ function App() {
 
         {/* 에디터 영역 */}
         <main className="editor-area-wrapper">
-          {currentLesson && <StepBar lessonData={currentLesson} onSectionClick={handleSectionClick} />}
+          {currentLesson && <StepBar lessonData={currentLesson} onSectionClick={handleSectionClick} courseType={courseData.courseType} />}
           <div className="editor-area">
             {courseData.lessons.length === 0 ? (
               <div className="welcome-screen">

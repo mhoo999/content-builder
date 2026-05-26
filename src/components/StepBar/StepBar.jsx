@@ -1,45 +1,37 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import './StepBar.css';
+import { validateLesson } from '../../utils/dataValidator';
 
 /**
  * 수평 스텝바 컴포넌트
  * 준비하기 | 학습하기 | 정리하기 3단계 표시
  * 각 섹션 완료 여부 체크 표시, 클릭 시 해당 섹션으로 스크롤
+ * validateLesson을 사용하여 미입력 필드가 있으면 미완료 표시
  */
-const StepBar = React.memo(({ lessonData, onSectionClick }) => {
-  // 섹션 완료 여부 판단
+const StepBar = React.memo(({ lessonData, onSectionClick, courseType = 'general' }) => {
+  // validateLesson 결과를 메모이제이션
+  const validationIssues = useMemo(() => {
+    if (!lessonData) return [];
+    return validateLesson(lessonData, 0, courseType);
+  }, [lessonData, courseType]);
+
+  // 섹션 완료 여부 판단 (validateLesson 결과 기반)
   const isPreparationComplete = () => {
     if (!lessonData) return false;
-
-    // 용어(terms) 중 제목과 내용이 입력된 항목이 1개 이상
-    const terms = lessonData.terms || [];
-    const hasValidTerms = terms.some(term =>
-      term.title && term.title.trim() !== '' &&
-      term.content && term.content.length > 0 &&
-      term.content.some(c => c && c.trim() !== '')
-    );
-
-    return hasValidTerms;
+    // 준비하기 관련 이슈가 없으면 완료
+    return !validationIssues.some(issue => issue.includes('준비하기'));
   };
 
   const isLearningComplete = () => {
     if (!lessonData) return false;
-
-    // 강의영상 URL 입력
-    return lessonData.lectureVideoUrl && lessonData.lectureVideoUrl.trim() !== '';
+    // 학습하기 관련 이슈가 없으면 완료
+    return !validationIssues.some(issue => issue.includes('학습하기'));
   };
 
   const isSummaryComplete = () => {
     if (!lessonData) return false;
-
-    // 연습문제(exercises) 중 question이 입력된 항목 또는 학습정리(summary) 중 내용이 입력된 항목이 1개 이상
-    const exercises = lessonData.exercises || [];
-    const summary = lessonData.summary || [];
-
-    const hasValidExercise = exercises.some(ex => ex.question && ex.question.trim() !== '');
-    const hasValidSummary = summary.some(s => s && s.trim() !== '');
-
-    return hasValidExercise || hasValidSummary;
+    // 정리하기 관련 이슈가 없으면 완료
+    return !validationIssues.some(issue => issue.includes('정리하기'));
   };
 
   const steps = [

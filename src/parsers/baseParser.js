@@ -63,6 +63,12 @@ export const normalizeHeadings = (html) => {
     '<h3>$1</h3>'
   );
 
+  // 7. title 클래스 → H3 (modules.css의 .title 스타일과 일치)
+  result = result.replace(
+    /<(?:p|div|span)\s+class=['"]title['"][^>]*>(.*?)<\/(?:p|div|span)>/gi,
+    '<h3>$1</h3>'
+  );
+
   return result;
 };
 

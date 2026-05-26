@@ -66,17 +66,17 @@ export function validateLesson(lessonData, lessonIndex, courseType = 'general') 
   if (courseType === 'general') {
     // 연습문제
     const exercises = lessonData.exercises || []
-    if (exercises.length === 0 || exercises.every(e => !e.question || e.question.trim() === '')) {
+    if (exercises.length === 0 || exercises.every(e => !e.question || String(e.question).trim() === '')) {
       issues.push(`${lessonNum}차시 > 정리하기 > 연습문제: 문제가 입력되지 않았습니다.`)
     } else {
       exercises.forEach((ex, idx) => {
-        if (!ex.question || ex.question.trim() === '') {
+        if (!ex.question || String(ex.question).trim() === '') {
           issues.push(`${lessonNum}차시 > 정리하기 > 연습문제 ${idx + 1}: 문항이 비어있습니다.`)
         }
-        if (!ex.answer || ex.answer.trim() === '') {
+        if (ex.answer == null || String(ex.answer).trim() === '') {
           issues.push(`${lessonNum}차시 > 정리하기 > 연습문제 ${idx + 1}: 정답이 선택되지 않았습니다.`)
         }
-        if (ex.type === 'multiple' && ex.options.some(o => !o || o.trim() === '')) {
+        if (ex.type === 'multiple' && ex.options?.some(o => o == null || String(o).trim() === '')) {
           issues.push(`${lessonNum}차시 > 정리하기 > 연습문제 ${idx + 1}: 선택지가 비어있습니다.`)
         }
       })
