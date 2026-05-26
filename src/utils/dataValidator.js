@@ -14,6 +14,14 @@ export function validateLesson(lessonData, lessonIndex, courseType = 'general') 
   const issues = []
   const lessonNum = lessonIndex + 1
 
+  // 기본 정보
+  if (!lessonData.weekTitle || !lessonData.weekTitle.trim()) {
+    issues.push(`${lessonNum}차시 > 주차 타이틀이 입력되지 않았습니다.`)
+  }
+  if (!lessonData.lessonTitle || !lessonData.lessonTitle.trim()) {
+    issues.push(`${lessonNum}차시 > 차시 제목이 입력되지 않았습니다.`)
+  }
+
   // 준비하기
   if (courseType === 'general') {
     // 용어체크

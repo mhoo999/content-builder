@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createCourseData, createBuilderLessonData, createProfessorData } from "./models/dataModel"
 import ProfessorSection from "./components/Professor/ProfessorSection"
 import PreparationSection from "./components/Preparation/PreparationSection"
@@ -15,7 +15,7 @@ import {
   markRelativeImages,
 } from "./utils/folderParser"
 import { TEMPLATE_PRESETS, detectTemplatePreset, detectTemplateTheme, getAllTemplates, getTemplateById } from "./models/templatePresets"
-import { validateCourseData, logValidationResult, formatValidationMessage } from "./utils/dataValidator"
+import { validateCourseData, logValidationResult, formatValidationMessage, validateLesson } from "./utils/dataValidator"
 import "./App.css"
 
 const STORAGE_KEY = "content-builder-autosave"
@@ -102,6 +102,18 @@ function App() {
 
   // 전역 과목 데이터
   const [courseData, setCourseData] = useState(loadSavedData)
+
+  // 과정 전체 완성도 계산 (useMemo로 캐싱)
+  const lessonCompletionStats = useMemo(() => {
+    const allLessons = courseData.lessons
+    if (allLessons.length === 0) return { completedCount: 0, totalCount: 0 }
+
+    const completedCount = allLessons.filter((lesson, index) =>
+      validateLesson(lesson, index, courseData.courseType).length === 0
+    ).length
+
+    return { completedCount, totalCount: allLessons.length }
+  }, [courseData.lessons, courseData.courseType])
 
   // 저장 상태
   const [saveStatus, setSaveStatus] = useState("저장됨")
@@ -963,6 +975,15 @@ function App() {
         <aside className={`sidebar sidebar-left ${leftSidebarOpen ? "open" : "collapsed"}`}>
           <div className="lessons-list">
             <div className="lessons-header">
+              {lessonCompletionStats.totalCount > 0 && (
+                <div className="lessons-header-status">
+                  {lessonCompletionStats.completedCount === lessonCompletionStats.totalCount ? (
+                    <span className="header-validation-complete" title="모든 차시가 완성되었습니다">✓</span>
+                  ) : (
+                    <span className="header-validation-incomplete" title={`${lessonCompletionStats.completedCount}/${lessonCompletionStats.totalCount} 완성`}></span>
+                  )}
+                </div>
+              )}
               <h3>차시 목록</h3>
               <button className="btn-add" onClick={addLesson} disabled={courseData.lessons.length === 0}>
                 + 새 차시
