@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import './ProfessorSection.css';
 import ImageUploader from '../ImageUploader/ImageUploader';
 
@@ -80,19 +79,24 @@ function ProfessorSection({ professor, onUpdate, disabled = false }) {
 
   return (
     <div className="professor-section">
-      <div className="form-group">
-        <label>교수명</label>
-        <input
-          type="text"
-          placeholder="예: 곽후근"
-          value={professor.name}
-          onChange={(e) => onUpdate({ ...professor, name: e.target.value })}
-          disabled={disabled}
-        />
+      <div className="professor-profile-head">
+        <div className="professor-avatar">
+          {professor.name?.trim()?.charAt(0) || '교'}
+        </div>
+        <label className="professor-name-field">
+          <span>교수명</span>
+          <input
+            type="text"
+            placeholder="예: 곽후근"
+            value={professor.name}
+            onChange={(e) => onUpdate({ ...professor, name: e.target.value })}
+            disabled={disabled}
+          />
+        </label>
       </div>
 
-      <div className="form-group">
-        <label>교수 사진</label>
+      <details className="professor-compact-details">
+        <summary>교수 사진</summary>
         <ImageUploader
           onImageInsert={(imageHtml) => {
             onUpdate({ ...professor, photo: imageHtml });
@@ -101,11 +105,11 @@ function ProfessorSection({ professor, onUpdate, disabled = false }) {
         />
         {professor.photo && (
           <div className="current-image-preview">
-            <small>현재 이미지:</small>
+            <small>현재 이미지</small>
             <div dangerouslySetInnerHTML={{ __html: professor.photo }} />
           </div>
         )}
-      </div>
+      </details>
 
       {/* 학력 */}
       <div className="dynamic-list">

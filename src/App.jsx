@@ -984,7 +984,7 @@ function App() {
         : "summary"
 
   return (
-    <div className="app">
+    <div className={`app ${courseData.lessons.length === 0 ? "is-landing" : ""}`}>
       {/* 시작하기 모달 */}
       {showStartModal && <StartModal onClose={() => setShowStartModal(false)} onCreate={createLessonsFromModal} />}
 
@@ -1017,6 +1017,7 @@ function App() {
           <h1 className="logo-clickable" onClick={resetToHome} title="처음으로 돌아가기">
             <span className="logo-mark">C</span>
             Content Builder
+            <span className="logo-version">2.0</span>
           </h1>
           <span className="header-divider" />
           <span className="header-crumb">
@@ -1183,10 +1184,6 @@ function App() {
                 <div className="lesson-head-left">
                   <span className="lesson-kicker">{lessonLabel} · {currentLesson.weekTitle || "주차 타이틀 없음"}</span>
                   <h2>{currentLesson.lessonTitle || "제목 없음"}</h2>
-                  <div className="lesson-meta-row">
-                    <span>강의 영상: {currentLesson.lectureVideoUrl || "미입력"}</span>
-                    <span>자막: {currentLesson.lectureSubtitle || "미입력"}</span>
-                  </div>
                 </div>
               </div>
               <StepBar
@@ -1211,10 +1208,6 @@ function App() {
                   <button className="btn-start-center" onClick={() => setShowStartModal(true)}>
                     새 과목 시작
                   </button>
-                </div>
-                <div className="welcome-preview">
-                  <span>최근 작업 없음</span>
-                  <strong>차시 목록과 과목 정보가 이 화면에 표시됩니다.</strong>
                 </div>
               </div>
             ) : currentLesson ? (

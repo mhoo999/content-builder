@@ -108,6 +108,17 @@ button {
   white-space: nowrap;
 }
 
+.logo-version {
+  margin-left: 1px;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .logo-mark {
   width: 18px;
   height: 18px;
@@ -200,6 +211,37 @@ button {
   flex: 1;
   display: flex;
   overflow: hidden;
+}
+
+.is-landing .sidebar {
+  display: none;
+}
+
+.is-landing .header-toggle-left,
+.is-landing .header-toggle-right,
+.is-landing .header-crumb,
+.is-landing .save-status {
+  display: none;
+}
+
+.is-landing .header-left {
+  flex: 1;
+}
+
+.is-landing .logo-clickable {
+  cursor: default;
+}
+
+.is-landing .editor-area-wrapper {
+  background:
+    linear-gradient(180deg, rgba(79, 70, 229, 0.045), transparent 42%),
+    var(--bg);
+}
+
+.is-landing .editor-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar {
@@ -566,12 +608,7 @@ button {
 }
 
 .lesson-meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-top: 4px;
-  color: var(--text-secondary);
-  font-size: 12px;
+  display: none;
 }
 
 .lesson-flags {
@@ -614,26 +651,61 @@ button {
 }
 
 .welcome-screen {
-  min-height: 100%;
+  width: min(620px, 100%);
+  min-height: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 48px 32px;
   text-align: center;
   color: var(--text-secondary);
 }
 
+.welcome-mark {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: white;
+  font-size: 24px;
+  font-weight: 800;
+}
+
 .welcome-screen h2 {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   color: var(--text-primary);
-  font-size: 34px;
+  font-size: 38px;
   font-weight: 700;
   letter-spacing: 0;
+  line-height: 1.15;
 }
 
 .welcome-screen p {
   margin: 0;
+  max-width: 420px;
   font-size: 14px;
+  line-height: 1.6;
+}
+
+.welcome-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.welcome-actions .btn-secondary,
+.welcome-actions .btn-start-center {
+  min-width: 132px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0 16px;
+  font-size: 13px;
 }
 
 .form-section {
@@ -647,7 +719,7 @@ button {
 
 .form-section h3 {
   margin: 0;
-  padding: 12px 18px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--border);
   color: var(--text-primary);
   font-size: 14px;
@@ -656,7 +728,7 @@ button {
 
 .subsection {
   margin: 0;
-  padding: 14px 18px 18px;
+  padding: 18px 18px 20px;
   border: none;
   border-bottom: 1px solid var(--border);
   border-radius: 0;
@@ -681,11 +753,11 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .form-group {
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .form-group:last-child {
@@ -695,7 +767,7 @@ button {
 .form-group label,
 .field-label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   color: var(--text-secondary);
   font-size: 11.5px;
   font-weight: 600;
@@ -783,7 +855,6 @@ button:disabled,
 }
 
 .btn-primary,
-.btn-add-small,
 .btn-start-center {
   border-color: var(--accent);
   background: var(--accent);
@@ -792,10 +863,26 @@ button:disabled,
 }
 
 .btn-primary:hover:not(:disabled),
-.btn-add-small:hover:not(:disabled),
 .btn-start-center:hover:not(:disabled) {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
+}
+
+.btn-add-small {
+  height: 22px;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.btn-add-small:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--border-strong);
 }
 
 .btn-start-center {
@@ -1016,20 +1103,23 @@ button:disabled,
 }
 
 .editable-template {
-  min-height: 24px;
+  min-height: 30px;
   max-width: 170px;
-  flex-direction: column;
+  flex-direction: row;
   align-items: flex-end;
-  gap: 1px;
-  padding: 0;
-  border: none;
-  background: transparent;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
   text-align: right;
 }
 
 .editable-template:hover {
   color: var(--accent);
-  background: transparent;
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .editable-template strong {
@@ -1043,46 +1133,10 @@ button:disabled,
 }
 
 .editable-template small {
+  display: none;
   color: var(--text-tertiary);
   font-size: 11px;
   font-weight: 500;
-}
-
-.professor-section .form-group,
-.professor-section .dynamic-list {
-  margin-bottom: 10px;
-}
-
-.professor-section .form-group label,
-.professor-section .list-header h4 {
-  margin-bottom: 5px;
-  font-size: 11.5px;
-}
-
-.professor-section input,
-.professor-section textarea {
-  min-height: 28px;
-  padding: 4px 0;
-  border: none;
-  border-bottom: 1px solid var(--border);
-  border-radius: 0;
-  background: transparent;
-  font-size: 12.5px;
-  box-shadow: none;
-}
-
-.professor-section input:focus,
-.professor-section textarea:focus {
-  border-bottom-color: var(--accent);
-  box-shadow: none;
-}
-
-.professor-section textarea {
-  min-height: 64px;
-}
-
-.professor-section .career-item {
-  padding: 8px;
 }
 
 .toc-nav {
