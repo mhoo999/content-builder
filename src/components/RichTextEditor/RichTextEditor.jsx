@@ -421,8 +421,30 @@ function RichTextEditor({ value, onChange, placeholder = "내용을 입력하세
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
       editor.commands.setContent(value || "")
+      
+      // 임포트나 외부 변경 시 내용에 맞게 높이 자동 조절
+      setTimeout(() => {
+        if (editor.view && editor.view.dom) {
+          const dom = editor.view.dom
+          dom.style.height = 'auto' // 기존 높이 리셋
+          const newHeight = Math.max(200, dom.scrollHeight)
+          dom.style.height = `${newHeight}px`
+        }
+      }, 10)
     }
   }, [value, editor])
+
+  // 에디터 초기 로드 시 높이 조절
+  useEffect(() => {
+    if (editor && editor.view && editor.view.dom) {
+      setTimeout(() => {
+        const dom = editor.view.dom
+        dom.style.height = 'auto'
+        const newHeight = Math.max(200, dom.scrollHeight)
+        dom.style.height = `${newHeight}px`
+      }, 100)
+    }
+  }, [editor])
 
   // 이미지에 title 속성 추가 (호버 시 경로 표시) - 에디터 마운트 시 1회만 실행
   useEffect(() => {

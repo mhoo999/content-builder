@@ -220,6 +220,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
                 value={exercise.question}
                 onChange={(value) => updateExercise(index, "question", value)}
                 placeholder="문제를 입력하세요"
+                editorType="question"
               />
             </div>
 
@@ -233,6 +234,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
                       value={option}
                       onChange={(value) => updateExerciseOption(index, optIndex, value)}
                       placeholder={`선택지 ${optIndex + 1}를 입력하세요`}
+                      editorType="option"
                     />
                   </div>
                 ))}
@@ -282,6 +284,7 @@ function SummarySection({ lessonData, onUpdate, courseCode, year, courseType = '
                 value={exercise.commentary}
                 onChange={(value) => updateExercise(index, "commentary", value)}
                 placeholder="정답에 대한 해설을 작성하세요"
+                editorType="commentary"
               />
             </div>
           </div>

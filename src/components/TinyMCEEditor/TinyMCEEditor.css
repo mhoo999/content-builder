@@ -4,6 +4,36 @@
   margin: 8px 0;
 }
 
+.tinymce-editor-wrapper.type-question {
+  border-color: #a5b4fc;
+}
+
+.tinymce-editor-wrapper.type-question .tox-toolbar__primary,
+.tinymce-editor-wrapper.type-question .tox-toolbar__overflow,
+.tinymce-editor-wrapper.type-question .tox-statusbar {
+  background-color: #e0e7ff !important;
+}
+
+.tinymce-editor-wrapper.type-option {
+  border-color: #86efac;
+}
+
+.tinymce-editor-wrapper.type-option .tox-toolbar__primary,
+.tinymce-editor-wrapper.type-option .tox-toolbar__overflow,
+.tinymce-editor-wrapper.type-option .tox-statusbar {
+  background-color: #dcfce7 !important;
+}
+
+.tinymce-editor-wrapper.type-commentary {
+  border-color: #fcd34d;
+}
+
+.tinymce-editor-wrapper.type-commentary .tox-toolbar__primary,
+.tinymce-editor-wrapper.type-commentary .tox-toolbar__overflow,
+.tinymce-editor-wrapper.type-commentary .tox-statusbar {
+  background-color: #fef3c7 !important;
+}
+
 .tinymce-editor-wrapper .tox-tinymce {
   border: none;
   border-radius: 4px;

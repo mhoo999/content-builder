@@ -175,11 +175,13 @@
 
 /* 에디터 본문 */
 .notion-editor-content {
-  min-height: 150px;
+  min-height: 200px;
   padding: 16px 20px;
   font-size: 15px;
   line-height: 1.7;
   color: #37352f;
+  resize: vertical;
+  overflow: auto;
 }
 
 .notion-editor-content:focus {

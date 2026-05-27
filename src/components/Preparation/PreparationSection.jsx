@@ -96,61 +96,6 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
     updateLocal({ terms: newTerms })
   }
 
-  const handleTermContentChange = (termIndex, contentIndex, value) => {
-    const newTerms = [...localData.terms]
-    const newContent = [...(newTerms[termIndex].content || [])]
-    newContent[contentIndex] = value
-    newTerms[termIndex] = { ...newTerms[termIndex], content: newContent }
-    updateLocal({ terms: newTerms })
-  }
-
-  const addTermContent = (termIndex) => {
-    const newTerms = [...localData.terms]
-    const newContent = [...(newTerms[termIndex].content || []), ""]
-    newTerms[termIndex] = { ...newTerms[termIndex], content: newContent }
-    updateLocal({ terms: newTerms })
-  }
-
-  const removeTermContent = (termIndex, contentIndex) => {
-    const newTerms = [...localData.terms]
-    const newContent = (newTerms[termIndex].content || []).filter((_, i) => i !== contentIndex)
-    newTerms[termIndex] = { ...newTerms[termIndex], content: newContent }
-    updateLocal({ terms: newTerms })
-  }
-
-  const handleTermContentPaste = (termIndex, contentIndex, e) => {
-    const pastedText = e.clipboardData.getData('text/plain');
-
-    if (pastedText.includes('\n')) {
-      e.preventDefault();
-
-      const lines = pastedText
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
-
-      if (lines.length > 1) {
-        const newTerms = [...localData.terms];
-        const currentContent = [...(newTerms[termIndex].content || [])];
-        currentContent[contentIndex] = lines[0];
-
-        for (let i = 1; i < lines.length; i++) {
-          currentContent.splice(contentIndex + i, 0, lines[i]);
-        }
-
-        newTerms[termIndex] = { ...newTerms[termIndex], content: currentContent };
-        updateLocal({ terms: newTerms });
-
-        console.log(`[용어 ${termIndex + 1}] 붙여넣기: ${lines.length}개 항목으로 자동 분리됨`);
-      } else if (lines.length === 1) {
-        const newTerms = [...localData.terms];
-        const currentContent = [...(newTerms[termIndex].content || [])];
-        currentContent[contentIndex] = lines[0];
-        newTerms[termIndex] = { ...newTerms[termIndex], content: currentContent };
-        updateLocal({ terms: newTerms });
-      }
-    }
-  }
 
   const handleLearningContentChange = (index, value) => {
     const newContents = [...localData.learningContents]
@@ -257,34 +202,18 @@ function PreparationSection({ lessonData, onUpdate, courseCode, year, courseType
               <small className="hint">💡 Enter 키로 줄바꿈 가능</small>
             </div>
             <div className="form-group">
-              <div className="list-header">
-                <label>내용</label>
-                <button className="btn-add-small" onClick={() => addTermContent(index)} type="button">
-                  + 추가
-                </button>
-              </div>
-              {(term.content || [""]).map((contentItem, contentIndex) => (
-                <div key={contentIndex} className="dynamic-item">
-                  <input
-                    type="text"
-                    placeholder={`내용 ${contentIndex + 1}`}
-                    value={contentItem}
-                    onChange={(e) => handleTermContentChange(index, contentIndex, e.target.value)}
-                    onPaste={(e) => handleTermContentPaste(index, contentIndex, e)}
-                    title="여러 줄 붙여넣기 시 자동으로 항목 분리"
-                  />
-                  {(term.content || []).length > 1 && (
-                    <button
-                      className="btn-remove-small"
-                      onClick={() => removeTermContent(index, contentIndex)}
-                      type="button"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-              <small className="hint">💡 여러 줄을 붙여넣으면 자동으로 항목이 분리됩니다.</small>
+              <label>내용 (줄바꿈으로 구분)</label>
+              <textarea
+                placeholder="내용을 입력하세요. (Enter 키로 항목 구분)"
+                value={(term.content || []).join('\n')}
+                onChange={(e) => {
+                  const newTerms = [...localData.terms]
+                  newTerms[index] = { ...newTerms[index], content: e.target.value.split('\n') }
+                  updateLocal({ terms: newTerms })
+                }}
+                rows={4}
+              />
+              <small className="hint">💡 줄바꿈(Enter)으로 여러 내용을 구분해서 입력하세요.</small>
             </div>
           </div>
         ))}
