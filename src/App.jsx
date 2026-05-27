@@ -6,6 +6,7 @@ import LearningSection from "./components/Learning/LearningSection"
 import SummarySection from "./components/Summary/SummarySectionNew"
 import StartModal from "./components/StartModal/StartModal"
 import TemplateModal from "./components/TemplateModal/TemplateModal"
+import { parseSyllabusMarkdown, convertToLessonStructure } from "./parsers/syllabusParser"
 import SaveStatusIndicator from "./components/SaveStatusIndicator"
 import StepBar from "./components/StepBar/StepBar"
 import {
@@ -497,6 +498,132 @@ function App() {
     setRightSidebarOpen(true)
   }
 
+  // 강의계획서 파일 가져오기
+  const importSyllabusFile = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // 파일 입력 초기화 (같은 파일 다시 선택 가능하게)
+    event.target.value = ''
+
+    if (!file.name.endsWith('.md')) {
+      alert('마크다운 파일(.md)만 업로드할 수 있습니다.')
+      return
+    }
+
+    try {
+      const text = await file.text()
+      const parsed = parseSyllabusMarkdown(text)
+
+      if (parsed.rows.length === 0) {
+        alert('유효한 강의계획서 테이블을 찾을 수 없습니다.')
+        return
+      }
+
+      // 과목 코드 입력 받기
+      const inputCode = prompt(
+        `과목 코드를 입력하세요.\n\n` +
+        `과정명: ${parsed.courseName || '(추출 실패)'}\n` +
+        `차시 수: ${parsed.totalLessons}개\n` +
+        `문서 유형: ${parsed.hasPractice ? '실습 포함' : '일반'}`,
+        courseData.courseCode || ''
+      )
+      if (inputCode === null) return // 취소
+
+      const codeVal = inputCode.trim()
+      if (!codeVal) {
+        alert('과목 코드를 입력해야 합니다.')
+        return
+      }
+
+      // 연도 입력 받기
+      const inputYear = prompt('연도를 입력하세요.', courseData.year || new Date().getFullYear().toString())
+      if (inputYear === null) return // 취소
+
+      const yearVal = inputYear.trim()
+      if (!yearVal) {
+        alert('연도를 입력해야 합니다.')
+        return
+      }
+
+      // 레슨 구조로 변환
+      const syllabusLessons = convertToLessonStructure(parsed)
+
+      // 주차별 차시 카운터
+      const weekSectionCounter = {}
+
+      const newLessons = syllabusLessons.map((structure, index) => {
+        const newLesson = createBuilderLessonData()
+        newLesson.weekNumber = structure.weekNumber
+        newLesson.lessonNumber = structure.lessonNumber || (index + 1)
+        newLesson.lessonTitle = structure.title || ''
+        newLesson.weekTitle = structure.weekTitle || ''
+
+        // sectionInWeek 계산
+        const weekNum = newLesson.weekNumber
+        if (!weekSectionCounter[weekNum]) {
+          weekSectionCounter[weekNum] = 0
+        }
+        weekSectionCounter[weekNum]++
+        newLesson.sectionInWeek = weekSectionCounter[weekNum]
+
+        const lessonNumStr = String(newLesson.lessonNumber).padStart(2, "0")
+
+        // 학습내용, 학습목표 매핑
+        if (structure.learningContents?.length > 0) {
+          newLesson.learningContents = structure.learningContents
+        }
+        if (structure.learningObjectives?.length > 0) {
+          newLesson.learningObjectives = structure.learningObjectives
+        }
+
+        // 실습 내용 매핑
+        if (structure.practiceContent?.length > 0) {
+          newLesson.hasPractice = true
+          const practiceItems = structure.practiceContent.map(item => `<li>${item}</li>`).join('')
+          newLesson.practiceContent = `<div class='practice'><ul>${practiceItems}</ul></div>`
+        }
+
+        // 1주 1차시: 오리엔테이션
+        if (newLesson.weekNumber === 1 && newLesson.lessonNumber === 1) {
+          newLesson.hasOrientation = true
+          newLesson.orientation.videoUrl = `https://cdn-it.livestudy.com/mov/${yearVal}/${codeVal}/${codeVal}_ot.mp4`
+          newLesson.orientation.subtitlePath = `../subtitles/${codeVal}_ot.vtt`
+        }
+
+        // URL 자동 생성
+        newLesson.lectureVideoUrl = `https://cdn-it.livestudy.com/mov/${yearVal}/${codeVal}/${codeVal}_${lessonNumStr}.mp4`
+        newLesson.lectureSubtitle = `../subtitles/${codeVal}_${lessonNumStr}.vtt`
+        newLesson.instructionUrl = `https://cdn-it.livestudy.com/mov/${yearVal}/${codeVal}/down/${codeVal}_mp3_${lessonNumStr}.zip`
+        newLesson.guideUrl = `https://cdn-it.livestudy.com/mov/${yearVal}/${codeVal}/down/${codeVal}_book_${lessonNumStr}.zip`
+
+        if (newLesson.hasPractice) {
+          newLesson.practiceVideoUrl = `https://cdn-it.livestudy.com/mov/${yearVal}/${codeVal}/${codeVal}_${lessonNumStr}_P.mp4`
+          newLesson.practiceSubtitle = `../subtitles/${codeVal}_${lessonNumStr}_P.vtt`
+        }
+
+        return newLesson
+      })
+
+      setCourseData((prev) => ({
+        ...prev,
+        courseCode: codeVal,
+        courseName: parsed.courseName || prev.courseName,
+        year: yearVal,
+        courseType: parsed.hasPractice ? 'general' : (prev.courseType || 'general'),
+        lessons: newLessons,
+      }))
+      setCurrentLessonIndex(0)
+      setLeftSidebarOpen(true)
+      setRightSidebarOpen(true)
+
+      alert(`${newLessons.length}개 차시를 생성했습니다.`)
+    } catch (err) {
+      console.error('Syllabus import error:', err)
+      alert('파일 처리 중 오류가 발생했습니다: ' + err.message)
+    }
+  }
+
   // 과목 정보 업데이트
   const updateCourseInfo = (field, value) => {
     setCourseData((prev) => ({ ...prev, [field]: value }))
@@ -984,7 +1111,7 @@ function App() {
 
       {/* 템플릿 선택 모달 */}
       {showTemplateModal && (
-        <TemplateModal 
+        <TemplateModal
           onClose={() => setShowTemplateModal(false)}
           activePreset={courseData.templatePreset || "2025-standard"}
           activeTheme={courseData.templateTheme || "type-1"}
@@ -1044,6 +1171,15 @@ function App() {
               directory=""
               multiple
               onChange={importFolder}
+              style={{ display: "none" }}
+            />
+          </label>
+          <label className="btn-secondary" title="강의계획서 마크다운에서 차시 자동 생성">
+            계획표
+            <input
+              type="file"
+              accept=".md"
+              onChange={importSyllabusFile}
               style={{ display: "none" }}
             />
           </label>
@@ -1183,6 +1319,15 @@ function App() {
                   <label className="btn-secondary">
                     가져오기
                     <input type="file" webkitdirectory="" directory="" multiple onChange={importFolder} style={{ display: "none" }} />
+                  </label>
+                  <label className="btn-secondary" title="강의계획서 마크다운에서 차시 자동 생성">
+                    계획표 가져오기
+                    <input
+                      type="file"
+                      accept=".md"
+                      onChange={importSyllabusFile}
+                      style={{ display: "none" }}
+                    />
                   </label>
                   <button className="btn-start-center" onClick={() => setShowStartModal(true)}>
                     새 과목 시작
