@@ -655,54 +655,34 @@ def create_objectives_page(contents, objectives, images_dir=None, course_code=No
                 obj = extract_and_save_images(obj, images_dir, course_code, image_counter, imported_path_mapping, image_cache)
             processed_objectives.append(obj)
 
-    # Round-trip compatibility: 원본 번호 형식 보존
-    # 메타데이터에서 원본 번호 형식 확인 (우선 순위: 메타데이터 > 현재 내용 검사)
-    meta = lesson_meta or {}
-    had_content_numbering = meta.get('hadContentNumbering', False)
-    had_objective_numbering = meta.get('hadObjectiveNumbering', False)
-
-    # Fallback: 메타데이터가 없으면 현재 내용으로 판단
-    if not meta:
-        if filtered_contents and filtered_contents[0]:
-            had_content_numbering = bool(re.match(r'^\d+[\.\)]\s', filtered_contents[0]))
-        if processed_objectives and processed_objectives[0]:
-            had_objective_numbering = bool(re.match(r'^\d+[\.\)]\s', processed_objectives[0]))
-
+    # 모든 템플릿 공용 규칙: 내보낼 때 항상 숫자를 붙여서 내보냄
     # 학습내용 처리
     final_contents = []
-    if had_content_numbering:
-        # 원본에 번호가 있었으면 번호 추가
-        content_number = 1
-        for c in filtered_contents:
-            if c:
-                # 실습 항목(<div class='practice'>)은 넘버링 없이 그대로 추가
-                if c.strip().startswith("<div class='practice'>"):
+    content_number = 1
+    for c in filtered_contents:
+        if c:
+            # 실습 항목(<div class='practice'>)은 넘버링 없이 그대로 추가
+            if c.strip().startswith("<div class='practice'>") or "class='practice'" in c or 'class="practice"' in c:
+                final_contents.append(c)
+            else:
+                # 이미 번호가 있는지 확인 (중복 방지)
+                if re.match(r'^\d+[\.\)]\s', c):
                     final_contents.append(c)
                 else:
-                    # 이미 번호가 있는지 확인
-                    if re.match(r'^\d+[\.\)]\s', c):
-                        final_contents.append(c)
-                    else:
-                        final_contents.append(f"{content_number}. {c}")
-                    content_number += 1
-    else:
-        # 원본에 번호가 없었으면 그대로 사용
-        final_contents = filtered_contents
+                    final_contents.append(f"{content_number}. {c}")
+                content_number += 1
 
     # 학습목표 처리
-    if had_objective_numbering:
-        # 원본에 번호가 있었으면 번호 추가
-        final_objectives = []
-        for i, o in enumerate(processed_objectives):
-            if o:
-                # 이미 번호가 있는지 확인
-                if re.match(r'^\d+[\.\)]\s', o):
-                    final_objectives.append(o)
-                else:
-                    final_objectives.append(f"{i+1}. {o}")
-    else:
-        # 원본에 번호가 없었으면 그대로 사용
-        final_objectives = processed_objectives
+    final_objectives = []
+    objective_number = 1
+    for o in processed_objectives:
+        if o:
+            # 이미 번호가 있는지 확인 (중복 방지)
+            if re.match(r'^\d+[\.\)]\s', o):
+                final_objectives.append(o)
+            else:
+                final_objectives.append(f"{objective_number}. {o}")
+            objective_number += 1
 
     # 원본 description/script 우선 사용
     final_description = description if description else "주요 학습내용과 학습목표를 살펴보세요."

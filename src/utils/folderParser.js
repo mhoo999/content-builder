@@ -203,18 +203,18 @@ export const convertDataJsonToBuilderFormat = (dataJson, lessonNumber, htmlConte
       .replace(/&amp;/g, "&")
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
-    // 넘버링 제거 (예: "1. 내용" -> "내용")
+    // 넘버링 제거 (예: "1. 내용", "1) 내용" -> "내용")
     // HTML 태그가 포함된 경우에도 넘버링만 제거
-    cleaned = cleaned.replace(/^\d+\.\s*/, "").trim()
+    cleaned = cleaned.replace(/^\d+[\.\)]\s*/, "").trim()
     return cleaned
   }
 
-  // 원본 번호 형식 감지 (export 시 복원을 위해)
+  // 원본 번호 형식 감지 (export 시 복원을 위해 - 내보낼 땐 항상 붙이므로 참고용)
   const hadContentNumbering = learningContentsRaw.some(text =>
-    typeof text === "string" && /^\d+\.\s*/.test(text.replace(/&[^;]+;/g, ""))
+    typeof text === "string" && /^\d+[\.\)]\s*/.test(text.replace(/&[^;]+;/g, ""))
   )
   const hadObjectiveNumbering = learningObjectivesRaw.some(text =>
-    typeof text === "string" && /^\d+\.\s*/.test(text.replace(/&[^;]+;/g, ""))
+    typeof text === "string" && /^\d+[\.\)]\s*/.test(text.replace(/&[^;]+;/g, ""))
   )
 
   // 넘버링 제거 (HTML 태그는 유지하여 에디터로 표시)
@@ -577,9 +577,12 @@ export const parseProfessorInfo = (dataJson) => {
         }
       }
       // 일반 문자열인 경우 - plain text에서 날짜 패턴 추출 시도
-      // "YYYY년 M월 ~ YYYY년 M월 내용" 또는 "YYYY년 M월 ~ 현재 내용" 형식
-      const datePattern = /^(\d{4}년\s*\d{1,2}월\s*~\s*(?:\d{4}년\s*\d{1,2}월|현재))\s*(.*)$/
-      const dateMatch = careerStr.match(datePattern)
+      // 먼저 HTML 태그 제거 (<br> 등)
+      const cleanCareerStr = careerStr.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      
+      // "YYYY년 M월 ~ YYYY년 M월 내용" 또는 "YYYY년 M월 ~ 현재 내용" 또는 "재직중" 형식
+      const datePattern = /^(\d{4}년\s*\d{1,2}월\s*~\s*(?:\d{4}년\s*\d{1,2}월|현재|재직중)?)\s+(.+)$/
+      const dateMatch = cleanCareerStr.match(datePattern)
 
       if (dateMatch) {
         const period = dateMatch[1].trim()

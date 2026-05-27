@@ -159,11 +159,11 @@ export const cleanText = (text, options = {}) => {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'");
 
-  // 번호 제거 전 원본 형식 기록
-  const hadNumbering = /^\d+\.\s*/.test(cleaned);
+  // 번호 제거 전 원본 형식 기록 (내보낼 때 항상 숫자를 붙이므로 기록용)
+  const hadNumbering = /^\d+[\.\)]\s*/.test(cleaned);
 
-  // 넘버링 제거 (예: "1. 내용" -> "내용")
-  cleaned = cleaned.replace(/^\d+\.\s*/, "").trim();
+  // 넘버링 제거 (예: "1. 내용", "1) 내용" -> "내용")
+  cleaned = cleaned.replace(/^\d+[\.\)]\s*/, "").trim();
 
   if (options.returnMetadata) {
     return { text: cleaned, hadNumbering };
