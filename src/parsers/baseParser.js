@@ -484,6 +484,15 @@ export const parseProfessorInfo = (introPage, importedImages = {}) => {
   };
 
   const careerContent = careerItem?.content || [];
+
+  // 원본 형식 감지: HTML 태그(<b>, <br> 등)가 있는지 확인
+  const hasHtmlInCareer = careerContent.some((item) => {
+    if (typeof item === "string") {
+      return /<(?:b|strong|br)[^>]*>/i.test(item);
+    }
+    return false;
+  });
+
   const parsedCareer = careerContent.map((careerStr, idx) => {
     if (typeof careerStr === "string") {
       // HTML 엔티티 디코딩
@@ -567,7 +576,8 @@ export const parseProfessorInfo = (introPage, importedImages = {}) => {
     photo: prof.photo || "",
     education: educationItem?.content || [""],
     career: parsedCareer.length > 0 ? parsedCareer : [{ period: "", startDate: "", endDate: "", description: "" }],
-    introMedia: introPage?.media || ""
+    introMedia: introPage?.media || "",
+    _careerHadHtmlTags: hasHtmlInCareer  // 원본 형식 메타데이터 보존
   };
 };
 

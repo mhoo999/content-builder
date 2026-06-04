@@ -468,7 +468,12 @@ def create_intro_page(professor, processed_photo=None, lesson_title=None, is_201
     if not intro_media:
         intro_media = "../../../resources/media/common_start.mp3"
 
-    # 경력 변환: [{ period: '', description: '' }] → ['<b>period</b><br />description']
+    # 경력 변환
+    # 원본에 HTML 태그가 있었는지 확인 (_careerHadHtmlTags 메타데이터 사용)
+    # True: HTML 형식으로 내보내기 (예: "<b>기간</b><br />내용")
+    # False: 순수 텍스트로 내보내기 (예: "기간 내용")
+    career_had_html_tags = professor.get("_careerHadHtmlTags", True)  # 기본값은 True (기존 동작 유지)
+
     career_content = []
     if isinstance(professor.get("career"), list):
         for career_item in professor.get("career", []):
@@ -476,12 +481,22 @@ def create_intro_page(professor, processed_photo=None, lesson_title=None, is_201
                 period = career_item.get("period", "").strip()
                 description = career_item.get("description", "").strip()
                 if period or description:
-                    if period and description:
-                        career_content.append(f"<b>{period}</b><br />{description}")
-                    elif period:
-                        career_content.append(f"<b>{period}</b>")
-                    elif description:
-                        career_content.append(description)
+                    if career_had_html_tags:
+                        # HTML 형식으로 내보내기 (원본에 HTML 태그가 있었던 경우)
+                        if period and description:
+                            career_content.append(f"<b>{period}</b><br />{description}")
+                        elif period:
+                            career_content.append(f"<b>{period}</b>")
+                        elif description:
+                            career_content.append(description)
+                    else:
+                        # 순수 텍스트로 내보내기 (원본에 HTML 태그가 없었던 경우)
+                        if period and description:
+                            career_content.append(f"{period} {description}")
+                        elif period:
+                            career_content.append(period)
+                        elif description:
+                            career_content.append(description)
             elif isinstance(career_item, str) and career_item.strip():
                 # 기존 형식 호환 (문자열인 경우 그대로 사용)
                 career_content.append(career_item)

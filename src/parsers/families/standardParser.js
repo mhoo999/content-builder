@@ -156,7 +156,8 @@ export class StandardParser extends BaseParser {
           name: professorInfo.name,
           photo: professorInfo.photo,
           education: professorInfo.education,
-          career: professorInfo.career
+          career: professorInfo.career,
+          _careerHadHtmlTags: professorInfo._careerHadHtmlTags
         }
       },
 
@@ -202,7 +203,8 @@ export class StandardParser extends BaseParser {
         name: professorInfo.name,
         photo: professorInfo.photo,
         education: professorInfo.education,
-        career: professorInfo.career
+        career: professorInfo.career,
+        _careerHadHtmlTags: professorInfo._careerHadHtmlTags
       },
 
       _meta: {

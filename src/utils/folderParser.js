@@ -550,6 +550,14 @@ export const parseProfessorInfo = (dataJson) => {
     return { startDate: "", endDate: "" }
   }
 
+  // 원본 형식 감지: HTML 태그(<b>, <br> 등)가 있는지 확인
+  const hasHtmlInCareer = careerContent.some((item) => {
+    if (typeof item === "string") {
+      return /<(?:b|strong|br)[^>]*>/i.test(item)
+    }
+    return false
+  })
+
   const parsedCareer = careerContent.map((careerStr) => {
     if (typeof careerStr === "string") {
       // <b>연도</b><br />내용 또는 <b>연도</b><br>내용 형식 파싱
@@ -579,7 +587,7 @@ export const parseProfessorInfo = (dataJson) => {
       // 일반 문자열인 경우 - plain text에서 날짜 패턴 추출 시도
       // 먼저 HTML 태그 제거 (<br> 등)
       const cleanCareerStr = careerStr.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-      
+
       // "YYYY년 M월 ~ YYYY년 M월 내용" 또는 "YYYY년 M월 ~ 현재 내용" 또는 "재직중" 형식
       const datePattern = /^(\d{4}년\s*\d{1,2}월\s*~\s*(?:\d{4}년\s*\d{1,2}월|현재|재직중)?)\s+(.+)$/
       const dateMatch = cleanCareerStr.match(datePattern)
@@ -624,5 +632,6 @@ export const parseProfessorInfo = (dataJson) => {
     education: educationItem?.content || [""],
     career: parsedCareer.length > 0 ? parsedCareer : [{ period: "", description: "" }],
     introMedia: introPage?.media || "", // 인트로 페이지 media 경로 저장
+    _careerHadHtmlTags: hasHtmlInCareer  // 원본 형식 메타데이터 보존
   }
 }
