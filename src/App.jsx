@@ -693,20 +693,6 @@ function App() {
       }
     }
 
-    // 출력 경로 입력 받기
-    // Windows/macOS/Linux 공통 경로 안내
-    const isWindows = navigator.platform.toLowerCase().includes("win")
-    const defaultPath = isWindows ? "~/Documents" : "~/Documents"
-    const examplePath = isWindows
-      ? "C:\\Users\\username\\Documents\n또는: ~/Documents (자동 확장됨)"
-      : "~/Documents\n또는: /Users/username/Documents"
-
-    const outputPath = prompt(`출력 경로를 입력하세요:\n\n예: ${examplePath}`, defaultPath)
-
-    if (!outputPath) {
-      return // 사용자가 취소
-    }
-
     // Export 전 모든 차시의 sectionInWeek 재계산
     // (차시 번호나 주차를 수정했을 때 sectionInWeek가 자동 업데이트되지 않으므로)
     const dataWithRecalculatedSections = {
@@ -734,30 +720,33 @@ function App() {
       examWeeks: examWeeks, // 시험 주차 (중간고사/기말고사 등)
     }
 
+    // API를 통해 ZIP 파일 생성 및 다운로드
     try {
-      // API 호출하여 폴더 구조 생성
-      const response = await fetch("/api/export-subjects", {
+      const response = await fetch("/api/export", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          courseData: exportData,
-          outputPath: outputPath,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseData: exportData }),
       })
 
-      if (!response.ok) {
-        const error = await response.text()
-        throw new Error(error || "폴더 생성 중 오류가 발생했습니다.")
+      if (response.ok) {
+        // ZIP 파일 다운로드
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `${courseData.courseCode}.zip`
+        link.click()
+        URL.revokeObjectURL(url)
+        alert(`✅ ${courseData.courseCode}.zip 다운로드 완료!`)
+      } else {
+        // API 실패 시 에러 메시지 표시
+        const error = await response.json()
+        throw new Error(error.error || "Export failed")
       }
-
-      const result = await response.json()
-      alert(`✅ 폴더 구조 생성 완료!\n\n` + `위치: ${result.outputPath}\n` + `차시 수: ${result.lessonCount}개`)
     } catch (error) {
       console.error("Export error:", error)
 
-      // API가 없는 경우 대체 방법 안내
+      // API 실패 시 JSON 다운로드 (fallback)
       const dataStr = JSON.stringify(exportData, null, 2)
       const blob = new Blob([dataStr], { type: "application/json" })
       const url = URL.createObjectURL(blob)
@@ -768,13 +757,10 @@ function App() {
       link.click()
       URL.revokeObjectURL(url)
 
-      const pythonCmd = isWindows ? "python" : "python3"
-      const command = `${pythonCmd} builder_to_subjects.py ${filename} ${outputPath}`
       alert(
-        `⚠️ API 서버가 실행되지 않았습니다.\n\n` +
+        `⚠️ 서버 처리 실패: ${error.message}\n\n` +
           `JSON 파일이 다운로드되었습니다.\n` +
-          `Python 스크립트가 HTML의 base64 이미지를 자동으로 파일로 저장하고 상대경로로 교체합니다.\n\n` +
-          `터미널에서 다음 명령어를 실행하세요:\n\n${command}`,
+          `터미널에서 실행: python3 builder_to_subjects.py ${filename} ./output`,
       )
     }
   }

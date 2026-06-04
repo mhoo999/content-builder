@@ -1,0 +1,2 @@
+# Vercel Python Runtime dependencies
+# 기본 라이브러리만 사용하므로 추가 패키지 없음
