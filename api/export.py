@@ -13,10 +13,11 @@ import io
 import base64
 from pathlib import Path
 
-# 상위 디렉토리의 모듈 import를 위한 경로 추가
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from builder_to_subjects import convert_builder_to_subjects
+# 모듈 import (Vercel/로컬 환경 호환)
+try:
+    from api.builder_to_subjects import convert_builder_to_subjects
+except ImportError:
+    from builder_to_subjects import convert_builder_to_subjects
 
 
 class handler(BaseHTTPRequestHandler):
