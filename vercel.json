@@ -2,8 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/export.py": {
-      "runtime": "@vercel/python@4.5.0",
+    "api/export.js": {
       "maxDuration": 60
     }
   },

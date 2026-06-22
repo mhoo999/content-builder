@@ -11,6 +11,7 @@
     "test:round-trip": "node cli/round-trip-test.cjs"
   },
   "dependencies": {
+    "archiver": "^7.0.1",
     "@codecogs/eqneditor-tinymce6": "^1.0.2",
     "@tinymce/tinymce-react": "^6.3.0",
     "@tiptap/extension-bubble-menu": "^3.11.0",
