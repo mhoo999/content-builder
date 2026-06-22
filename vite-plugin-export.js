@@ -1,8 +1,10 @@
 import { spawn } from 'node:child_process';
-import { writeFileSync, unlinkSync, existsSync, rmSync } from 'node:fs';
+import { writeFileSync, unlinkSync, existsSync, rmSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import archiver from 'archiver';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const archiver = require('archiver');
 
 export default function exportSubjectsPlugin() {
   return {
@@ -41,7 +43,6 @@ export default function exportSubjectsPlugin() {
             const outputDir = join(tempDir, 'output');
 
             // 디렉토리 생성
-            const { mkdirSync } = await import('node:fs');
             mkdirSync(tempDir, { recursive: true });
             mkdirSync(outputDir, { recursive: true });
 

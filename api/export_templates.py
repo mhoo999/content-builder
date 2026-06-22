@@ -59,6 +59,8 @@ TEMPLATE_PRESETS = {
     "2022-standard": {
         "html_head": """	<link rel="stylesheet" href="../../../resources/styles/2022/base.css">
 	<link rel="stylesheet" href="../../../resources/styles/2022/layout.css">
+	<link rel="stylesheet" href="../../../resources/styles/2022/modules.css">
+	<link rel="stylesheet" href="../../../resources/styles/2022/mediaquery.css">
 	<link rel="stylesheet" href="../../../resources/styles/2022/{theme}.css">""",
         "html_head_scripts": """	<script src="../../../resources/scripts/2022/templates/layout.js"></script>
 	<script src="../../../resources/scripts/2022/templates/defaults.js"></script>
