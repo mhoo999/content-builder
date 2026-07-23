@@ -69,7 +69,7 @@ const TEMPLATE_PRESETS = {
   },
   "2023-standard": {
     html_head: `	<link rel="stylesheet" href="../../../resources/styles/2023/base.css">
-	<link rel="stylesheet" href="../../../resources/styles/2025/layout.css">
+	<link rel="stylesheet" href="../../../resources/styles/2023/layout.css">
 	<link rel="stylesheet" href="../../../resources/styles/2023/modules.css">
 	<link rel="stylesheet" href="../../../resources/styles/2023/mediaquery.css">
 	<link rel="stylesheet" href="../../../resources/styles/2023/{theme}.css">`,
@@ -83,7 +83,20 @@ const TEMPLATE_PRESETS = {
     html_head: `	<link rel="stylesheet" href="../../../resources/styles/2023/base.css">
 	<link rel="stylesheet" href="../../../resources/styles/2025/layout.css">
 	<link rel="stylesheet" href="../../../resources/styles/2023/modules.css">
-	<link rel="stylesheet" href="../../../resources/styles/2025/{theme}.css">`,
+	<link rel="stylesheet" href="../../../resources/styles/2023/mediaquery.css">
+	<link rel="stylesheet" href="../../../resources/styles/2023/{theme}.css">`,
+    html_head_scripts: `	<script src="../../../resources/scripts/2022/templates/layout.js"></script>
+	<script src="../../../resources/scripts/2022/templates/defaults.js"></script>
+	<script src="../../../resources/scripts/sync.js"></script>`,
+    html_body_scripts: `	<script src="../../../resources/scripts/2022/commons.js"></script>`,
+    components: ["intro", "orientation", "term", "objectives", "opinion", "lecture", "check", "exercise", "theorem", "next"]
+  },
+  "2026-standard": {
+    html_head: `	<link rel="stylesheet" href="../../../resources/styles/2023/base.css">
+	<link rel="stylesheet" href="../../../resources/styles/2025/layout.css">
+	<link rel="stylesheet" href="../../../resources/styles/2023/modules.css">
+	<link rel="stylesheet" href="../../../resources/styles/2023/mediaquery.css">
+	<link rel="stylesheet" href="../../../resources/styles/2023/{theme}.css">`,
     html_head_scripts: `	<script src="../../../resources/scripts/2023/templates/layout.js"></script>
 	<script src="../../../resources/scripts/2023/templates/defaults.js"></script>
 	<script src="../../../resources/scripts/sync.js"></script>`,
@@ -92,10 +105,12 @@ const TEMPLATE_PRESETS = {
   },
   "2022-ct": {
     html_head: `	<link rel="stylesheet" href="../../../resources/styles/2022/base.css">
-	<link rel="stylesheet" href="../../../resources/styles/2022/layout_ct.css">
+	<link rel="stylesheet" href="../../../resources/styles/2022/layout.css">
+	<link rel="stylesheet" href="../../../resources/styles/2022/modules.css">
+	<link rel="stylesheet" href="../../../resources/styles/2022/mediaquery.css">
 	<link rel="stylesheet" href="../../../resources/styles/2022/{theme}.css">`,
     html_head_scripts: `	<script src="../../../resources/scripts/2022/templates/layout_ct.js"></script>
-	<script src="../../../resources/scripts/2022/templates/defaults_ct.js"></script>
+	<script src="../../../resources/scripts/2022/templates/defaults.js"></script>
 	<script src="../../../resources/scripts/sync.js"></script>`,
     html_body_scripts: `	<script src="../../../resources/scripts/2022/commons_ct.js"></script>`,
     components: ["lecture"]
@@ -112,12 +127,13 @@ const TEMPLATE_PRESETS = {
     components: ["lecture"]
   },
   "2024-hrd": {
-    html_head: `	<link rel="stylesheet" href="../../../resources/styles/base-gr19.css">
-	<link rel="stylesheet" href="../../../resources/styles/2024/layout-hrd.css">
-	<link rel="stylesheet" href="../../../resources/styles/2024/modules-hrd.css">
-	<link rel="stylesheet" href="../../../resources/styles/2024/{theme}.css">`,
-    html_head_scripts: `	<script src="../../../resources/scripts/2024/templates/layout-hrd.js"></script>
-	<script src="../../../resources/scripts/2024/templates/defaults-hrd.js"></script>
+    html_head: `	<link rel="stylesheet" href="../../../resources/styles/2023/base.css">
+	<link rel="stylesheet" href="../../../resources/styles/2023/layout.css">
+	<link rel="stylesheet" href="../../../resources/styles/2023/modules.css">
+	<link rel="stylesheet" href="../../../resources/styles/2023/mediaquery.css">
+	<link rel="stylesheet" href="../../../resources/styles/2023/{theme}.css">`,
+    html_head_scripts: `	<script src="../../../resources/scripts/2023/templates/layout.js"></script>
+	<script src="../../../resources/scripts/2023/templates/defaults_hrd.js"></script>
 	<script src="../../../resources/scripts/sync.js"></script>`,
     html_body_scripts: `	<script src="../../../resources/scripts/2024/commons_hrd.js"></script>`,
     components: ["intro", "exercise_pre", "objectives", "lecture", "exercise_post", "theorem", "next"]
