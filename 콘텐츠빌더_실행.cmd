@@ -48,13 +48,14 @@ if errorlevel 1 (
 
 
 :: ==================================================
-:: 설치 여부 확인
+:: npm 설치 여부 확인
 :: ==================================================
-if not exist "node_modules\.bin\vite.cmd" (
+where npm >nul 2>&1
+
+if errorlevel 1 (
     echo.
-    echo [오류] 콘텐츠 빌더가 설치되지 않았습니다.
-    echo.
-    echo "콘텐츠빌더_설치.cmd"를 먼저 실행해 주세요.
+    echo [오류] npm을 찾을 수 없습니다.
+    echo Node.js가 설치되어 있는지 확인해 주세요.
     echo.
     pause
     popd
@@ -83,6 +84,43 @@ if not defined CHROME_PATH (
     )
 )
 
+if not defined CHROME_PATH (
+    echo.
+    echo [오류] Google Chrome 실행 파일을 찾을 수 없습니다.
+    echo Chrome 설치 여부를 확인해 주세요.
+    echo.
+    pause
+    popd
+    exit /b 1
+)
+
+
+:: ==================================================
+:: 필요한 패키지 설치
+:: ==================================================
+if not exist "node_modules\.bin\vite.cmd" (
+    echo.
+    echo 콘텐츠 빌더 실행에 필요한 패키지를 설치합니다.
+    echo 최초 실행 시에만 진행됩니다.
+    echo.
+
+    if exist "package-lock.json" (
+        call npm ci
+    ) else (
+        call npm install
+    )
+
+    if errorlevel 1 (
+        echo.
+        echo [오류] 필요한 패키지를 설치하지 못했습니다.
+        echo 위에 표시된 오류 내용을 개발 담당자에게 전달해 주세요.
+        echo.
+        pause
+        popd
+        exit /b 1
+    )
+)
+
 
 :: ==================================================
 :: 콘텐츠 빌더 서버 실행
@@ -103,18 +141,13 @@ timeout /t 5 /nobreak >nul
 
 
 :: ==================================================
-:: 브라우저로 열기
+:: 업무용 Chrome Default 프로필로 열기
 :: ==================================================
-if defined CHROME_PATH (
-    start "" "%CHROME_PATH%" ^
-        --user-data-dir="%CHROME_USER_DATA%" ^
-        --profile-directory="%CHROME_PROFILE%" ^
-        --new-window ^
-        "%APP_URL%"
-) else (
-    echo Chrome을 찾을 수 없어 기본 브라우저로 엽니다.
-    start "" "%APP_URL%"
-)
+start "" "%CHROME_PATH%" ^
+    --user-data-dir="%CHROME_USER_DATA%" ^
+    --profile-directory="%CHROME_PROFILE%" ^
+    --new-window ^
+    "%APP_URL%"
 
 popd
 exit /b
