@@ -365,7 +365,7 @@ export const parseExerciseData = (exercisePage, importedImages = {}) => {
       return {
         type: "boolean",
         question: markRelativeImages(ex.subject || "", importedImages),
-        answer: ex.answer || "2",
+        answer: ex.answer != null ? String(ex.answer) : "2",
         options: [],
         commentary: markRelativeImages(ex.commentary || "", importedImages)
       };
@@ -373,7 +373,7 @@ export const parseExerciseData = (exercisePage, importedImages = {}) => {
       return {
         type: "multiple",
         question: markRelativeImages(ex.subject || "", importedImages),
-        answer: ex.answer || "1",
+        answer: ex.answer != null ? String(ex.answer) : "1",
         options: (ex.value || ["", "", "", ""]).map(opt =>
           markRelativeImages(opt, importedImages)
         ),
